@@ -1,5 +1,3 @@
-// Models are added in Phase 2 — this phase wires up the datasource and client only.
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -7,4 +5,82 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Position {
+  PG
+  SG
+  SF
+  PF
+  C
+}
+
+enum Conference {
+  EAST
+  WEST
+}
+
+// One row per real person. A player keeps this identity across every season and
+// team, which is what the once-per-run duplicate rule is enforced against.
+model Player {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  fullName  String    @map("full_name")
+  birthDate DateTime? @map("birth_date") @db.Date
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  rosters Roster[]
+
+  @@map("players")
+}
+
+model Team {
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  name         String
+  abbreviation String
+  conference   Conference
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  rosters Roster[]
+
+  @@map("teams")
+}
+
+// `year` is the season's ending year — the 2009-10 season is 2010.
+model Season {
+  id        String   @id @default(cuid())
+  year      Int      @unique
+  label     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  rosters Roster[]
+
+  @@map("seasons")
+}
+
+// One appearance of a player on a team in a season — the unit the draft offers.
+// `positions` is per player-season, not per player: the same person can be
+// listed at different positions in different years. Unordered — a player simply
+// plays these positions, and fits a formation slot if the slot is among them.
+model Roster {
+  id        String     @id @default(cuid())
+  teamId    String     @map("team_id")
+  seasonId  String     @map("season_id")
+  playerId  String     @map("player_id")
+  positions Position[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, seasonId, playerId])
+  @@index([teamId, seasonId])
+  @@index([playerId])
+  @@map("rosters")
 }
