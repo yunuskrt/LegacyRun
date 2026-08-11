@@ -1,0 +1,9 @@
+.next
+node_modules
+src/generated
+package-lock.json
+prisma/migrations
+
+# Project documentation and agent config are authored by hand — don't reformat them.
+.claude
+context

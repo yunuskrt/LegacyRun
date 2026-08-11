@@ -1,0 +1,10 @@
+// Models are added in Phase 2 — this phase wires up the datasource and client only.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}

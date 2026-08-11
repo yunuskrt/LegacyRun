@@ -2,7 +2,7 @@
 
 Quick-reference list of what's being built, in build order. For the detailed, paste-into-Claude-Code version of each phase, see `prompts.md`.
 
-- [ ] **Phase 1 — Project Foundation Setup**: initialize the tech stack (Next.js, TypeScript, Tailwind, shadcn/ui, Framer Motion, Prisma + Neon) and folder structure.
+- [x] **Phase 1 — Project Foundation Setup**: initialize the tech stack (Next.js, TypeScript, Tailwind, shadcn/ui, Framer Motion, Prisma + Neon) and folder structure.
 - [ ] **Phase 2 — Core Entity Schema**: players, teams, seasons, rosters, and positions tables.
 - [ ] **Phase 3 — Ratings & Playoff History Schema**: player-season and team-season rating tables, playoff results.
 - [ ] **Phase 4 — Mock/Seed Dataset**: small hand-built dataset + seed script for local development.

@@ -66,6 +66,8 @@ const ComponentName = ({}: Props) => {}
 - Use the component's actual CSS module only when custom CSS is required.
 - Do not import a CSS module if the component does not use custom CSS.
 
+Because `type Props = {}` would otherwise be rejected by `@typescript-eslint/no-empty-object-type`, that rule is configured with `allowObjectTypes: "always"` in `eslint.config.mjs`. Don't "fix" the empty `Props` type to satisfy a linter — the template wins.
+
 ## Next.js
 
 - Server components by default.
@@ -173,6 +175,17 @@ with kebab-case.
 - Always use `prisma migrate dev` for schema changes (not `db push`)
 - Run `prisma migrate status` before committing to verify migrations are in sync
 - Production deployments must run `prisma migrate deploy` before the app starts
+
+### Prisma 7 specifics
+
+We are on Prisma 7, which differs from Prisma 6 in ways most examples get wrong:
+
+- **`url` is not allowed in the `datasource` block.** The connection string is configured in two separate places:
+  - `prisma.config.ts` — used by the CLI (`migrate`, `studio`, `generate`), loaded from `.env` via `dotenv`.
+  - A **driver adapter** passed to the `PrismaClient` constructor — used at runtime. We use `@prisma/adapter-neon`.
+- Import the client from the generated output (`@/generated/prisma/client`), not `@prisma/client`.
+- The generated client is gitignored, so `postinstall` runs `prisma generate` to keep fresh clones buildable.
+- Always import the shared singleton from `@/lib/db` — never construct a `PrismaClient` anywhere else.
 
 ## Data Fetching
 
