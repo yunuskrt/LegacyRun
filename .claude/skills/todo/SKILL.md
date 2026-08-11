@@ -1,7 +1,7 @@
 ---
 name: todo
-description: Manage the LegacyRun build-phase todo list in context/todo.md - current, done, remaining or list
-argument-hint: current|done|remaining|list <phase-number>
+description: Manage the LegacyRun build-phase todo list in context/todo.md - current, done, remaining, list or spec
+argument-hint: current|done|remaining|list <phase-number>|spec [phase-number]
 ---
 
 # Todo Phase Workflow
@@ -12,6 +12,7 @@ Tracks progress through the phased build plan.
 
 @context/todo.md — the ordered phase checklist (source of truth for progress)
 @context/prompts.md — the detailed spec for each phase (`## Phase N — ...` sections)
+@context/features/ — generated per-phase spec files, shaped like `context/current-feature.md`
 
 ### File Structure
 
@@ -39,6 +40,7 @@ Execute the requested action: $ARGUMENTS
 | `done`      | Mark the current phase complete                          |
 | `remaining` | List what's still unimplemented in the current phase, refresh its 🟡 marker |
 | `list <N>`  | Promote phase N to be the next phase, reorder the rest   |
+| `spec [N]`  | Write phase N (default: current phase) into one or more spec files in `context/features/`, splitting it if it's too big for a single feature |
 
 See [actions/](actions/) for detailed instructions.
 

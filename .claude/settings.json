@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl -s http://localhost:3000)"
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(find /Users/yunuskerestecioglu/.claude /Users/yunuskerestecioglu/Desktop/LegacyRun/legacy-run -path '*skills/todo*' -name '*.md' 2>/dev/null)",
+      "Read(//Users/yunuskerestecioglu/.claude/**)"
     ]
   }
 }
