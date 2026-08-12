@@ -7,7 +7,6 @@ These are the context files referenced by the `CLAUDE.md` file. Only the four ro
 - `ai-interaction.md` - Workflow and communication guidelines for working with the AI
 - `current-feature.md` - Living document tracking the feature currently being worked on
 - `todo.md` - Ordered roadmap of upcoming phases and open decisions (not auto-loaded)
-- `prompts.md` - Prompt examples of upcoming phases in `todo.md` file
 - `AGENTS.md` - Up to date Next.js search to avoid deprecations
 - `features/` - Feature spec files used with the `/feature` command
 - `fixes/` - Fix spec files for bugs and issues

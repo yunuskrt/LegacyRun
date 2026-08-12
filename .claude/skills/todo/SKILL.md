@@ -11,7 +11,6 @@ Tracks progress through the phased build plan.
 ## Working Files
 
 @context/todo.md — the ordered phase checklist (source of truth for progress)
-@context/prompts.md — the detailed spec for each phase (`## Phase N — ...` sections)
 @context/features/ — generated per-phase spec files, shaped like `context/current-feature.md`
 
 ### File Structure
@@ -27,7 +26,6 @@ todo.md is a single flat checklist. Every line looks like:
 - **Never put anything but a space or `x` inside the brackets.** GitHub-flavored Markdown only recognizes `[ ]`, `[x]` and `[X]` — any other character stops the line rendering as a checkbox. Partial state is the 🟡 marker after the box, never `[~]` or `[-]`.
 - The 🟡 marker is optionally followed by a short ` — partially done: ...` note at the end of the line. `/todo remaining` keeps both in sync; you can also set them by hand.
 - **Line order = build order.** Completed phases sit at the top, in the order they were finished; incomplete phases follow. A 🟡 phase is still incomplete and stays in the incomplete section.
-- **The phase number is a stable ID, not a position.** It always points at the matching `## Phase N` section in prompts.md, so it is never renumbered — only lines move.
 - **Current phase** = the first `- [ ]` line in the file.
 
 ## Task

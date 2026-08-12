@@ -12,9 +12,7 @@ Usage: `/todo spec` (current phase) or `/todo spec <phase-number>`.
    - Already `- [x]` → say it's complete and ask whether to spec it anyway before writing anything
 2. If no number was given, use the current phase (first `- [ ]` line)
    - If every line is `- [x]`, report "All phases complete" and stop
-3. Read the matching `## Phase N` section in prompts.md — that is the full scope
-4. If the phase line carries a 🟡 marker, run the `/todo remaining` inspection first and scope the specs to what's actually left, noting the already-done parts under Notes
-5. If the prompts.md section is marked `⏳ TBD`, stop and ask what the phase should cover — do not invent scope
+3. If the phase line carries a 🟡 marker, run the `/todo remaining` inspection first and scope the specs to what's actually left, noting the already-done parts under Notes
 
 ## Deciding one spec or several
 
@@ -33,7 +31,6 @@ Each spec must be independently implementable in order, and each must end in a s
 
 `context/features/phase-<NN>-<kebab-title>.md` for a single spec, e.g. `phase-02-core-entity-schema.md`.
 Split specs get a letter suffix in build order: `phase-13a-draft-pool-queries.md`, `phase-13b-draft-screen.md`.
-`NN` is the zero-padded phase number and never changes — it maps back to prompts.md.
 If a target file already exists, show what would change and ask before overwriting.
 
 ## Spec file structure
@@ -65,7 +62,6 @@ Not Started
 - Leave `## History` empty — it is filled in when the phase completes
 - Goals bullets are deliverables, not narration; name real paths (`src/lib/db/queries.ts`, `prisma/schema.prisma`)
 - Carry over the relevant hard constraints from `context/project-overview.md` and the rules from `context/coding-standards.md` that apply to this phase; do not restate the whole standard
-- Do not invent scope beyond the prompts.md section
 
 ## Reporting
 

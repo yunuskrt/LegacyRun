@@ -13,5 +13,4 @@ Requires a phase number, e.g. `/todo list 13`.
    - If no phase is complete yet, it goes to the top of the list
 5. Keep every other incomplete phase in its existing relative order, shifted down to fill the gap
 6. Carry each moved line's 🟡 marker and trailing note along unchanged — reordering never changes a phase's implementation state
-7. Never renumber a phase — the number is the ID that maps to prompts.md. Only line positions change
-8. Report the new order of incomplete phases and which phase is now current
+7. Report the new order of incomplete phases and which phase is now current
