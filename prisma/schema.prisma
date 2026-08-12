@@ -40,8 +40,7 @@ model Player {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 
-  rosters       Roster[]
-  seasonRatings PlayerSeasonRating[]
+  playerSeasons PlayerSeason[]
 
   @@map("players")
 }
@@ -55,113 +54,99 @@ model Team {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  rosters              Roster[]
-  seasonRatings        TeamSeasonRating[]
+  teamSeasons          TeamSeason[]
   playoffParticipation PlayoffParticipation[]
 
   @@map("teams")
 }
 
-// `year` is the season's ending year — the 2009-10 season is 2010.
-model Season {
-  id        String   @id @default(cuid())
-  year      Int      @unique
-  label     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+// `seasonYear` is the season's ending year — the 2009-10 season is 2010. Only
+// playoff team-seasons are ingested, so a row here is a draftable squad pool.
+model TeamSeason {
+  id            String   @id @default(cuid())
+  teamId        String   @map("team_id")
+  seasonYear    Int      @map("season_year")
+  overallRating Float    @map("overall_rating")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  rosters              Roster[]
-  playerRatings        PlayerSeasonRating[]
-  teamRatings          TeamSeasonRating[]
-  playoffParticipation PlayoffParticipation[]
+  team          Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  playerSeasons PlayerSeasonTeam[]
 
-  @@map("seasons")
-}
-
-// One appearance of a player on a team in a season — the unit the draft offers.
-// `positions` is per player-season, not per player: the same person can be
-// listed at different positions in different years. Unordered — a player simply
-// plays these positions, and fits a formation slot if the slot is among them.
-model Roster {
-  id        String     @id @default(cuid())
-  teamId    String     @map("team_id")
-  seasonId  String     @map("season_id")
-  playerId  String     @map("player_id")
-  positions Position[]
-  createdAt DateTime   @default(now()) @map("created_at")
-  updatedAt DateTime   @updatedAt @map("updated_at")
-
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([teamId, seasonId, playerId])
-  @@index([teamId, seasonId])
-  @@index([playerId])
-  @@map("rosters")
-}
-
-// Keyed on player + season rather than on a roster entry: a rating describes the
-// person's season, so a mid-season trade (two roster rows, one season) still
-// resolves to one rating. The stat columns are the rating engine's inputs, kept
-// so a rating can be recomputed rather than trusted blindly.
-model PlayerSeasonRating {
-  id                    String   @id @default(cuid())
-  playerId              String   @map("player_id")
-  seasonId              String   @map("season_id")
-  offensiveRating       Float    @map("offensive_rating")
-  defensiveRating       Float    @map("defensive_rating")
-  overallRating         Float    @map("overall_rating")
-  gamesPlayed           Int      @map("games_played")
-  minutesPerGame        Float    @map("minutes_per_game")
-  pointsPerGame         Float    @map("points_per_game")
-  reboundsPerGame       Float    @map("rebounds_per_game")
-  assistsPerGame        Float    @map("assists_per_game")
-  stealsPerGame         Float    @map("steals_per_game")
-  blocksPerGame         Float    @map("blocks_per_game")
-  trueShootingPct       Float    @map("true_shooting_pct")
-  usageRate             Float    @map("usage_rate")
-  boxPlusMinus          Float?   @map("box_plus_minus")
-  defensiveBoxPlusMinus Float?   @map("defensive_box_plus_minus")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-
-  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
-  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-
-  @@unique([playerId, seasonId])
-  @@index([seasonId])
-  @@map("player_season_ratings")
-}
-
-// Team strength for one season — what the bracket generator seeds on. Aggregated
-// from roster ratings and playoff success at ingestion time, never at runtime.
-model TeamSeasonRating {
-  id              String   @id @default(cuid())
-  teamId          String   @map("team_id")
-  seasonId        String   @map("season_id")
-  offensiveRating Float    @map("offensive_rating")
-  defensiveRating Float    @map("defensive_rating")
-  overallRating   Float    @map("overall_rating")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
-
-  @@unique([teamId, seasonId])
-  @@index([seasonId])
+  @@unique([teamId, seasonYear])
+  @@index([seasonYear])
   @@index([overallRating])
-  @@map("team_season_ratings")
+  @@map("team_seasons")
 }
 
-// One row per team-season that actually made the playoffs. Membership here is the
-// draft pool gate — a team-season with no row is never offered. `conference` is
-// stored per season because realignments move franchises between conferences.
+// One player's season, not one stint: a traded player has a single row rated off
+// Basketball-Reference's combined (2TM/3TM) line, linked to every team he played
+// for that year. `positions` is unordered — he fits a formation slot if the slot
+// is among them.
+model PlayerSeason {
+  id            String     @id @default(cuid())
+  playerId      String     @map("player_id")
+  seasonYear    Int        @map("season_year")
+  age           Int
+  positions     Position[]
+  overallRating Float      @map("overall_rating")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  player Player             @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  teams  PlayerSeasonTeam[]
+  data   PlayerSeasonData?
+
+  @@unique([playerId, seasonYear])
+  @@index([seasonYear])
+  @@map("player_seasons")
+}
+
+model PlayerSeasonTeam {
+  id             String   @id @default(cuid())
+  playerSeasonId String   @map("player_season_id")
+  teamSeasonId   String   @map("team_season_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  playerSeason PlayerSeason @relation(fields: [playerSeasonId], references: [id], onDelete: Cascade)
+  teamSeason   TeamSeason   @relation(fields: [teamSeasonId], references: [id], onDelete: Cascade)
+
+  @@unique([playerSeasonId, teamSeasonId])
+  @@index([teamSeasonId])
+  @@map("player_season_teams")
+}
+
+// The scraper's raw output, kept so `PlayerSeason.overallRating` can be
+// re-derived when the normalization function changes — no re-scrape needed.
+// Games and minutes are required because they are the reliability filter;
+// every advanced metric is nullable, since early-1980s rows are the likely gaps.
+model PlayerSeasonData {
+  id                     String   @id @default(cuid())
+  playerSeasonId         String   @unique @map("player_season_id")
+  gamesPlayed            Int      @map("games_played")
+  minutesPlayed          Int      @map("minutes_played")
+  playerEfficiencyRating Float?   @map("player_efficiency_rating")
+  boxPlusMinus           Float?   @map("box_plus_minus")
+  offensiveBoxPlusMinus  Float?   @map("offensive_box_plus_minus")
+  defensiveBoxPlusMinus  Float?   @map("defensive_box_plus_minus")
+  vorp                   Float?
+  winSharesPer48         Float?   @map("win_shares_per_48")
+  trueShootingPct        Float?   @map("true_shooting_pct")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  playerSeason PlayerSeason @relation(fields: [playerSeasonId], references: [id], onDelete: Cascade)
+
+  @@map("player_season_data")
+}
+
+// One row per team-season that made the playoffs — ingestion history behind the
+// draft pool. `conference` is stored per season because realignments move
+// franchises between conferences.
 model PlayoffParticipation {
   id           String       @id @default(cuid())
   teamId       String       @map("team_id")
-  seasonId     String       @map("season_id")
+  seasonYear   Int          @map("season_year")
   conference   Conference
   seed         Int
   roundReached PlayoffRound @map("round_reached")
@@ -170,11 +155,10 @@ model PlayoffParticipation {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
-  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
-  @@unique([teamId, seasonId])
-  @@index([seasonId])
-  @@index([conference, seasonId])
+  @@unique([teamId, seasonYear])
+  @@index([seasonYear])
+  @@index([conference, seasonYear])
   @@map("playoff_participation")
 }
