@@ -8,6 +8,8 @@ Not Started
 
 ## Notes
 
+## References
+
 ## History
 
 ### Phase 1 — Project Foundation Setup
@@ -80,3 +82,23 @@ Notable decisions and gotchas:
 Verified: `prisma validate`, `db:generate`, `lint`, `format:check`, `test`, and `build` all pass. The migration at `prisma/migrations/20260812190000_rating_type_alignment/` drops 4 tables and creates 4. Not verified: anything needing a database, and no UI consumes the new types yet — nothing renders until Phase 5.
 
 Still open: `DATABASE_URL` is a placeholder, and all three migrations are **unapplied** — this one drops the tables the other two create, so a first `db:migrate` against real Neon will churn through the whole sequence. Squashing them into one initial migration is worth considering while the database is still empty.
+
+### Phase 4 — Mock Dataset
+
+Hand-built the local development dataset as typed TS fixtures in `src/data/` — 12 real playoff team-seasons (1983 Sixers, 1986 Celtics, 1987 Lakers, 1994 Rockets, 1996 Bulls, 2001 Lakers, 2008 Celtics, 2013 Heat, 2016 Cavaliers, 2017 Warriors, 2021 Bucks, 2023 Nuggets) with 9–11 players each, one completed `Squad`, the `TRADITIONAL` formation definition, and `teamLogoPath()` in `src/lib/`. Nothing touches the database. Phase 5 renders these; Phase 11's query API must eventually return the same shapes.
+
+Notable decisions and gotchas:
+
+- **Rating band is 0–100**, hand-set and commented as placeholders in both fixture files. Phase 8's rating engine has to normalize into this band, and Phase 5's card design will bake it in visually. Enforced by tests on players, teams, and the squad.
+- **Ids are readable slugs, not cuids.** `playerId` is the person slug (`lebron-james`), `playerSeasonId` is `<playerId>-<year>`, `teamSeasonId` is `<teamSlug>-<year>`. A test enforces the `playerSeasonId` derivation so the fixtures can't drift. Production rows stay cuids — nothing downstream may assume either format.
+- **Team slug = franchise nickname** (`lakers`, `celtics`, `sixers`, `cavaliers`, `warriors`, `nuggets`, `bulls`, `bucks`, `heat`, `rockets`), chosen over abbreviations because the slug doubles as the logo filename. **The uploaded PNGs must match these names exactly.**
+- **Franchise identity is reused across eras** — `lakers` covers 1987 and 2001, `celtics` covers 1986 and 2008 — which is what the real `teamId` will do. A test pins one name+slug per `teamId`.
+- **`teamLogo` never appears as a literal.** Every value comes from `teamLogoPath(slug)` in `@/lib/team-logo`, the single home of the `/logos/<slug>.png` convention, reused by Phase 11 when it builds real `DraftTeam` rows. Tests assert `teamLogo === teamLogoPath(teamSlug)` but deliberately do **not** check the filesystem — `public/logos/` holds only a `.gitkeep` and the images are uploaded separately, so the paths 404 until then. Phase 5 needs a graceful fallback for the logo slot.
+- **Five real duplicate identities** span two team-seasons each — LeBron (2013 Heat / 2016 Cavs), Ray Allen (2008 / 2013), Robert Horry (1994 / 2001), Sam Cassell (1994 / 2008), Ron Harper (1996 / 2001) — so Phase 16's duplicate guard has genuine cases to block rather than a single contrived one.
+- Every team-season can fill all five formation slots on its own, which is a test rather than a convention: the draft is unplayable if an offered team can't cover an open slot.
+- The mock squad is cross-checked against the draft pool — each member must exist as an offered player-season with a matching rating and an eligible position — so the two fixtures can't drift apart.
+- Bones Hyland was initially listed on the 2023 Nuggets; he was traded to the Clippers at that deadline and wasn't on the playoff roster. Replaced with Reggie Jackson. Worth remembering that "made the playoffs" is a roster-level fact, not a season-level one.
+
+Verified: `npm test` (20 tests across 2 files, non-zero as specced), `tsc --noEmit`, `lint`, `format:check`, and `build` all pass. Not verified: nothing renders these yet — no route consumes `src/data/` until Phase 5, and the logo images don't exist.
+
+Still open: the fixture ratings are placeholders, not engine output, and must never be imported by ingestion or rating code. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied — unchanged by this phase, which never touches Neon.
