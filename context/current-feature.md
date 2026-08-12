@@ -58,3 +58,25 @@ Notable decisions and gotchas:
 Verified: `prisma validate`, `db:generate`, `lint`, `format:check`, `test`, and `build` all pass. The migration at `prisma/migrations/20260812120000_ratings_playoff_history/` contains 3 tables, 1 enum type, 3 unique constraints, 4 indexes, and 6 foreign keys. Not verified: anything needing a database — both this migration and Phase 2's are **unapplied** and will run together on the first `db:migrate` against real Neon.
 
 Still open: `DATABASE_URL` is a placeholder. Per the reordered `todo.md`, Phase 4 is now typed TS fixtures in `src/data/` (no seed script, nothing written to the database), so the first phase that genuinely requires live Neon has moved out to Phase 9's ingestion runner.
+
+### Phase 9 (part 1) — Rating & Type Alignment
+
+Reshaped the schema around a single overall rating and the fields the Basketball-Reference advanced table actually provides, then added the first runtime gameplay types in `src/types/game.ts`. Done ahead of Phase 4 so the mock fixtures aren't built against types that were about to change. **Phase 9 stays 🟡 in `todo.md`** — the mock-fixture alignment and the nullability confirmation both depend on later phases.
+
+Scraped fields the schema now targets: Player, Team, G, MP, PER, BPM/OBPM/DBPM (BPM is their sum, so all three cost nothing extra), plus VORP, WS/48, Age, Pos, TS%. All raw inputs are stored so the normalization function can change without re-scraping.
+
+Notable decisions and gotchas:
+
+- **The `seasons` table was dropped** in favour of a plain `seasonYear Int` (same ending-year convention). It only carried a display label the UI can format, and it added a join to every draft and bracket query. Phase 2's decision to model it as an entity didn't survive contact with the query shapes.
+- **`rosters` replaced by `team_seasons` + `player_seasons` + `player_season_teams`.** The player-season is now the primary unit, and the join table is the relational form of a `teams: string[]` field — Postgres can't foreign-key an array.
+- **One rating per player-season, from the combined `2TM`/`3TM` row.** A traded player shows the same rating whichever of his teams the draft offers, which matches the once-per-run duplicate rule (already per person) and avoids rating a 5-game stint off a 5-game sample. The cost is that "who he was on *that* roster" isn't represented; revisit only if the draft feels wrong.
+- **Offensive/defensive ratings dropped** from both player and team ratings — one `overallRating` each. This reverses Phase 3, which stored all three. Off/def splits come back only if Phase 19's sim engine needs them.
+- **`player_season_data` is a separate 1:1 audit table** for raw scraped inputs, keyed by a unique `playerSeasonId` FK. It deliberately does **not** repeat playerId/age/positions/teams — the FK reaches all of them and duplicated keys drift. The scraper writes this table; the rating engine reads it and writes `player_seasons.overallRating`.
+- **Nullability split on data-availability grounds:** G and MP are required (they're the reliability filter), every advanced metric (PER, TS%, WS/48, BPM, OBPM, DBPM, VORP) is nullable, since early-1980s rows are the likeliest gaps. These are still *guesses* until Phase 7 scrapes real rows.
+- `playoff_participation` survived unchanged apart from the `seasonId` → `seasonYear` re-key. It stays separate from `team_seasons` on the Phase 3 logic: `team_seasons` is the lean gameplay row, playoff outcome data is ingestion history.
+- Runtime types (`DraftTeam`, `SquadMember`, `Squad`, `DraftablePlayer`) are gameplay-only, never persisted. `seasonYear` is a number, matching the column; `teamLogo` is derived from the team slug at read time rather than stored; `score` became `rating` to match the DB. `SquadMember.position` is a single `Position` — the slot the player was drafted into — with no `positions` array, since his other eligible positions stop mattering once he's on the squad.
+- The Phase 3 offline-diff pattern (`git show HEAD:prisma/schema.prisma` → `prisma migrate diff --from-schema … --to-schema …`) worked as documented for a third time. Its output needed one cleanup: the `Loaded Prisma config from prisma.config.ts.` banner goes to stdout and has to be stripped out of `migration.sql`.
+
+Verified: `prisma validate`, `db:generate`, `lint`, `format:check`, `test`, and `build` all pass. The migration at `prisma/migrations/20260812190000_rating_type_alignment/` drops 4 tables and creates 4. Not verified: anything needing a database, and no UI consumes the new types yet — nothing renders until Phase 5.
+
+Still open: `DATABASE_URL` is a placeholder, and all three migrations are **unapplied** — this one drops the tables the other two create, so a first `db:migrate` against real Neon will churn through the whole sequence. Squashing them into one initial migration is worth considering while the database is still empty.
