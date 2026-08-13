@@ -3,6 +3,10 @@ node_modules
 src/generated
 package-lock.json
 prisma/migrations
+.playwright-mcp
+
+# Raw scraper output — byte-identical to Basketball-Reference's export.
+src/data/raw
 
 # Project documentation and agent config are authored by hand — don't reformat them.
 .claude
