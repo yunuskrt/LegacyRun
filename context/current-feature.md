@@ -6,9 +6,15 @@ Not Started
 
 ## Goals
 
+<!-- Bullet points of what success looks like -->
+
 ## Notes
 
+<!-- Additional context, constraints, or details from spec -->
+
 ## References
+
+<!-- Spec files, related docs, existing code to follow -->
 
 ## History
 
@@ -102,3 +108,26 @@ Notable decisions and gotchas:
 Verified: `npm test` (20 tests across 2 files, non-zero as specced), `tsc --noEmit`, `lint`, `format:check`, and `build` all pass. Not verified: nothing renders these yet — no route consumes `src/data/` until Phase 5, and the logo images don't exist.
 
 Still open: the fixture ratings are placeholders, not engine output, and must never be imported by ingestion or rating code. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied — unchanged by this phase, which never touches Neon.
+
+### Phase 7 (part 1) — Scraper Data Load (Raw CSV Export)
+
+**Phase 7 stays in progress** — this covers the scrape and the header gate only; parsing the raw CSVs into the normalized artifact later phases consume is still outstanding.
+
+Scraped the Basketball-Reference advanced season tables for every season from 1981 to 2026 and committed the raw exports untouched: 46 regular-season and 46 playoff CSVs (~4.7 MB) under `src/data/raw/regular/` and `src/data/raw/playoffs/`. Two scripts ship with them — `scripts/scrape-advanced.mts` (`npm run scrape:advanced`) and `scripts/validate-raw-csv.py` (`npm run validate:raw`). Nothing is parsed, normalized, or written to Neon; Phase 8 consumes these files.
+
+Notable decisions and gotchas:
+
+- **The raw files live at `src/data/raw/`, not root `data/raw/`.** The spec assumed a root `data/` directory that doesn't exist in this tree — `src/data/` is where the Phase 4 fixtures already are, so the scraper output joined them. Both scripts hard-code that path.
+- **Split into `regular/` and `playoffs/` subdirectories** rather than one flat folder with a `-playoffs` filename suffix. The suffix is still on the playoff filenames, but the split lets the validator glob two groups directly instead of pattern-matching names, and 92 files in one folder is unreadable.
+- **Playwright's actionability checks can't drive the Share & Export menu** — it's hover-only and closes on scroll, so a real click never lands. The scraper dispatches tab-switch, export-button click, and `<pre>` read entirely inside one `page.evaluate()`. This is the one part likely to break when Basketball-Reference changes its markup; the element ids (`advanced_sh` / `advanced_post_sh`, `csv_advanced` / `csv_advanced_post`) are the things to re-check.
+- **The exported `<pre>` opens with a citation preamble**, so the writer slices from the first line starting with `Rk,` and errors if there isn't one — a truncated or empty export fails loudly rather than writing a junk file.
+- Rerun guard is per file, not per season: a season with a regular CSV but no playoff CSV re-fetches only the missing table. Failures are collected and reported at the end with a non-zero exit instead of aborting the run, so one bad season doesn't cost the rest. 6 s delay between seasons; `npm run scrape:advanced 1995 1999` limits the range.
+- **The Phase 9 nullability guess is refuted.** The guess was that advanced metrics would be missing in early-1980s rows. They aren't — PER, WS/48, OBPM, DBPM, BPM and VORP are populated on **every** real player row in all 92 files, 1981 included. The only genuinely blank metric is **TS%**, and only for players with zero shot attempts (6 rows in a typical playoff file, e.g. a 1-minute cameo) — an undefined-ratio problem, not an era problem. So the nullable columns are right, but for a different reason, and G/MP being required holds.
+- **Every file carries a trailing `League Average` row** with a blank `Rk`, `Age`, `Team`, `Pos`, `G` and `MP`. Phase 8 must filter it before load or it becomes a phantom player — it is the sole source of blank G/MP in the entire dataset.
+- **`players-81-82-playoffs.csv` genuinely has no `GS` column**; 1980-81 and 1982-83 both do (mostly empty). Verified against the live site rather than assumed to be a scrape failure. `GS` isn't in the schema, so the validator whitelists it via `ALLOWED_MISSING` instead of failing the gate forever.
+- Header shape otherwise: 30 columns, identical across all 46 regular files and across 45 of 46 playoff files.
+- `src/data/raw` is prettier-ignored — the files must stay byte-identical to the site's export. `.playwright-mcp` (MCP session artifacts) is gitignored, and `.mcp.json` registers the Playwright server for the repo.
+
+Verified: `npm run validate:raw` passes (46 + 46 files, 30 columns, one accepted known exception), and `lint`, `format:check`, `test` (20 tests), and `build` all pass. Not verified: the *values* beyond header shape and null-density — no row has been cross-checked against Basketball-Reference by hand, and nothing parses these files yet.
+
+Still open: the parsing step — reading these CSVs into the normalized artifact — which owns the `League Average` filter, the `2TM`/`3TM` combined-row rule, and mapping `Team`/`Pos` strings onto the schema's enums. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied — this phase never touches Neon.
