@@ -40,6 +40,12 @@ yarn-error.log*
 # playwright mcp session artifacts
 /.playwright-mcp
 
+# python
+__pycache__/
+
+# parser output — regenerate with `npm run parse:raw`
+/src/data/parsed
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
