@@ -152,3 +152,24 @@ Notable decisions and gotchas:
 Verified: `npm run parse:raw` produces 46 seasons / 20,263 players with one object per `PlayerSlug` and per `Rank` in every season, 2,284 array-valued `TeamSlug` rows (exactly the raw `nTM` row count), no `League Average` row, and byte-identical output across two consecutive runs. Failure paths (missing column, orphan total row, duplicate slug, embedded header, blank→`null`) were exercised against synthetic fixtures. `lint`, `format:check`, `test` (20), `build`, and `validate:raw` all pass. Not verified: the parsed stat *values* against Basketball-Reference beyond the one hand-checked traded player, and no Vitest coverage — the script is Python, and the repo's Vitest suite doesn't reach it.
 
 Still open: nothing consumes the artifacts yet. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied — this phase never touches Neon.
+
+### Phase 5 (part 1) — Draft Page Design (Layout & Theme Scaffolding)
+
+**Phase 5 stays 🟡 in `todo.md`** — this is part 1 of 2, covering the route, the color theme, the top bar, and the responsive two-column shell. The court graphic, player cards, roster reveal, reroll pool, motion, and enabled/disabled states are part 2.
+
+The first thing in the project that actually renders. Added `/play/draft` (`src/app/play/draft/layout.tsx` + `page.tsx`), two components in `src/components/draft/` (`DraftTopBar`, `DraftSectionHeading`), the four shadcn primitives the page needs, and the full "Dark Trophy Room" palette from `context/theme.md` in `src/app/globals.css`. Placeholder panels hold a plain `h2` each, as specced.
+
+Notable decisions and gotchas:
+
+- **The theme went into the existing `.dark` block, not a new token set.** shadcn's own components read `--primary`, `--ring`, `--border` etc., so overwriting those values makes every primitive inherit the gold/navy look for free — a parallel set of `--trophy-*` tokens would have left every shadcn component still neutral-gray.
+- **Gradients and shadows can't be `@theme` color tokens.** `--gradient-gold`, `--gradient-room`, `--shadow-trophy`, `--shadow-panel` are plain custom properties on `:root`, surfaced as four Tailwind v4 `@utility` rules (`bg-gold`, `bg-room`, `shadow-trophy`, `shadow-panel`) since `@theme` only generates utilities for recognized namespaces. The color tokens (`--color-court`, `--color-pos-*`) do go through `@theme inline` and give `bg-court`, `text-pos-pg`, etc.
+- **Court and position tokens live on `:root`, not `.dark`.** They're identical in both modes — only the core surface palette differs — so duplicating them would just invite drift.
+- **`bg-court` beating shadcn's `bg-card` is load-bearing and was verified, not assumed.** `cn()`/tailwind-merge doesn't know custom utilities, so it can't dedupe them against `bg-card` the way it would two built-ins; the override works on CSS source order alone. Confirmed in the browser that the computed background equals `var(--court)`. **Any future custom color utility layered onto a shadcn component needs the same check.**
+- **The top bar lives in `page.tsx`, not the layout**, even though it looks like chrome. It renders `filledSlots`, which becomes draft state in part 2 — putting it in the layout would force a move then. `filledSlots` is a local `const 0` placeholder and the total comes from `TRADITIONAL_SLOTS.length`, never a literal `5`.
+- Desktop split is `lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]`, measured off the reference screenshot rather than eyeballed; below `lg` it collapses to one column, lineup above draft board.
+- shadcn was already initialized in Phase 1 — only `button`, `card`, `badge`, `separator` were added. Badge and separator are unused in part 1; they're the position pills and reroll-pool divider part 2 needs.
+- **shadcn's generated components are not Prettier-formatted** and broke `format:check` until they were run through `prettier --write`. Expect this on every future `shadcn add`.
+
+Verified: `lint`, `format:check`, `test` (20), and `build` all pass, and the page was driven in a real browser at 1440px and 390px — both match the reference screenshots' structure with zero console errors. The gradient and shadow utilities were checked against the computed values in `context/theme.md`. Not verified: light mode, which is untouched and will render the court/position tokens at their dark values (the app forces `.dark` on `<html>`, so nothing hits it).
+
+Still open: everything in part 2. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied — this phase never touches Neon.
