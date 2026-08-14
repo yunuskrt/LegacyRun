@@ -7,7 +7,13 @@
       "mcp__playwright__browser_navigate",
       "mcp__playwright__browser_evaluate",
       "mcp__playwright__browser_hover",
-      "mcp__playwright__browser_click"
+      "mcp__playwright__browser_click",
+      "Bash(npx shadcn@latest add button card badge separator --yes)",
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_console_messages",
+      "Bash(npx prettier *)",
+      "Bash(npm run *)"
     ]
   }
 }
