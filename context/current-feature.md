@@ -14,8 +14,7 @@ Not Started
 
 ## References
 
-<!-- Spec files, related docs, existing code to follow -->
-
+<!-- Spec files, docs, and source files this feature depends on -->
 
 ## History
 
@@ -175,3 +174,28 @@ Gotchas:
 Verified: `npm test` (48), `lint`, `format:check`, `build`; `/play/draft` and `/play/tournament` both still prerender static. Browser-driven at 1440×1000 and 390×844: full five-man lineup drafted by click and by drag, wrong-slot drop rejected with the toast and no state change, all three reroll buttons drawing one pool down to 0/3, and J.R. Smith drafted from the '18 Cavs coming back `ALREADY DRAFTED` on the '16 Cavs roster. Only console errors are the known `/logos/*.png` 404s.
 
 Still open: no touch-drag support. Team logo PNGs still don't exist. `DATABASE_URL` is a placeholder and all three migrations remain unapplied — Phase 8 is next.
+
+### Phase 8 — Data Normalization & Player Rating Engine
+
+**Phase 8 complete (player-seasons).** Every one of the 20,260 rateable player-seasons now carries a reproducible integer `Rating` on the 0–100 band, derived by pure arithmetic from the Phase 7 parsed JSON. Ships `scripts/rate-players.py` (`npm run rate:players`), the generated-and-committed `src/data/rating/season_players.ts`, `src/types/rating.ts`, and 9 Vitest tests. The engine is specced in full in `context/docs/player-rating-normalization.md`. Team-season aggregation was **not** part of this phase — it belongs to Phase 10.
+
+Gotchas:
+
+- **Committed TS, Python generator** — matching Phase 7's tooling. The output `.ts` is committed so nothing at build time depends on the gitignored parsed JSON. Run `npm run parse:raw` before `npm run rate:players` on a fresh clone.
+- **Standardization is per-season and over the reference population only (MP ≥ 500).** Pooling all 46 seasons, or including the low-minute tail in the μ/σ, are the two mistakes that silently break era-neutrality.
+- **The 3 unrateable rows are dropped** (Alex Scales 2006, JamesOn Curry 2010, Damion James 2013 — all `MP = 0`), so 20,263 parsed → 20,260 rated and every metric field in `RatedPlayerSeason` is non-null.
+- **`TeamSlug` is always `string[]`** here — single-team values are wrapped, killing Phase 7's mixed-type footgun for the ETL.
+- **The doc's "VORP floors near −2" is wrong by one row.** Michael Olowokandi 1999-2000 has VORP −2.6, making `sqrt(VORP + 2.5)` raise. The sqrt argument is floored at 0 rather than raising `VORP_SHIFT` — changing the shift would move the whole distribution and invalidate the logistic constants. He has the dataset's worst VORP, so the floor preserves ordering.
+- **Population standard deviation, not sample** — confirmed against the doc's worked example (sample σ reads 4.601 where the doc says 4.595).
+- **The doc's top-seasons list prints six of its nine at 98 where the engine gives 99** — same nine seasons, same order, all sitting in 98.5–99.0 where half-up rounding carries them over. Everything else reproduces exactly.
+- **`season_players.ts` is prettier-ignored** and written one object per line (~6 MB / 20,266 lines) — reformatting would explode it across ~250k lines.
+- **The file is snake_case** where the repo is otherwise kebab-case, because the spec names it explicitly. Its test is `season-players.test.ts`.
+- Review fixes: the test's `bySeason` index was rebuilding the accumulating array per row (~4.4M copies); `validate_output` didn't type-check `Rating` itself; `is_rateable` required `MinutesPlayed` to be an `int`, so a float would have silently dropped a legitimate player. None changed the output — same SHA before and after.
+
+Band check against the Phase 4 hand-set fixtures (playoff rosters, mean 68.4, range 44–98): full league 20,260 rows mean 61.1 / median 58 / 34–99; rotation regulars (MP ≥ 1500) 7,957 rows mean 70.5. The comparable subset lines up with the fixtures, so draft cards read the way the Phase 5 UI was designed against.
+
+Verified: `npm test` (57), `lint`, `format:check`, `build`. Generator output byte-identical across two runs; exits 1 with a `run npm run parse:raw` hint when the source JSON is absent. Reproduces the doc's percentile table, min/max, the 68 low-minute ceiling, and the §8 worked example down to `n = 367` and all four μ/σ pairs.
+
+Not verified: no Vitest coverage of the *engine* — it's Python, so the tests pin its output, not its arithmetic (same limitation as Phase 7). No stat value hand-checked against Basketball-Reference beyond the worked example.
+
+Still open: nothing consumes `RATED_PLAYER_SEASONS` yet — wiring it to `PlayerSeason.overallRating` belongs to the ETL phase. Team-season ratings don't exist. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied.
