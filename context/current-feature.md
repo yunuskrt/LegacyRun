@@ -77,7 +77,7 @@ Hand-built the local dataset as typed TS fixtures in `src/data/`: 12 real playof
 Gotchas:
 
 - **Ratings are a hand-set 0–100 band, not engine output.** Phase 8 must normalize into the same band. Ingestion and rating code must never import these fixtures.
-- **Ids are readable slugs, not cuids** — `playerSeasonId` is `<playerId>-<year>`, `teamSeasonId` is `<teamSlug>-<year>`. Production rows use cuids, so nothing downstream may assume either format.
+- **Ids are readable slugs, not cuids** — `playerSeasonId` is `<playerId>-<year>`, `teamSeasonId` is `<teamSlug>-<year>`. Production rows use cuids, so nothing downstream may assume either format. (Superseded in part by Phase 9: `players` and `teams` are keyed by `slug` — the identity tables carry no cuid at all. Only the season-scoped tables generate ids.)
 - **Team slug = franchise nickname** (`lakers`, `celtics`, …) because the slug doubles as the logo filename. **The uploaded PNGs must match exactly.**
 - **`teamLogo` is never a literal** — every value comes from `teamLogoPath()`, the single home of the `/logos/<slug>.png` convention. The files don't exist yet, so the paths 404 and the UI needs a fallback.
 - **Five real duplicate identities** span two team-seasons each (LeBron, Ray Allen, Robert Horry, Sam Cassell, Ron Harper), so Phase 16's duplicate guard has genuine cases to block.
