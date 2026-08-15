@@ -58,7 +58,7 @@ const RosterPlayerCard = ({
         <span
           className={cn(
             "absolute inset-y-0 left-0 w-1",
-            POSITION_BG[player.positions[0]]
+            POSITION_BG[player.position]
           )}
         />
       )}
@@ -74,17 +74,14 @@ const RosterPlayerCard = ({
 
       <div className="mt-2 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-sm font-bold">
-          {player.positions.map((position) => (
-            <span
-              key={position}
-              className={cn(
-                POSITION_TEXT[position],
-                isDisabled && "opacity-60"
-              )}
-            >
-              {position}
-            </span>
-          ))}
+          <span
+            className={cn(
+              POSITION_TEXT[player.position],
+              isDisabled && "opacity-60"
+            )}
+          >
+            {player.position}
+          </span>
         </span>
         <span
           className={cn(

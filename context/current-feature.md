@@ -199,3 +199,23 @@ Verified: `npm test` (57), `lint`, `format:check`, `build`. Generator output byt
 Not verified: no Vitest coverage of the *engine* — it's Python, so the tests pin its output, not its arithmetic (same limitation as Phase 7). No stat value hand-checked against Basketball-Reference beyond the worked example.
 
 Still open: nothing consumes `RATED_PLAYER_SEASONS` yet — wiring it to `PlayerSeason.overallRating` belongs to the ETL phase. Team-season ratings don't exist. `DATABASE_URL` is still a placeholder and all three migrations remain unapplied.
+
+### Phase 9 (part 2) — Type Alignment
+
+**Phase 9 complete.** Finished the alignment part 1 started: `players`/`teams` are keyed by `slug` with no cuid at all, `overallRating` → `rating`, `positions` collapsed to a single `Position`, `updatedAt` gone from every table, and the runtime gameplay types plus all 20 fixture team-seasons and the draft UI moved with them. The three unapplied migrations were squashed into one 143-line `20260816000000_initial_schema`.
+
+Gotchas:
+
+- **A player now fits exactly one slot** — this reverses Phase 2's deliberate `Position[]` decision (Draymond at PF/C/SF). 105 of the 196 fixture players were multi-position; each kept its **first** listing. Checked before converting: all 20 team-seasons still cover all five slots, so Phase 4's "any offered team can fill a lineup" invariant survives. The draft is genuinely more constrained than it was.
+- **`validateDraft` now checks the duplicate rule before the position rules.** With one position per player, LeBron is `SF` in every season, so the cross-season duplicate case returned `WRONG_POSITION` and hid the real blocker. `playerAvailability` already reported identity first; the two now agree.
+- **`PlayoffParticipation.teamId` had to repoint to `Team.slug`** even though the spec said not to touch that table — it foreign-keyed `Team.id`, which no longer exists. Forced, not chosen.
+- **`DraftablePlayer.playerId` was deliberately left alone.** Only `SquadMember` was renamed to `playerSlug`, per spec; the two names now differ across the `toSquadMember` boundary, which reads odd but is what was asked for.
+- **The migrations were squashed, not stacked.** Three files (337 lines of create-then-drop churn) became one `--from-empty` diff. Safe only because no database had ever applied them. **This window closes the moment Phase 10 runs `prisma migrate deploy` against a real Neon instance** — after that, rewriting history makes Prisma treat the database as corrupt.
+- **`player_season_data` metrics stay nullable**, but the schema comment now gives the real reason (Phase 7: `MP = 0` rows leave them blank), replacing part 1's refuted early-1980s guess.
+- One test was deleted rather than rewritten — `records the slot drafted into, not the player's first position` is unreachable by construction now, so the count is 56, not 57. `completeDraft`'s PF pick moved from Robert Horry (now `SF` on the '95 Rockets) to Carl Herrera.
+
+Verified: `prisma validate`, `db:generate`, `npm test` (56), `lint`, `format:check`, `build`; both routes still prerender static. Browser-driven at 1440×1000 and 390×844: full 5/5 lineup drafted, one position badge per card, Shaq correctly `Slot filled` once C was taken, `Not a SG` on all seven non-SGs with only the two SGs live. Only console errors are the known `/logos/*.png` 404s.
+
+Not verified: no database has run the squashed migration — `DATABASE_URL` is still the stock Prisma placeholder, and nothing consumes the Prisma client at runtime yet, so the schema half is type-checked but never executed.
+
+Still open: team-season ratings don't exist and `RATED_PLAYER_SEASONS` still has no consumer — both are Phase 10, along with the first real Neon connection. Team logo PNGs still don't exist. No touch-drag support.

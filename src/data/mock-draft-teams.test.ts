@@ -57,15 +57,15 @@ describe("MOCK_DRAFT_TEAMS", () => {
     expect(repeated.length).toBeGreaterThan(0);
   });
 
-  it("keeps one team name and slug per franchise id", () => {
-    const slugsById = new Map<string, Set<string>>();
+  it("keeps one team name per franchise slug", () => {
+    const namesBySlug = new Map<string, Set<string>>();
     for (const team of MOCK_DRAFT_TEAMS) {
-      const slugs = slugsById.get(team.teamId) ?? new Set<string>();
-      slugs.add(`${team.teamSlug}|${team.teamName}`);
-      slugsById.set(team.teamId, slugs);
+      const names = namesBySlug.get(team.teamSlug) ?? new Set<string>();
+      names.add(team.teamName);
+      namesBySlug.set(team.teamSlug, names);
     }
-    for (const [teamId, slugs] of slugsById) {
-      expect([...slugs], teamId).toHaveLength(1);
+    for (const [teamSlug, names] of namesBySlug) {
+      expect([...names], teamSlug).toHaveLength(1);
     }
   });
 
@@ -93,17 +93,19 @@ describe("MOCK_DRAFT_TEAMS", () => {
     }
   });
 
-  it("gives every player at least one position", () => {
+  it("gives every player a formation slot", () => {
     for (const player of ALL_PLAYERS) {
-      expect(player.positions.length, player.playerSeasonId).toBeGreaterThan(0);
+      expect(TRADITIONAL_SLOTS, player.playerSeasonId).toContain(
+        player.position
+      );
     }
   });
 
   it("can fill every formation slot from any offered team", () => {
     for (const team of MOCK_DRAFT_TEAMS) {
       for (const slot of TRADITIONAL_SLOTS) {
-        const eligible = team.players.filter((player) =>
-          player.positions.includes(slot)
+        const eligible = team.players.filter(
+          (player) => player.position === slot
         );
         expect(eligible.length, `${team.teamSeasonId} ${slot}`).toBeGreaterThan(
           0
@@ -115,15 +117,15 @@ describe("MOCK_DRAFT_TEAMS", () => {
   // "Another Season" can only ever fire if the offered franchise has a second
   // season in the pool, so every franchise carries at least two.
   it("gives every franchise at least two seasons", () => {
-    const seasonsByTeamId = new Map<string, Set<number>>();
+    const seasonsByTeamSlug = new Map<string, Set<number>>();
     for (const team of MOCK_DRAFT_TEAMS) {
-      const seasons = seasonsByTeamId.get(team.teamId) ?? new Set<number>();
+      const seasons = seasonsByTeamSlug.get(team.teamSlug) ?? new Set<number>();
       seasons.add(team.seasonYear);
-      seasonsByTeamId.set(team.teamId, seasons);
+      seasonsByTeamSlug.set(team.teamSlug, seasons);
     }
-    expect(seasonsByTeamId.size).toBeGreaterThanOrEqual(3);
-    for (const [teamId, seasons] of seasonsByTeamId) {
-      expect(seasons.size, teamId).toBeGreaterThanOrEqual(2);
+    expect(seasonsByTeamSlug.size).toBeGreaterThanOrEqual(3);
+    for (const [teamSlug, seasons] of seasonsByTeamSlug) {
+      expect(seasons.size, teamSlug).toBeGreaterThanOrEqual(2);
     }
   });
 

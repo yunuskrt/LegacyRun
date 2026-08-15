@@ -11,7 +11,7 @@ export type DraftablePlayer = {
   playerSeasonId: string;
   name: string;
   age: number;
-  positions: Position[];
+  position: Position;
   rating: number;
 };
 
@@ -19,7 +19,6 @@ export type DraftablePlayer = {
 // derived from the team slug at read time, not stored in the database.
 export type DraftTeam = {
   teamSeasonId: string;
-  teamId: string;
   teamName: string;
   teamSlug: string;
   teamLogo: string;
@@ -28,10 +27,8 @@ export type DraftTeam = {
   players: DraftablePlayer[];
 };
 
-// `position` is the formation slot the player was drafted into — one slot per
-// member, even when the player is eligible for several.
 export type SquadMember = {
-  playerId: string;
+  playerSlug: string;
   playerSeasonId: string;
   name: string;
   teamName: string;
@@ -43,8 +40,8 @@ export type SquadMember = {
 };
 
 export type Squad = {
-  name: string;
+  name?: string;
   formation: FormationId;
-  rating: number;
+  rating?: number;
   players: SquadMember[];
 };

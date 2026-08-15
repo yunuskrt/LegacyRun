@@ -17,7 +17,7 @@ describe("MOCK_SQUAD", () => {
   });
 
   it("never repeats a player identity", () => {
-    const ids = MOCK_SQUAD.players.map((player) => player.playerId);
+    const ids = MOCK_SQUAD.players.map((player) => player.playerSlug);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -34,7 +34,7 @@ describe("MOCK_SQUAD", () => {
       );
       expect(offered, player.playerSeasonId).toBeDefined();
       expect(offered?.rating).toBe(player.rating);
-      expect(offered?.positions).toContain(player.position);
+      expect(offered?.position).toBe(player.position);
     }
   });
 
