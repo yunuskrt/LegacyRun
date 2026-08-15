@@ -11,14 +11,22 @@ import { Card } from "@/components/ui/card";
 import { formatSeason } from "@/lib/format";
 import { POSITION_TEXT } from "@/lib/position-style";
 import { cn } from "@/lib/utils";
-import type { DraftTeam, Position } from "@/types/game";
+import type { PlayerAvailability, RerollKind } from "@/lib/draft";
+import type { DraftablePlayer, DraftTeam, Position } from "@/types/game";
 
 type Props = {
   team?: DraftTeam;
+  selectedPosition: Position | null;
+  availabilityOf: (player: DraftablePlayer) => PlayerAvailability;
   openPositions: Position[];
   rerollsLeft: number;
   totalRerolls: number;
   isComplete: boolean;
+  canGetTeam: boolean;
+  canReroll: boolean;
+  onGetRandomTeam: () => void;
+  onReroll: (kind: RerollKind) => void;
+  onDraftPlayer: (player: DraftablePlayer, position: Position) => void;
 };
 
 const PLACEHOLDER_ICON =
@@ -26,10 +34,17 @@ const PLACEHOLDER_ICON =
 
 const DraftBoard = ({
   team,
+  selectedPosition,
+  availabilityOf,
   openPositions,
   rerollsLeft,
   totalRerolls,
   isComplete,
+  canGetTeam,
+  canReroll,
+  onGetRandomTeam,
+  onReroll,
+  onDraftPlayer,
 }: Props) => {
   const stateKey = isComplete ? "complete" : team ? team.teamSeasonId : "idle";
 
@@ -72,15 +87,34 @@ const DraftBoard = ({
               </div>
 
               <p className="text-muted-foreground mt-5 mb-3 text-sm tracking-[0.14em] uppercase">
-                Roster · Pick any player for an open slot{" "}
-                {openPositions.map((position) => (
-                  <span
-                    key={position}
-                    className={cn("ml-1 font-bold", POSITION_TEXT[position])}
-                  >
-                    {position}
-                  </span>
-                ))}
+                {selectedPosition ? (
+                  <>
+                    Roster · Pick a{" "}
+                    <span
+                      className={cn(
+                        "font-bold",
+                        POSITION_TEXT[selectedPosition]
+                      )}
+                    >
+                      {selectedPosition}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    Roster · Select an open slot{" "}
+                    {openPositions.map((position) => (
+                      <span
+                        key={position}
+                        className={cn(
+                          "ml-1 font-bold",
+                          POSITION_TEXT[position]
+                        )}
+                      >
+                        {position}
+                      </span>
+                    ))}
+                  </>
+                )}
               </p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -93,9 +127,12 @@ const DraftBoard = ({
                   >
                     <RosterPlayerCard
                       player={player}
-                      isDisabled={
-                        !player.positions.some((position) =>
-                          openPositions.includes(position)
+                      availability={availabilityOf(player)}
+                      selectedPosition={selectedPosition}
+                      onDraft={() =>
+                        onDraftPlayer(
+                          player,
+                          selectedPosition ?? player.positions[0]
                         )
                       }
                     />
@@ -125,6 +162,8 @@ const DraftBoard = ({
               <Button
                 type="button"
                 size="lg"
+                disabled={!canGetTeam}
+                onClick={onGetRandomTeam}
                 className="bg-gold mt-5 font-bold"
               >
                 Get Random Team
@@ -137,7 +176,8 @@ const DraftBoard = ({
       <RerollPool
         rerollsLeft={rerollsLeft}
         totalRerolls={totalRerolls}
-        isDisabled={isComplete}
+        isDisabled={!canReroll}
+        onReroll={onReroll}
       />
     </Card>
   );

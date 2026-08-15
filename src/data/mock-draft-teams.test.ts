@@ -112,6 +112,21 @@ describe("MOCK_DRAFT_TEAMS", () => {
     }
   });
 
+  // "Another Season" can only ever fire if the offered franchise has a second
+  // season in the pool, so every franchise carries at least two.
+  it("gives every franchise at least two seasons", () => {
+    const seasonsByTeamId = new Map<string, Set<number>>();
+    for (const team of MOCK_DRAFT_TEAMS) {
+      const seasons = seasonsByTeamId.get(team.teamId) ?? new Set<number>();
+      seasons.add(team.seasonYear);
+      seasonsByTeamId.set(team.teamId, seasons);
+    }
+    expect(seasonsByTeamId.size).toBeGreaterThanOrEqual(3);
+    for (const [teamId, seasons] of seasonsByTeamId) {
+      expect(seasons.size, teamId).toBeGreaterThanOrEqual(2);
+    }
+  });
+
   it("offers a deep enough roster to draft from", () => {
     expect(MOCK_DRAFT_TEAMS.length).toBeGreaterThanOrEqual(8);
     for (const team of MOCK_DRAFT_TEAMS) {

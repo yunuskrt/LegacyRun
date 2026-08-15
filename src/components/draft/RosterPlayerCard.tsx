@@ -1,25 +1,57 @@
 import React from "react";
 import { Ban } from "lucide-react";
+import { PLAYER_DRAG_TYPE, type PlayerAvailability } from "@/lib/draft";
 import { abbreviatePlayerName } from "@/lib/format";
 import { POSITION_BG, POSITION_TEXT } from "@/lib/position-style";
 import { cn } from "@/lib/utils";
-import type { DraftablePlayer } from "@/types/game";
+import type { DraftablePlayer, Position } from "@/types/game";
 
 type Props = {
   player: DraftablePlayer;
-  isDisabled: boolean;
+  availability: PlayerAvailability;
+  selectedPosition: Position | null;
+  onDraft: () => void;
 };
 
-const RosterPlayerCard = ({ player, isDisabled }: Props) => {
+const blockedReason = (
+  availability: PlayerAvailability,
+  selectedPosition: Position | null
+): string | null => {
+  if (availability === "ALREADY_DRAFTED") return "Already drafted";
+  if (availability === "OUT_OF_POSITION") return "Slot filled";
+  if (availability === "OFF_SLOT" && selectedPosition)
+    return `Not a ${selectedPosition}`;
+  return null;
+};
+
+const RosterPlayerCard = ({
+  player,
+  availability,
+  selectedPosition,
+  onDraft,
+}: Props) => {
+  const isDraftable = availability === "DRAFTABLE";
+  const isDisabled =
+    availability !== "DRAFTABLE" && availability !== "AVAILABLE";
+  const reason = blockedReason(availability, selectedPosition);
+
   return (
     <button
       type="button"
       disabled={isDisabled}
+      onClick={onDraft}
+      draggable={isDraftable}
+      onDragStart={(event) => {
+        event.dataTransfer.setData(PLAYER_DRAG_TYPE, player.playerSeasonId);
+        event.dataTransfer.effectAllowed = "move";
+      }}
       className={cn(
         "border-border/70 bg-secondary/45 focus-visible:ring-ring/60 relative w-full overflow-hidden rounded-xl border py-4 pr-4 pl-5 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none",
         isDisabled
           ? "cursor-not-allowed opacity-60"
-          : "hover:border-primary/50 hover:bg-secondary/80 cursor-pointer"
+          : "hover:border-primary/50 hover:bg-secondary/80 cursor-pointer",
+        isDraftable &&
+          "border-primary/60 bg-secondary/70 active:cursor-grabbing"
       )}
     >
       {!isDisabled && (
@@ -66,10 +98,10 @@ const RosterPlayerCard = ({ player, isDisabled }: Props) => {
         </span>
       </div>
 
-      {isDisabled && (
+      {reason && (
         <p className="text-muted-foreground mt-2 flex items-center gap-1.5 text-xs tracking-[0.12em] uppercase">
           <Ban className="size-3.5" />
-          Slot filled
+          {reason}
         </p>
       )}
     </button>

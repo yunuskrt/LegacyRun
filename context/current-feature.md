@@ -16,6 +16,7 @@ Not Started
 
 <!-- Spec files, related docs, existing code to follow -->
 
+
 ## History
 
 ### Phase 1 — Project Foundation Setup
@@ -152,3 +153,25 @@ Gotchas:
 Verified: `lint`, `format:check`, `test` (20), `build`; `/play/draft` still prerenders as static. Browser-checked at 1440×1000 and 390×844 across all three states. The only console error is a `/logos/celtics.png` 404 — expected, and the initials fallback catches it. Not verified: no Vitest coverage for `src/lib/format.ts` (worth adding), and light mode is still untouched.
 
 Still open: the page has no interactivity — Phase 6 owns that and is now next in `todo.md`. Team logo PNGs still don't exist. `DATABASE_URL` is a placeholder and all three migrations remain unapplied.
+
+### Phase 6 — Draft Mechanics (Mock Data)
+
+**Phase 6 complete.** The draft is playable. All mechanics live in `src/lib/draft.ts` as pure functions plus a `createDraftReducer(slots)` factory; `DraftExperience` is the one new client component and holds the `useReducer`. Grew the fixtures 12 → 20 team-seasons, added `sonner`, and dropped a placeholder `/play/tournament` page so the completed lineup has somewhere to go.
+
+Gotchas:
+
+- **Randomness stays out of the reducer.** The component picks the team and passes it in the action (`OFFER_TEAM`/`REROLL` both carry a `team`), so every rule is testable without stubbing `Math.random`. The three `random*` selectors take an injectable `Rng` and are asserted against *every* fixture team, not a sample.
+- **`validateDraft` returns a typed rejection**, and the component — not the reducer — decides to toast. The reducer independently re-validates and no-ops, so an invalid dispatch can never corrupt state. This is what makes the "wrong CourtSlot" drop a visible error instead of a silent nothing.
+- **Every court slot is a drop target, including filled and unselected ones.** `onDragOver` preventDefaults everywhere; otherwise a mistaken drop fires no event at all and there's nothing to report.
+- **Drag payload is `text/plain`** carrying the `playerSeasonId`. A custom MIME type is dropped by Safari. Native HTML5 DnD also means **drag does not work on touch** — clicking a card is the mobile path.
+- **Reroll enablement was corrected on review:** the spec said "selecting state" (a slot selected), but the intent is that rerolls unlock the moment a roster is on the board. `canReroll` requires only `offeredTeam !== null && rerollsLeft > 0`. `isSelectingPlayer` became dead and was deleted.
+- **Drafting clears `offeredTeam`**, which is what makes "Get Random Team" reappear each round — the next team never auto-arrives. Switching slots mid-round only re-filters, never re-fetches.
+- **`playerAvailability` has five states, not two.** `AVAILABLE` (fits an open slot, no slot picked yet) is clickable and toasts a prompt; `OFF_SLOT` dims mid-round; `OUT_OF_POSITION` keeps Phase 5's "Slot filled" copy; `ALREADY_DRAFTED` is the hard-constraint-6 block.
+- **The dataset now gives all 10 franchises two seasons** (20 team-seasons, ~190 players) — "Another Season" is unreachable otherwise, and a test pins that invariant. This also multiplied the duplicate identities well past Phase 4's five.
+- **shadcn's `sonner` pulls in `next-themes`.** The app hard-forces `.dark`, so the provider would do nothing; hardcoded `theme="dark"` and uninstalled the dependency.
+- Two copy changes were needed for the mechanic to be discoverable — the roster header switches to "Pick a C" once a slot is chosen, and an empty slot gains a `SELECTED` state. No Phase 5 styling was otherwise touched.
+- `Start Tournament` routes to `/play/tournament`, which is a placeholder line of text until Phase 18.
+
+Verified: `npm test` (48), `lint`, `format:check`, `build`; `/play/draft` and `/play/tournament` both still prerender static. Browser-driven at 1440×1000 and 390×844: full five-man lineup drafted by click and by drag, wrong-slot drop rejected with the toast and no state change, all three reroll buttons drawing one pool down to 0/3, and J.R. Smith drafted from the '18 Cavs coming back `ALREADY DRAFTED` on the '16 Cavs roster. Only console errors are the known `/logos/*.png` 404s.
+
+Still open: no touch-drag support. Team logo PNGs still don't exist. `DATABASE_URL` is a placeholder and all three migrations remain unapplied — Phase 8 is next.
