@@ -13,6 +13,8 @@ type Props = {
   position: Position;
   member?: SquadMember;
   isOpen: boolean;
+  isSelected: boolean;
+  onSelect: () => void;
 };
 
 const SLOT_SHELL =
@@ -21,7 +23,13 @@ const SLOT_SHELL =
 const JERSEY =
   "block size-[9cqw] bg-current [mask-image:url(/assets/jersey-empty-slot.svg)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]";
 
-const CourtSlot = ({ position, member, isOpen }: Props) => {
+const CourtSlot = ({
+  position,
+  member,
+  isOpen,
+  isSelected,
+  onSelect,
+}: Props) => {
   if (member) {
     return (
       <div
@@ -52,13 +60,18 @@ const CourtSlot = ({ position, member, isOpen }: Props) => {
   }
 
   return (
-    <div
+    <button
+      type="button"
+      disabled={!isOpen}
+      onClick={onSelect}
       className={cn(
         SLOT_SHELL,
-        "border-2 border-dashed",
-        isOpen
-          ? "border-primary bg-primary/12 shadow-[0_0_0.9rem_-0.7rem_var(--primary)]"
-          : "border-muted-foreground/25 bg-foreground/[0.02]"
+        "focus-visible:ring-ring/60 border-2 border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none",
+        isSelected
+          ? "border-primary bg-primary/25 shadow-[0_0_1.1rem_-0.55rem_var(--primary)] cursor-pointer border-solid"
+          : isOpen
+            ? "border-primary bg-primary/12 hover:bg-primary/20 cursor-pointer shadow-[0_0_0.9rem_-0.7rem_var(--primary)]"
+            : "border-muted-foreground/25 bg-foreground/[0.02] cursor-not-allowed"
       )}
     >
       <span
@@ -75,10 +88,15 @@ const CourtSlot = ({ position, member, isOpen }: Props) => {
       >
         {position}
       </p>
-      <p className="text-muted-foreground mt-[0.8cqw] text-[clamp(0.5rem,1.45cqw,0.8rem)] leading-none tracking-[0.16em]">
-        {isOpen ? "OPEN" : "EMPTY"}
+      <p
+        className={cn(
+          "mt-[0.8cqw] text-[clamp(0.5rem,1.45cqw,0.8rem)] leading-none tracking-[0.16em]",
+          isSelected ? "text-primary font-bold" : "text-muted-foreground"
+        )}
+      >
+        {isSelected ? "SELECTED" : isOpen ? "OPEN" : "EMPTY"}
       </p>
-    </div>
+    </button>
   );
 };
 

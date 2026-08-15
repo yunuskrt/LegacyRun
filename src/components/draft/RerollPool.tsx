@@ -1,21 +1,32 @@
 import React from "react";
-import { Dices, Repeat2, SkipForward } from "lucide-react";
+import { Dices, Repeat2, SkipForward, type LucideIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import type { RerollKind } from "@/lib/draft";
 import { cn } from "@/lib/utils";
 
 type Props = {
   rerollsLeft: number;
   totalRerolls: number;
   isDisabled: boolean;
+  onReroll: (kind: RerollKind) => void;
 };
 
 const REROLL_ACTIONS = [
-  { label: "Another Team", Icon: Repeat2 },
-  { label: "Another Season", Icon: Dices },
-  { label: "Skip Round", Icon: SkipForward },
-] as const;
+  { kind: "ANOTHER_TEAM", label: "Another Team", Icon: Repeat2 },
+  { kind: "ANOTHER_SEASON", label: "Another Season", Icon: Dices },
+  { kind: "SKIP_ROUND", label: "Skip Round", Icon: SkipForward },
+] as const satisfies readonly {
+  kind: RerollKind;
+  label: string;
+  Icon: LucideIcon;
+}[];
 
-const RerollPool = ({ rerollsLeft, totalRerolls, isDisabled }: Props) => {
+const RerollPool = ({
+  rerollsLeft,
+  totalRerolls,
+  isDisabled,
+  onReroll,
+}: Props) => {
   return (
     <div>
       <Separator className="mb-4" />
@@ -30,11 +41,12 @@ const RerollPool = ({ rerollsLeft, totalRerolls, isDisabled }: Props) => {
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {REROLL_ACTIONS.map(({ label, Icon }) => (
+        {REROLL_ACTIONS.map(({ kind, label, Icon }) => (
           <button
-            key={label}
+            key={kind}
             type="button"
             disabled={isDisabled}
+            onClick={() => onReroll(kind)}
             className={cn(
               "border-border/70 bg-secondary/45 focus-visible:ring-ring/60 flex flex-col items-center gap-2 rounded-xl border px-2 py-4 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none",
               isDisabled
