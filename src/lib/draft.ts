@@ -54,8 +54,8 @@ export const INITIAL_DRAFT_STATE: DraftState = {
   rerollsLeft: TOTAL_REROLLS,
 };
 
-export const draftedPlayerIds = (state: DraftState): Set<string> =>
-  new Set(state.members.map((member) => member.playerId));
+export const draftedPlayerSlugs = (state: DraftState): Set<string> =>
+  new Set(state.members.map((member) => member.playerSlug));
 
 export const openPositions = (
   state: DraftState,
@@ -99,15 +99,17 @@ export const validateDraft = (
 ): DraftAttempt => {
   if (!state.offeredTeam) return { ok: false, reason: "NO_TEAM_OFFERED" };
   if (!state.selectedPosition) return { ok: false, reason: "NO_SLOT_SELECTED" };
+  // Hard constraint 6 — one appearance per person per run, any season. Checked
+  // ahead of the slot rules so the identity block is what the player is told,
+  // matching the order `playerAvailability` reports.
+  if (draftedPlayerSlugs(state).has(player.playerId))
+    return { ok: false, reason: "ALREADY_DRAFTED" };
   if (!openPositions(state, slots).includes(position))
     return { ok: false, reason: "SLOT_FILLED" };
   if (position !== state.selectedPosition)
     return { ok: false, reason: "WRONG_POSITION" };
-  if (!player.positions.includes(position))
+  if (player.position !== position)
     return { ok: false, reason: "WRONG_POSITION" };
-  // Hard constraint 6 — one appearance per person per run, any season.
-  if (draftedPlayerIds(state).has(player.playerId))
-    return { ok: false, reason: "ALREADY_DRAFTED" };
   return { ok: true };
 };
 
@@ -116,16 +118,13 @@ export const playerAvailability = (
   slots: readonly Position[],
   player: DraftablePlayer
 ): PlayerAvailability => {
-  if (draftedPlayerIds(state).has(player.playerId)) return "ALREADY_DRAFTED";
+  if (draftedPlayerSlugs(state).has(player.playerId)) return "ALREADY_DRAFTED";
 
-  const open = openPositions(state, slots);
-  if (!player.positions.some((position) => open.includes(position)))
+  if (!openPositions(state, slots).includes(player.position))
     return "OUT_OF_POSITION";
 
   if (!state.selectedPosition) return "AVAILABLE";
-  return player.positions.includes(state.selectedPosition)
-    ? "DRAFTABLE"
-    : "OFF_SLOT";
+  return player.position === state.selectedPosition ? "DRAFTABLE" : "OFF_SLOT";
 };
 
 export const toSquadMember = (
@@ -133,7 +132,7 @@ export const toSquadMember = (
   team: DraftTeam,
   position: Position
 ): SquadMember => ({
-  playerId: player.playerId,
+  playerSlug: player.playerId,
   playerSeasonId: player.playerSeasonId,
   name: player.name,
   teamName: team.teamName,
@@ -160,7 +159,7 @@ export const randomOtherTeam = (
   rng: Rng = Math.random
 ): DraftTeam | null =>
   pickRandom(
-    teams.filter((team) => team.teamId !== current.teamId),
+    teams.filter((team) => team.teamSlug !== current.teamSlug),
     rng
   );
 
@@ -172,7 +171,7 @@ export const randomOtherSeason = (
   pickRandom(
     teams.filter(
       (team) =>
-        team.teamId === current.teamId &&
+        team.teamSlug === current.teamSlug &&
         team.teamSeasonId !== current.teamSeasonId
     ),
     rng

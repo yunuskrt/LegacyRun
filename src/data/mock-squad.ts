@@ -1,8 +1,7 @@
 import { teamLogoPath } from "@/lib/team-logo";
 import type { Squad } from "@/types/game";
 
-// A finished draft, for building the team-review UI. `position` is the slot the
-// player was drafted into, not his full eligibility. Ratings are the same
+// A finished draft, for building the team-review UI. Ratings are the same
 // hand-set placeholders used in MOCK_DRAFT_TEAMS.
 export const MOCK_SQUAD: Squad = {
   name: "All-Era Starting Five",
@@ -10,7 +9,7 @@ export const MOCK_SQUAD: Squad = {
   rating: 92,
   players: [
     {
-      playerId: "magic-johnson",
+      playerSlug: "magic-johnson",
       playerSeasonId: "magic-johnson-1987",
       name: "Magic Johnson",
       teamName: "Los Angeles Lakers",
@@ -21,7 +20,7 @@ export const MOCK_SQUAD: Squad = {
       rating: 96,
     },
     {
-      playerId: "michael-jordan",
+      playerSlug: "michael-jordan",
       playerSeasonId: "michael-jordan-1996",
       name: "Michael Jordan",
       teamName: "Chicago Bulls",
@@ -32,7 +31,7 @@ export const MOCK_SQUAD: Squad = {
       rating: 98,
     },
     {
-      playerId: "lebron-james",
+      playerSlug: "lebron-james",
       playerSeasonId: "lebron-james-2013",
       name: "LeBron James",
       teamName: "Miami Heat",
@@ -43,7 +42,7 @@ export const MOCK_SQUAD: Squad = {
       rating: 98,
     },
     {
-      playerId: "kevin-garnett",
+      playerSlug: "kevin-garnett",
       playerSeasonId: "kevin-garnett-2008",
       name: "Kevin Garnett",
       teamName: "Boston Celtics",
@@ -54,7 +53,7 @@ export const MOCK_SQUAD: Squad = {
       rating: 88,
     },
     {
-      playerId: "nikola-jokic",
+      playerSlug: "nikola-jokic",
       playerSeasonId: "nikola-jokic-2023",
       name: "Nikola Jokić",
       teamName: "Denver Nuggets",

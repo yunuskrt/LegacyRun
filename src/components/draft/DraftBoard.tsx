@@ -132,7 +132,7 @@ const DraftBoard = ({
                       onDraft={() =>
                         onDraftPlayer(
                           player,
-                          selectedPosition ?? player.positions[0]
+                          selectedPosition ?? player.position
                         )
                       }
                     />

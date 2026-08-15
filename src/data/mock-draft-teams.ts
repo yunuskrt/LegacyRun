@@ -5,11 +5,11 @@ import type { DraftTeam } from "@/types/game";
 // playoff data; every `rating` is a hand-set placeholder on a 0-100 band, NOT
 // output of the Phase 8 rating engine. Never import this from ingestion code.
 // Ids are readable slugs rather than cuids — production rows use cuids, so
-// nothing may assume a format here.
+// nothing may assume a format here. `position` is the single formation slot the
+// player is draftable into; multi-position players keep their primary listing.
 export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
   {
     teamSeasonId: "sixers-1983",
-    teamId: "sixers",
     teamName: "Philadelphia 76ers",
     teamSlug: "sixers",
     teamLogo: teamLogoPath("sixers"),
@@ -21,7 +21,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "moses-malone-1983",
         name: "Moses Malone",
         age: 27,
-        positions: ["C"],
+        position: "C",
         rating: 94,
       },
       {
@@ -29,7 +29,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "julius-erving-1983",
         name: "Julius Erving",
         age: 32,
-        positions: ["SF"],
+        position: "SF",
         rating: 90,
       },
       {
@@ -37,7 +37,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "andrew-toney-1983",
         name: "Andrew Toney",
         age: 25,
-        positions: ["SG"],
+        position: "SG",
         rating: 79,
       },
       {
@@ -45,7 +45,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "maurice-cheeks-1983",
         name: "Maurice Cheeks",
         age: 26,
-        positions: ["PG"],
+        position: "PG",
         rating: 81,
       },
       {
@@ -53,7 +53,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bobby-jones-1983",
         name: "Bobby Jones",
         age: 31,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 78,
       },
       {
@@ -61,7 +61,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "marc-iavaroni-1983",
         name: "Marc Iavaroni",
         age: 26,
-        positions: ["PF"],
+        position: "PF",
         rating: 58,
       },
       {
@@ -69,7 +69,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "clint-richardson-1983",
         name: "Clint Richardson",
         age: 26,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 57,
       },
       {
@@ -77,7 +77,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "franklin-edwards-1983",
         name: "Franklin Edwards",
         age: 23,
-        positions: ["PG"],
+        position: "PG",
         rating: 54,
       },
       {
@@ -85,7 +85,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "earl-cureton-1983",
         name: "Earl Cureton",
         age: 25,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 55,
       },
       {
@@ -93,14 +93,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "clemon-johnson-1983",
         name: "Clemon Johnson",
         age: 26,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 56,
       },
     ],
   },
   {
     teamSeasonId: "celtics-1986",
-    teamId: "celtics",
     teamName: "Boston Celtics",
     teamSlug: "celtics",
     teamLogo: teamLogoPath("celtics"),
@@ -112,7 +111,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "larry-bird-1986",
         name: "Larry Bird",
         age: 29,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 96,
       },
       {
@@ -120,7 +119,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kevin-mchale-1986",
         name: "Kevin McHale",
         age: 28,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 87,
       },
       {
@@ -128,7 +127,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "robert-parish-1986",
         name: "Robert Parish",
         age: 32,
-        positions: ["C"],
+        position: "C",
         rating: 82,
       },
       {
@@ -136,7 +135,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "dennis-johnson-1986",
         name: "Dennis Johnson",
         age: 31,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 78,
       },
       {
@@ -144,7 +143,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "danny-ainge-1986",
         name: "Danny Ainge",
         age: 26,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 74,
       },
       {
@@ -152,7 +151,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bill-walton-1986",
         name: "Bill Walton",
         age: 33,
-        positions: ["C"],
+        position: "C",
         rating: 76,
       },
       {
@@ -160,7 +159,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "scott-wedman-1986",
         name: "Scott Wedman",
         age: 33,
-        positions: ["SF"],
+        position: "SF",
         rating: 62,
       },
       {
@@ -168,7 +167,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jerry-sichting-1986",
         name: "Jerry Sichting",
         age: 29,
-        positions: ["PG"],
+        position: "PG",
         rating: 58,
       },
       {
@@ -176,7 +175,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "david-thirdkill-1986",
         name: "David Thirdkill",
         age: 25,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 48,
       },
       {
@@ -184,14 +183,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "greg-kite-1986",
         name: "Greg Kite",
         age: 24,
-        positions: ["C"],
+        position: "C",
         rating: 44,
       },
     ],
   },
   {
     teamSeasonId: "lakers-1987",
-    teamId: "lakers",
     teamName: "Los Angeles Lakers",
     teamSlug: "lakers",
     teamLogo: teamLogoPath("lakers"),
@@ -203,7 +201,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "magic-johnson-1987",
         name: "Magic Johnson",
         age: 27,
-        positions: ["PG"],
+        position: "PG",
         rating: 96,
       },
       {
@@ -211,7 +209,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kareem-abdul-jabbar-1987",
         name: "Kareem Abdul-Jabbar",
         age: 39,
-        positions: ["C"],
+        position: "C",
         rating: 80,
       },
       {
@@ -219,7 +217,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "james-worthy-1987",
         name: "James Worthy",
         age: 25,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 85,
       },
       {
@@ -227,7 +225,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "byron-scott-1987",
         name: "Byron Scott",
         age: 25,
-        positions: ["SG"],
+        position: "SG",
         rating: 76,
       },
       {
@@ -235,7 +233,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ac-green-1987",
         name: "A.C. Green",
         age: 23,
-        positions: ["PF"],
+        position: "PF",
         rating: 70,
       },
       {
@@ -243,7 +241,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "michael-cooper-1987",
         name: "Michael Cooper",
         age: 30,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 73,
       },
       {
@@ -251,7 +249,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "mychal-thompson-1987",
         name: "Mychal Thompson",
         age: 32,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 68,
       },
       {
@@ -259,7 +257,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kurt-rambis-1987",
         name: "Kurt Rambis",
         age: 28,
-        positions: ["PF"],
+        position: "PF",
         rating: 60,
       },
       {
@@ -267,7 +265,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "wes-matthews-1987",
         name: "Wes Matthews",
         age: 27,
-        positions: ["PG"],
+        position: "PG",
         rating: 55,
       },
       {
@@ -275,14 +273,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "billy-thompson-1987",
         name: "Billy Thompson",
         age: 23,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 53,
       },
     ],
   },
   {
     teamSeasonId: "bulls-1991",
-    teamId: "bulls",
     teamName: "Chicago Bulls",
     teamSlug: "bulls",
     teamLogo: teamLogoPath("bulls"),
@@ -294,7 +291,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "michael-jordan-1991",
         name: "Michael Jordan",
         age: 27,
-        positions: ["SG"],
+        position: "SG",
         rating: 98,
       },
       {
@@ -302,7 +299,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "scottie-pippen-1991",
         name: "Scottie Pippen",
         age: 25,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 86,
       },
       {
@@ -310,7 +307,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "horace-grant-1991",
         name: "Horace Grant",
         age: 25,
-        positions: ["PF"],
+        position: "PF",
         rating: 76,
       },
       {
@@ -318,7 +315,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bill-cartwright-1991",
         name: "Bill Cartwright",
         age: 33,
-        positions: ["C"],
+        position: "C",
         rating: 66,
       },
       {
@@ -326,7 +323,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "john-paxson-1991",
         name: "John Paxson",
         age: 30,
-        positions: ["PG"],
+        position: "PG",
         rating: 63,
       },
       {
@@ -334,7 +331,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bj-armstrong-1991",
         name: "B.J. Armstrong",
         age: 23,
-        positions: ["PG"],
+        position: "PG",
         rating: 60,
       },
       {
@@ -342,7 +339,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "craig-hodges-1991",
         name: "Craig Hodges",
         age: 30,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 57,
       },
       {
@@ -350,7 +347,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "cliff-levingston-1991",
         name: "Cliff Levingston",
         age: 30,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 54,
       },
       {
@@ -358,7 +355,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "stacey-king-1991",
         name: "Stacey King",
         age: 24,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 53,
       },
       {
@@ -366,14 +363,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "will-perdue-1991",
         name: "Will Perdue",
         age: 25,
-        positions: ["C"],
+        position: "C",
         rating: 51,
       },
     ],
   },
   {
     teamSeasonId: "rockets-1994",
-    teamId: "rockets",
     teamName: "Houston Rockets",
     teamSlug: "rockets",
     teamLogo: teamLogoPath("rockets"),
@@ -385,7 +381,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "hakeem-olajuwon-1994",
         name: "Hakeem Olajuwon",
         age: 31,
-        positions: ["C"],
+        position: "C",
         rating: 95,
       },
       {
@@ -393,7 +389,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "otis-thorpe-1994",
         name: "Otis Thorpe",
         age: 31,
-        positions: ["PF"],
+        position: "PF",
         rating: 73,
       },
       {
@@ -401,7 +397,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "vernon-maxwell-1994",
         name: "Vernon Maxwell",
         age: 28,
-        positions: ["SG"],
+        position: "SG",
         rating: 68,
       },
       {
@@ -409,7 +405,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kenny-smith-1994",
         name: "Kenny Smith",
         age: 28,
-        positions: ["PG"],
+        position: "PG",
         rating: 69,
       },
       {
@@ -417,7 +413,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "robert-horry-1994",
         name: "Robert Horry",
         age: 23,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 67,
       },
       {
@@ -425,7 +421,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "sam-cassell-1994",
         name: "Sam Cassell",
         age: 24,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 63,
       },
       {
@@ -433,7 +429,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "mario-elie-1994",
         name: "Mario Elie",
         age: 30,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 62,
       },
       {
@@ -441,7 +437,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "carl-herrera-1994",
         name: "Carl Herrera",
         age: 27,
-        positions: ["PF"],
+        position: "PF",
         rating: 55,
       },
       {
@@ -449,14 +445,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "matt-bullard-1994",
         name: "Matt Bullard",
         age: 27,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 52,
       },
     ],
   },
   {
     teamSeasonId: "rockets-1995",
-    teamId: "rockets",
     teamName: "Houston Rockets",
     teamSlug: "rockets",
     teamLogo: teamLogoPath("rockets"),
@@ -468,7 +463,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "hakeem-olajuwon-1995",
         name: "Hakeem Olajuwon",
         age: 32,
-        positions: ["C"],
+        position: "C",
         rating: 96,
       },
       {
@@ -476,7 +471,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "clyde-drexler-1995",
         name: "Clyde Drexler",
         age: 32,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 84,
       },
       {
@@ -484,7 +479,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "robert-horry-1995",
         name: "Robert Horry",
         age: 24,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 69,
       },
       {
@@ -492,7 +487,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kenny-smith-1995",
         name: "Kenny Smith",
         age: 29,
-        positions: ["PG"],
+        position: "PG",
         rating: 68,
       },
       {
@@ -500,7 +495,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "sam-cassell-1995",
         name: "Sam Cassell",
         age: 25,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 66,
       },
       {
@@ -508,7 +503,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "mario-elie-1995",
         name: "Mario Elie",
         age: 31,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 64,
       },
       {
@@ -516,7 +511,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "carl-herrera-1995",
         name: "Carl Herrera",
         age: 28,
-        positions: ["PF"],
+        position: "PF",
         rating: 56,
       },
       {
@@ -524,7 +519,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "chucky-brown-1995",
         name: "Chucky Brown",
         age: 26,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 54,
       },
       {
@@ -532,14 +527,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "pete-chilcutt-1995",
         name: "Pete Chilcutt",
         age: 26,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 52,
       },
     ],
   },
   {
     teamSeasonId: "bulls-1996",
-    teamId: "bulls",
     teamName: "Chicago Bulls",
     teamSlug: "bulls",
     teamLogo: teamLogoPath("bulls"),
@@ -551,7 +545,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "michael-jordan-1996",
         name: "Michael Jordan",
         age: 32,
-        positions: ["SG"],
+        position: "SG",
         rating: 98,
       },
       {
@@ -559,7 +553,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "scottie-pippen-1996",
         name: "Scottie Pippen",
         age: 30,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 89,
       },
       {
@@ -567,7 +561,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "dennis-rodman-1996",
         name: "Dennis Rodman",
         age: 34,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 79,
       },
       {
@@ -575,7 +569,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "toni-kukoc-1996",
         name: "Toni Kukoč",
         age: 27,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 76,
       },
       {
@@ -583,7 +577,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ron-harper-1996",
         name: "Ron Harper",
         age: 32,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 68,
       },
       {
@@ -591,7 +585,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "luc-longley-1996",
         name: "Luc Longley",
         age: 27,
-        positions: ["C"],
+        position: "C",
         rating: 61,
       },
       {
@@ -599,7 +593,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "steve-kerr-1996",
         name: "Steve Kerr",
         age: 30,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 64,
       },
       {
@@ -607,7 +601,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bill-wennington-1996",
         name: "Bill Wennington",
         age: 32,
-        positions: ["C"],
+        position: "C",
         rating: 54,
       },
       {
@@ -615,7 +609,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "randy-brown-1996",
         name: "Randy Brown",
         age: 27,
-        positions: ["PG"],
+        position: "PG",
         rating: 51,
       },
       {
@@ -623,14 +617,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jud-buechler-1996",
         name: "Jud Buechler",
         age: 27,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 49,
       },
     ],
   },
   {
     teamSeasonId: "lakers-2001",
-    teamId: "lakers",
     teamName: "Los Angeles Lakers",
     teamSlug: "lakers",
     teamLogo: teamLogoPath("lakers"),
@@ -642,7 +635,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "shaquille-oneal-2001",
         name: "Shaquille O'Neal",
         age: 28,
-        positions: ["C"],
+        position: "C",
         rating: 96,
       },
       {
@@ -650,7 +643,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kobe-bryant-2001",
         name: "Kobe Bryant",
         age: 22,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 90,
       },
       {
@@ -658,7 +651,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "derek-fisher-2001",
         name: "Derek Fisher",
         age: 26,
-        positions: ["PG"],
+        position: "PG",
         rating: 62,
       },
       {
@@ -666,7 +659,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "rick-fox-2001",
         name: "Rick Fox",
         age: 31,
-        positions: ["SF"],
+        position: "SF",
         rating: 65,
       },
       {
@@ -674,7 +667,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "horace-grant-2001",
         name: "Horace Grant",
         age: 35,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 63,
       },
       {
@@ -682,7 +675,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "robert-horry-2001",
         name: "Robert Horry",
         age: 30,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 66,
       },
       {
@@ -690,7 +683,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ron-harper-2001",
         name: "Ron Harper",
         age: 37,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 53,
       },
       {
@@ -698,7 +691,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "brian-shaw-2001",
         name: "Brian Shaw",
         age: 34,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 55,
       },
       {
@@ -706,7 +699,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "tyronn-lue-2001",
         name: "Tyronn Lue",
         age: 23,
-        positions: ["PG"],
+        position: "PG",
         rating: 52,
       },
       {
@@ -714,14 +707,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "devean-george-2001",
         name: "Devean George",
         age: 23,
-        positions: ["SF"],
+        position: "SF",
         rating: 51,
       },
     ],
   },
   {
     teamSeasonId: "sixers-2001",
-    teamId: "sixers",
     teamName: "Philadelphia 76ers",
     teamSlug: "sixers",
     teamLogo: teamLogoPath("sixers"),
@@ -733,7 +725,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "allen-iverson-2001",
         name: "Allen Iverson",
         age: 25,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 93,
       },
       {
@@ -741,7 +733,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "dikembe-mutombo-2001",
         name: "Dikembe Mutombo",
         age: 34,
-        positions: ["C"],
+        position: "C",
         rating: 81,
       },
       {
@@ -749,7 +741,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "aaron-mckie-2001",
         name: "Aaron McKie",
         age: 28,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 71,
       },
       {
@@ -757,7 +749,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "eric-snow-2001",
         name: "Eric Snow",
         age: 27,
-        positions: ["PG"],
+        position: "PG",
         rating: 66,
       },
       {
@@ -765,7 +757,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "tyrone-hill-2001",
         name: "Tyrone Hill",
         age: 32,
-        positions: ["PF"],
+        position: "PF",
         rating: 64,
       },
       {
@@ -773,7 +765,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "george-lynch-2001",
         name: "George Lynch",
         age: 30,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 60,
       },
       {
@@ -781,7 +773,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "matt-geiger-2001",
         name: "Matt Geiger",
         age: 31,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 56,
       },
       {
@@ -789,7 +781,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "todd-macculloch-2001",
         name: "Todd MacCulloch",
         age: 25,
-        positions: ["C"],
+        position: "C",
         rating: 54,
       },
       {
@@ -797,7 +789,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jumaine-jones-2001",
         name: "Jumaine Jones",
         age: 22,
-        positions: ["SF"],
+        position: "SF",
         rating: 51,
       },
       {
@@ -805,14 +797,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "raja-bell-2001",
         name: "Raja Bell",
         age: 24,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 50,
       },
     ],
   },
   {
     teamSeasonId: "heat-2006",
-    teamId: "heat",
     teamName: "Miami Heat",
     teamSlug: "heat",
     teamLogo: teamLogoPath("heat"),
@@ -824,7 +815,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "dwyane-wade-2006",
         name: "Dwyane Wade",
         age: 24,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 91,
       },
       {
@@ -832,7 +823,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "shaquille-oneal-2006",
         name: "Shaquille O'Neal",
         age: 33,
-        positions: ["C"],
+        position: "C",
         rating: 87,
       },
       {
@@ -840,7 +831,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "antoine-walker-2006",
         name: "Antoine Walker",
         age: 29,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 70,
       },
       {
@@ -848,7 +839,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "udonis-haslem-2006",
         name: "Udonis Haslem",
         age: 25,
-        positions: ["PF"],
+        position: "PF",
         rating: 66,
       },
       {
@@ -856,7 +847,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "james-posey-2006",
         name: "James Posey",
         age: 29,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 64,
       },
       {
@@ -864,7 +855,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jason-williams-2006",
         name: "Jason Williams",
         age: 30,
-        positions: ["PG"],
+        position: "PG",
         rating: 63,
       },
       {
@@ -872,7 +863,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "alonzo-mourning-2006",
         name: "Alonzo Mourning",
         age: 35,
-        positions: ["C"],
+        position: "C",
         rating: 62,
       },
       {
@@ -880,7 +871,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "gary-payton-2006",
         name: "Gary Payton",
         age: 37,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 59,
       },
       {
@@ -888,14 +879,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "shandon-anderson-2006",
         name: "Shandon Anderson",
         age: 32,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 52,
       },
     ],
   },
   {
     teamSeasonId: "celtics-2008",
-    teamId: "celtics",
     teamName: "Boston Celtics",
     teamSlug: "celtics",
     teamLogo: teamLogoPath("celtics"),
@@ -907,7 +897,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kevin-garnett-2008",
         name: "Kevin Garnett",
         age: 31,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 88,
       },
       {
@@ -915,7 +905,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "paul-pierce-2008",
         name: "Paul Pierce",
         age: 30,
-        positions: ["SF"],
+        position: "SF",
         rating: 85,
       },
       {
@@ -923,7 +913,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ray-allen-2008",
         name: "Ray Allen",
         age: 32,
-        positions: ["SG"],
+        position: "SG",
         rating: 80,
       },
       {
@@ -931,7 +921,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "rajon-rondo-2008",
         name: "Rajon Rondo",
         age: 22,
-        positions: ["PG"],
+        position: "PG",
         rating: 72,
       },
       {
@@ -939,7 +929,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kendrick-perkins-2008",
         name: "Kendrick Perkins",
         age: 23,
-        positions: ["C"],
+        position: "C",
         rating: 63,
       },
       {
@@ -947,7 +937,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "james-posey-2008",
         name: "James Posey",
         age: 31,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 64,
       },
       {
@@ -955,7 +945,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "leon-powe-2008",
         name: "Leon Powe",
         age: 24,
-        positions: ["PF"],
+        position: "PF",
         rating: 58,
       },
       {
@@ -963,7 +953,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "eddie-house-2008",
         name: "Eddie House",
         age: 29,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 56,
       },
       {
@@ -971,7 +961,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "glen-davis-2008",
         name: "Glen Davis",
         age: 22,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 54,
       },
       {
@@ -979,7 +969,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "sam-cassell-2008",
         name: "Sam Cassell",
         age: 38,
-        positions: ["PG"],
+        position: "PG",
         rating: 55,
       },
       {
@@ -987,14 +977,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "pj-brown-2008",
         name: "P.J. Brown",
         age: 38,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 53,
       },
     ],
   },
   {
     teamSeasonId: "heat-2013",
-    teamId: "heat",
     teamName: "Miami Heat",
     teamSlug: "heat",
     teamLogo: teamLogoPath("heat"),
@@ -1006,7 +995,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "lebron-james-2013",
         name: "LeBron James",
         age: 28,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 98,
       },
       {
@@ -1014,7 +1003,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "dwyane-wade-2013",
         name: "Dwyane Wade",
         age: 31,
-        positions: ["SG"],
+        position: "SG",
         rating: 84,
       },
       {
@@ -1022,7 +1011,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "chris-bosh-2013",
         name: "Chris Bosh",
         age: 28,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 79,
       },
       {
@@ -1030,7 +1019,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "mario-chalmers-2013",
         name: "Mario Chalmers",
         age: 26,
-        positions: ["PG"],
+        position: "PG",
         rating: 62,
       },
       {
@@ -1038,7 +1027,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ray-allen-2013",
         name: "Ray Allen",
         age: 37,
-        positions: ["SG"],
+        position: "SG",
         rating: 68,
       },
       {
@@ -1046,7 +1035,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "shane-battier-2013",
         name: "Shane Battier",
         age: 34,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 61,
       },
       {
@@ -1054,7 +1043,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "udonis-haslem-2013",
         name: "Udonis Haslem",
         age: 32,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 57,
       },
       {
@@ -1062,7 +1051,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "norris-cole-2013",
         name: "Norris Cole",
         age: 24,
-        positions: ["PG"],
+        position: "PG",
         rating: 53,
       },
       {
@@ -1070,7 +1059,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "chris-andersen-2013",
         name: "Chris Andersen",
         age: 34,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 60,
       },
       {
@@ -1078,14 +1067,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "mike-miller-2013",
         name: "Mike Miller",
         age: 33,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 56,
       },
     ],
   },
   {
     teamSeasonId: "warriors-2015",
-    teamId: "warriors",
     teamName: "Golden State Warriors",
     teamSlug: "warriors",
     teamLogo: teamLogoPath("warriors"),
@@ -1097,7 +1085,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "stephen-curry-2015",
         name: "Stephen Curry",
         age: 26,
-        positions: ["PG"],
+        position: "PG",
         rating: 92,
       },
       {
@@ -1105,7 +1093,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "klay-thompson-2015",
         name: "Klay Thompson",
         age: 24,
-        positions: ["SG"],
+        position: "SG",
         rating: 83,
       },
       {
@@ -1113,7 +1101,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "draymond-green-2015",
         name: "Draymond Green",
         age: 24,
-        positions: ["PF", "C", "SF"],
+        position: "PF",
         rating: 81,
       },
       {
@@ -1121,7 +1109,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "andre-iguodala-2015",
         name: "Andre Iguodala",
         age: 31,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 72,
       },
       {
@@ -1129,7 +1117,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "andrew-bogut-2015",
         name: "Andrew Bogut",
         age: 30,
-        positions: ["C"],
+        position: "C",
         rating: 68,
       },
       {
@@ -1137,7 +1125,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "harrison-barnes-2015",
         name: "Harrison Barnes",
         age: 22,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 64,
       },
       {
@@ -1145,7 +1133,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "shaun-livingston-2015",
         name: "Shaun Livingston",
         age: 29,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 60,
       },
       {
@@ -1153,7 +1141,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "marreese-speights-2015",
         name: "Marreese Speights",
         age: 27,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 58,
       },
       {
@@ -1161,7 +1149,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "leandro-barbosa-2015",
         name: "Leandro Barbosa",
         age: 32,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 55,
       },
       {
@@ -1169,14 +1157,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "festus-ezeli-2015",
         name: "Festus Ezeli",
         age: 25,
-        positions: ["C"],
+        position: "C",
         rating: 52,
       },
     ],
   },
   {
     teamSeasonId: "cavaliers-2016",
-    teamId: "cavaliers",
     teamName: "Cleveland Cavaliers",
     teamSlug: "cavaliers",
     teamLogo: teamLogoPath("cavaliers"),
@@ -1188,7 +1175,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "lebron-james-2016",
         name: "LeBron James",
         age: 31,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 96,
       },
       {
@@ -1196,7 +1183,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kyrie-irving-2016",
         name: "Kyrie Irving",
         age: 23,
-        positions: ["PG"],
+        position: "PG",
         rating: 83,
       },
       {
@@ -1204,7 +1191,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kevin-love-2016",
         name: "Kevin Love",
         age: 27,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 78,
       },
       {
@@ -1212,7 +1199,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "tristan-thompson-2016",
         name: "Tristan Thompson",
         age: 24,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 66,
       },
       {
@@ -1220,7 +1207,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jr-smith-2016",
         name: "J.R. Smith",
         age: 30,
-        positions: ["SG"],
+        position: "SG",
         rating: 65,
       },
       {
@@ -1228,7 +1215,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "iman-shumpert-2016",
         name: "Iman Shumpert",
         age: 25,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 58,
       },
       {
@@ -1236,7 +1223,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "channing-frye-2016",
         name: "Channing Frye",
         age: 32,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 60,
       },
       {
@@ -1244,7 +1231,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "matthew-dellavedova-2016",
         name: "Matthew Dellavedova",
         age: 25,
-        positions: ["PG"],
+        position: "PG",
         rating: 55,
       },
       {
@@ -1252,7 +1239,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "richard-jefferson-2016",
         name: "Richard Jefferson",
         age: 35,
-        positions: ["SF"],
+        position: "SF",
         rating: 57,
       },
       {
@@ -1260,14 +1247,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "timofey-mozgov-2016",
         name: "Timofey Mozgov",
         age: 29,
-        positions: ["C"],
+        position: "C",
         rating: 52,
       },
     ],
   },
   {
     teamSeasonId: "warriors-2017",
-    teamId: "warriors",
     teamName: "Golden State Warriors",
     teamSlug: "warriors",
     teamLogo: teamLogoPath("warriors"),
@@ -1279,7 +1265,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kevin-durant-2017",
         name: "Kevin Durant",
         age: 28,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 94,
       },
       {
@@ -1287,7 +1273,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "stephen-curry-2017",
         name: "Stephen Curry",
         age: 28,
-        positions: ["PG"],
+        position: "PG",
         rating: 93,
       },
       {
@@ -1295,7 +1281,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "klay-thompson-2017",
         name: "Klay Thompson",
         age: 26,
-        positions: ["SG"],
+        position: "SG",
         rating: 81,
       },
       {
@@ -1303,7 +1289,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "draymond-green-2017",
         name: "Draymond Green",
         age: 26,
-        positions: ["PF", "C", "SF"],
+        position: "PF",
         rating: 85,
       },
       {
@@ -1311,7 +1297,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "andre-iguodala-2017",
         name: "Andre Iguodala",
         age: 33,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 68,
       },
       {
@@ -1319,7 +1305,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "zaza-pachulia-2017",
         name: "Zaza Pachulia",
         age: 32,
-        positions: ["C"],
+        position: "C",
         rating: 55,
       },
       {
@@ -1327,7 +1313,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "shaun-livingston-2017",
         name: "Shaun Livingston",
         age: 31,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 60,
       },
       {
@@ -1335,7 +1321,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "david-west-2017",
         name: "David West",
         age: 36,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 61,
       },
       {
@@ -1343,7 +1329,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "javale-mcgee-2017",
         name: "JaVale McGee",
         age: 29,
-        positions: ["C"],
+        position: "C",
         rating: 57,
       },
       {
@@ -1351,14 +1337,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ian-clark-2017",
         name: "Ian Clark",
         age: 25,
-        positions: ["SG"],
+        position: "SG",
         rating: 51,
       },
     ],
   },
   {
     teamSeasonId: "cavaliers-2018",
-    teamId: "cavaliers",
     teamName: "Cleveland Cavaliers",
     teamSlug: "cavaliers",
     teamLogo: teamLogoPath("cavaliers"),
@@ -1370,7 +1355,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "lebron-james-2018",
         name: "LeBron James",
         age: 33,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 96,
       },
       {
@@ -1378,7 +1363,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kevin-love-2018",
         name: "Kevin Love",
         age: 29,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 77,
       },
       {
@@ -1386,7 +1371,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kyle-korver-2018",
         name: "Kyle Korver",
         age: 36,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 65,
       },
       {
@@ -1394,7 +1379,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "george-hill-2018",
         name: "George Hill",
         age: 31,
-        positions: ["PG"],
+        position: "PG",
         rating: 63,
       },
       {
@@ -1402,7 +1387,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "larry-nance-jr-2018",
         name: "Larry Nance Jr.",
         age: 25,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 62,
       },
       {
@@ -1410,7 +1395,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "tristan-thompson-2018",
         name: "Tristan Thompson",
         age: 26,
-        positions: ["C", "PF"],
+        position: "C",
         rating: 60,
       },
       {
@@ -1418,7 +1403,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jordan-clarkson-2018",
         name: "Jordan Clarkson",
         age: 25,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 60,
       },
       {
@@ -1426,7 +1411,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jr-smith-2018",
         name: "J.R. Smith",
         age: 32,
-        positions: ["SG"],
+        position: "SG",
         rating: 58,
       },
       {
@@ -1434,7 +1419,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "rodney-hood-2018",
         name: "Rodney Hood",
         age: 25,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 57,
       },
       {
@@ -1442,14 +1427,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jeff-green-2018",
         name: "Jeff Green",
         age: 31,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 56,
       },
     ],
   },
   {
     teamSeasonId: "bucks-2019",
-    teamId: "bucks",
     teamName: "Milwaukee Bucks",
     teamSlug: "bucks",
     teamLogo: teamLogoPath("bucks"),
@@ -1461,7 +1445,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "giannis-antetokounmpo-2019",
         name: "Giannis Antetokounmpo",
         age: 24,
-        positions: ["PF", "SF", "C"],
+        position: "PF",
         rating: 92,
       },
       {
@@ -1469,7 +1453,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "khris-middleton-2019",
         name: "Khris Middleton",
         age: 27,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 75,
       },
       {
@@ -1477,7 +1461,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "eric-bledsoe-2019",
         name: "Eric Bledsoe",
         age: 29,
-        positions: ["PG"],
+        position: "PG",
         rating: 71,
       },
       {
@@ -1485,7 +1469,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "brook-lopez-2019",
         name: "Brook Lopez",
         age: 30,
-        positions: ["C"],
+        position: "C",
         rating: 68,
       },
       {
@@ -1493,7 +1477,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "malcolm-brogdon-2019",
         name: "Malcolm Brogdon",
         age: 26,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 66,
       },
       {
@@ -1501,7 +1485,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "nikola-mirotic-2019",
         name: "Nikola Mirotić",
         age: 27,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 60,
       },
       {
@@ -1509,7 +1493,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "george-hill-2019",
         name: "George Hill",
         age: 32,
-        positions: ["PG"],
+        position: "PG",
         rating: 58,
       },
       {
@@ -1517,7 +1501,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "ersan-ilyasova-2019",
         name: "Ersan İlyasova",
         age: 31,
-        positions: ["PF"],
+        position: "PF",
         rating: 56,
       },
       {
@@ -1525,14 +1509,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "pat-connaughton-2019",
         name: "Pat Connaughton",
         age: 26,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 54,
       },
     ],
   },
   {
     teamSeasonId: "nuggets-2020",
-    teamId: "nuggets",
     teamName: "Denver Nuggets",
     teamSlug: "nuggets",
     teamLogo: teamLogoPath("nuggets"),
@@ -1544,7 +1527,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "nikola-jokic-2020",
         name: "Nikola Jokić",
         age: 24,
-        positions: ["C"],
+        position: "C",
         rating: 90,
       },
       {
@@ -1552,7 +1535,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jamal-murray-2020",
         name: "Jamal Murray",
         age: 22,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 79,
       },
       {
@@ -1560,7 +1543,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "michael-porter-jr-2020",
         name: "Michael Porter Jr.",
         age: 21,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 67,
       },
       {
@@ -1568,7 +1551,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jerami-grant-2020",
         name: "Jerami Grant",
         age: 25,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 65,
       },
       {
@@ -1576,7 +1559,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "paul-millsap-2020",
         name: "Paul Millsap",
         age: 34,
-        positions: ["PF"],
+        position: "PF",
         rating: 64,
       },
       {
@@ -1584,7 +1567,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "gary-harris-2020",
         name: "Gary Harris",
         age: 25,
-        positions: ["SG"],
+        position: "SG",
         rating: 62,
       },
       {
@@ -1592,7 +1575,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "monte-morris-2020",
         name: "Monté Morris",
         age: 24,
-        positions: ["PG"],
+        position: "PG",
         rating: 60,
       },
       {
@@ -1600,7 +1583,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "mason-plumlee-2020",
         name: "Mason Plumlee",
         age: 29,
-        positions: ["C"],
+        position: "C",
         rating: 57,
       },
       {
@@ -1608,14 +1591,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "torrey-craig-2020",
         name: "Torrey Craig",
         age: 29,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 54,
       },
     ],
   },
   {
     teamSeasonId: "bucks-2021",
-    teamId: "bucks",
     teamName: "Milwaukee Bucks",
     teamSlug: "bucks",
     teamLogo: teamLogoPath("bucks"),
@@ -1627,7 +1609,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "giannis-antetokounmpo-2021",
         name: "Giannis Antetokounmpo",
         age: 26,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 95,
       },
       {
@@ -1635,7 +1617,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "khris-middleton-2021",
         name: "Khris Middleton",
         age: 29,
-        positions: ["SF", "SG"],
+        position: "SF",
         rating: 79,
       },
       {
@@ -1643,7 +1625,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jrue-holiday-2021",
         name: "Jrue Holiday",
         age: 30,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 78,
       },
       {
@@ -1651,7 +1633,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "brook-lopez-2021",
         name: "Brook Lopez",
         age: 33,
-        positions: ["C"],
+        position: "C",
         rating: 68,
       },
       {
@@ -1659,7 +1641,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bobby-portis-2021",
         name: "Bobby Portis",
         age: 26,
-        positions: ["PF", "C"],
+        position: "PF",
         rating: 63,
       },
       {
@@ -1667,7 +1649,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "pat-connaughton-2021",
         name: "Pat Connaughton",
         age: 28,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 58,
       },
       {
@@ -1675,7 +1657,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "pj-tucker-2021",
         name: "P.J. Tucker",
         age: 35,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 57,
       },
       {
@@ -1683,7 +1665,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "donte-divincenzo-2021",
         name: "Donte DiVincenzo",
         age: 24,
-        positions: ["SG", "PG"],
+        position: "SG",
         rating: 59,
       },
       {
@@ -1691,7 +1673,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bryn-forbes-2021",
         name: "Bryn Forbes",
         age: 27,
-        positions: ["SG"],
+        position: "SG",
         rating: 52,
       },
       {
@@ -1699,14 +1681,13 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jeff-teague-2021",
         name: "Jeff Teague",
         age: 32,
-        positions: ["PG"],
+        position: "PG",
         rating: 50,
       },
     ],
   },
   {
     teamSeasonId: "nuggets-2023",
-    teamId: "nuggets",
     teamName: "Denver Nuggets",
     teamSlug: "nuggets",
     teamLogo: teamLogoPath("nuggets"),
@@ -1718,7 +1699,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "nikola-jokic-2023",
         name: "Nikola Jokić",
         age: 28,
-        positions: ["C"],
+        position: "C",
         rating: 97,
       },
       {
@@ -1726,7 +1707,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jamal-murray-2023",
         name: "Jamal Murray",
         age: 26,
-        positions: ["PG", "SG"],
+        position: "PG",
         rating: 80,
       },
       {
@@ -1734,7 +1715,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "aaron-gordon-2023",
         name: "Aaron Gordon",
         age: 27,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 73,
       },
       {
@@ -1742,7 +1723,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "michael-porter-jr-2023",
         name: "Michael Porter Jr.",
         age: 24,
-        positions: ["SF", "PF"],
+        position: "SF",
         rating: 70,
       },
       {
@@ -1750,7 +1731,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "kentavious-caldwell-pope-2023",
         name: "Kentavious Caldwell-Pope",
         age: 30,
-        positions: ["SG"],
+        position: "SG",
         rating: 65,
       },
       {
@@ -1758,7 +1739,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "bruce-brown-2023",
         name: "Bruce Brown",
         age: 26,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 63,
       },
       {
@@ -1766,7 +1747,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "jeff-green-2023",
         name: "Jeff Green",
         age: 36,
-        positions: ["PF", "SF"],
+        position: "PF",
         rating: 55,
       },
       {
@@ -1774,7 +1755,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "christian-braun-2023",
         name: "Christian Braun",
         age: 22,
-        positions: ["SG", "SF"],
+        position: "SG",
         rating: 52,
       },
       {
@@ -1782,7 +1763,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "deandre-jordan-2023",
         name: "DeAndre Jordan",
         age: 34,
-        positions: ["C"],
+        position: "C",
         rating: 51,
       },
       {
@@ -1790,7 +1771,7 @@ export const MOCK_DRAFT_TEAMS: DraftTeam[] = [
         playerSeasonId: "reggie-jackson-2023",
         name: "Reggie Jackson",
         age: 32,
-        positions: ["PG"],
+        position: "PG",
         rating: 54,
       },
     ],

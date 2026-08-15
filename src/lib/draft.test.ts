@@ -6,7 +6,7 @@ import {
   canReroll,
   canSelectSlot,
   createDraftReducer,
-  draftedPlayerIds,
+  draftedPlayerSlugs,
   INITIAL_DRAFT_STATE,
   isDraftComplete,
   openPositions,
@@ -61,7 +61,7 @@ const completeDraft = (): DraftState => {
     ["celtics-1986", "larry-bird", "SF"],
     ["lakers-1987", "magic-johnson", "PG"],
     ["sixers-1983", "moses-malone", "C"],
-    ["rockets-1995", "robert-horry", "PF"],
+    ["rockets-1995", "carl-herrera", "PF"],
   ];
   return picks.reduce((state, [teamSeasonId, playerId, position]) => {
     const offered = offer(state, teamSeasonId);
@@ -141,7 +141,7 @@ describe("drafting a player", () => {
     );
     expect(state.members).toHaveLength(1);
     expect(state.members[0]).toMatchObject({
-      playerId: "paul-pierce",
+      playerSlug: "paul-pierce",
       position: "SF",
       seasonYear: 2008,
       teamSlug: "celtics",
@@ -150,15 +150,6 @@ describe("drafting a player", () => {
     expect(state.offeredTeam).toBeNull();
     expect(state.selectedPosition).toBeNull();
     expect(canOfferTeam(state, slots)).toBe(true);
-  });
-
-  it("records the slot drafted into, not the player's first position", () => {
-    const state = draft(
-      select(offer(INITIAL_DRAFT_STATE, "warriors-2015"), "C"),
-      "draymond-green",
-      "C"
-    );
-    expect(state.members[0].position).toBe("C");
   });
 
   it("rejects a drop on a slot other than the selected one", () => {
@@ -206,7 +197,7 @@ describe("drafting a player", () => {
       ok: false,
       reason: "ALREADY_DRAFTED",
     });
-    expect(draftedPlayerIds(first).has("lebron-james")).toBe(true);
+    expect(draftedPlayerSlugs(first).has("lebron-james")).toBe(true);
   });
 
   it("stops at exactly five members, one per slot", () => {
@@ -257,7 +248,7 @@ describe("player availability", () => {
     ).toBe("ALREADY_DRAFTED");
   });
 
-  it("marks a player whose every position is already filled", () => {
+  it("marks a player whose position is already filled", () => {
     const first = draft(
       select(offer(INITIAL_DRAFT_STATE, "celtics-2008"), "PG"),
       "rajon-rondo",
@@ -339,7 +330,7 @@ describe("random team selection", () => {
       for (const rng of [firstRng, lastRng, () => 0.5]) {
         const next = randomOtherTeam(MOCK_DRAFT_TEAMS, current, rng);
         expect(next, current.teamSeasonId).not.toBeNull();
-        expect(next?.teamId, current.teamSeasonId).not.toBe(current.teamId);
+        expect(next?.teamSlug, current.teamSeasonId).not.toBe(current.teamSlug);
       }
     }
   });
@@ -349,7 +340,7 @@ describe("random team selection", () => {
       for (const rng of [firstRng, lastRng]) {
         const next = randomOtherSeason(MOCK_DRAFT_TEAMS, current, rng);
         expect(next, current.teamSeasonId).not.toBeNull();
-        expect(next?.teamId).toBe(current.teamId);
+        expect(next?.teamSlug).toBe(current.teamSlug);
         expect(next?.seasonYear, current.teamSeasonId).not.toBe(
           current.seasonYear
         );
