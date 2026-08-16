@@ -20,8 +20,6 @@ enum Conference {
   WEST
 }
 
-// How far a team got in that season's playoffs. `CHAMPION` is a distinct value
-// rather than NBA_FINALS + a flag, so round-reached ordering is a single field.
 enum PlayoffRound {
   FIRST_ROUND
   CONFERENCE_SEMIS
@@ -30,8 +28,6 @@ enum PlayoffRound {
   CHAMPION
 }
 
-// One row per real person, keyed by slug — the identity the once-per-run
-// duplicate rule is enforced against, stable across every season and team.
 model Player {
   slug      String   @id
   fullName  String   @map("full_name")
@@ -54,41 +50,36 @@ model Team {
   @@map("teams")
 }
 
-// `seasonYear` is the season's ending year — the 2009-10 season is 2010. Only
-// playoff team-seasons are ingested, so a row here is a draftable squad pool.
 model TeamSeason {
-  id         String   @id @default(cuid())
-  teamId     String   @map("team_id")
+  id         String   @id
+  teamSlug   String   @map("team_slug")
   seasonYear Int      @map("season_year")
   rating     Float
   createdAt  DateTime @default(now()) @map("created_at")
 
-  team          Team               @relation(fields: [teamId], references: [slug], onDelete: Cascade)
+  team          Team               @relation(fields: [teamSlug], references: [slug], onDelete: Cascade)
   playerSeasons PlayerSeasonTeam[]
 
-  @@unique([teamId, seasonYear])
+  @@unique([teamSlug, seasonYear])
   @@index([seasonYear])
   @@index([rating])
   @@map("team_seasons")
 }
 
-// One player's season, not one stint: a traded player has a single row rated off
-// Basketball-Reference's combined (2TM/3TM) line, linked to every team he played
-// for that year. `position` is the single formation slot he is drafted into.
 model PlayerSeason {
-  id         String   @id @default(cuid())
-  playerId   String   @map("player_id")
+  id         String   @id
+  playerSlug String   @map("player_slug")
   seasonYear Int      @map("season_year")
   age        Int
   position   Position
   rating     Float
   createdAt  DateTime @default(now()) @map("created_at")
 
-  player Player             @relation(fields: [playerId], references: [slug], onDelete: Cascade)
+  player Player             @relation(fields: [playerSlug], references: [slug], onDelete: Cascade)
   teams  PlayerSeasonTeam[]
   data   PlayerSeasonData?
 
-  @@unique([playerId, seasonYear])
+  @@unique([playerSlug, seasonYear])
   @@index([seasonYear])
   @@map("player_seasons")
 }
@@ -107,11 +98,6 @@ model PlayerSeasonTeam {
   @@map("player_season_teams")
 }
 
-// The scraper's raw output, kept so `PlayerSeason.rating` can be re-derived when
-// the normalization function changes — no re-scrape needed. `rank` is the source
-// table's Rk column. Games and minutes are required because they are the
-// reliability filter; the advanced metrics are nullable because a zero-minute
-// row leaves them blank.
 model PlayerSeasonData {
   playerSeasonId         String   @id @map("player_season_id")
   rank                   Int
@@ -128,12 +114,9 @@ model PlayerSeasonData {
   @@map("player_season_data")
 }
 
-// One row per team-season that made the playoffs — ingestion history behind the
-// draft pool. `conference` is stored per season because realignments move
-// franchises between conferences.
 model PlayoffParticipation {
   id           String       @id @default(cuid())
-  teamId       String       @map("team_id")
+  teamSlug     String       @map("team_slug")
   seasonYear   Int          @map("season_year")
   conference   Conference
   seed         Int
@@ -142,9 +125,9 @@ model PlayoffParticipation {
   losses       Int
   createdAt    DateTime     @default(now()) @map("created_at")
 
-  team Team @relation(fields: [teamId], references: [slug], onDelete: Cascade)
+  team Team @relation(fields: [teamSlug], references: [slug], onDelete: Cascade)
 
-  @@unique([teamId, seasonYear])
+  @@unique([teamSlug, seasonYear])
   @@index([seasonYear])
   @@index([conference, seasonYear])
   @@map("playoff_participation")

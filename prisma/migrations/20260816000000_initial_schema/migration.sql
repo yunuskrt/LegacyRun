@@ -32,7 +32,7 @@ CREATE TABLE "teams" (
 -- CreateTable
 CREATE TABLE "team_seasons" (
     "id" TEXT NOT NULL,
-    "team_id" TEXT NOT NULL,
+    "team_slug" TEXT NOT NULL,
     "season_year" INTEGER NOT NULL,
     "rating" DOUBLE PRECISION NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +43,7 @@ CREATE TABLE "team_seasons" (
 -- CreateTable
 CREATE TABLE "player_seasons" (
     "id" TEXT NOT NULL,
-    "player_id" TEXT NOT NULL,
+    "player_slug" TEXT NOT NULL,
     "season_year" INTEGER NOT NULL,
     "age" INTEGER NOT NULL,
     "position" "Position" NOT NULL,
@@ -81,7 +81,7 @@ CREATE TABLE "player_season_data" (
 -- CreateTable
 CREATE TABLE "playoff_participation" (
     "id" TEXT NOT NULL,
-    "team_id" TEXT NOT NULL,
+    "team_slug" TEXT NOT NULL,
     "season_year" INTEGER NOT NULL,
     "conference" "Conference" NOT NULL,
     "seed" INTEGER NOT NULL,
@@ -100,13 +100,13 @@ CREATE INDEX "team_seasons_season_year_idx" ON "team_seasons"("season_year");
 CREATE INDEX "team_seasons_rating_idx" ON "team_seasons"("rating");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "team_seasons_team_id_season_year_key" ON "team_seasons"("team_id", "season_year");
+CREATE UNIQUE INDEX "team_seasons_team_slug_season_year_key" ON "team_seasons"("team_slug", "season_year");
 
 -- CreateIndex
 CREATE INDEX "player_seasons_season_year_idx" ON "player_seasons"("season_year");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "player_seasons_player_id_season_year_key" ON "player_seasons"("player_id", "season_year");
+CREATE UNIQUE INDEX "player_seasons_player_slug_season_year_key" ON "player_seasons"("player_slug", "season_year");
 
 -- CreateIndex
 CREATE INDEX "player_season_teams_team_season_id_idx" ON "player_season_teams"("team_season_id");
@@ -121,13 +121,13 @@ CREATE INDEX "playoff_participation_season_year_idx" ON "playoff_participation"(
 CREATE INDEX "playoff_participation_conference_season_year_idx" ON "playoff_participation"("conference", "season_year");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "playoff_participation_team_id_season_year_key" ON "playoff_participation"("team_id", "season_year");
+CREATE UNIQUE INDEX "playoff_participation_team_slug_season_year_key" ON "playoff_participation"("team_slug", "season_year");
 
 -- AddForeignKey
-ALTER TABLE "team_seasons" ADD CONSTRAINT "team_seasons_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("slug") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "team_seasons" ADD CONSTRAINT "team_seasons_team_slug_fkey" FOREIGN KEY ("team_slug") REFERENCES "teams"("slug") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "player_seasons" ADD CONSTRAINT "player_seasons_player_id_fkey" FOREIGN KEY ("player_id") REFERENCES "players"("slug") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "player_seasons" ADD CONSTRAINT "player_seasons_player_slug_fkey" FOREIGN KEY ("player_slug") REFERENCES "players"("slug") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "player_season_teams" ADD CONSTRAINT "player_season_teams_player_season_id_fkey" FOREIGN KEY ("player_season_id") REFERENCES "player_seasons"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -139,5 +139,5 @@ ALTER TABLE "player_season_teams" ADD CONSTRAINT "player_season_teams_team_seaso
 ALTER TABLE "player_season_data" ADD CONSTRAINT "player_season_data_player_season_id_fkey" FOREIGN KEY ("player_season_id") REFERENCES "player_seasons"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "playoff_participation" ADD CONSTRAINT "playoff_participation_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("slug") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "playoff_participation" ADD CONSTRAINT "playoff_participation_team_slug_fkey" FOREIGN KEY ("team_slug") REFERENCES "teams"("slug") ON DELETE CASCADE ON UPDATE CASCADE;
 
