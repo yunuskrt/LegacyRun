@@ -15,6 +15,7 @@
     "validate:raw": "python3 scripts/validate-raw-csv.py",
     "parse:raw": "python3 scripts/parse-raw-csv.py",
     "rate:players": "python3 scripts/rate-players.py",
+    "build:db-data": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/build-db-data.mts",
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

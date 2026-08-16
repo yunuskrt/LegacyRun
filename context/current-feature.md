@@ -219,3 +219,32 @@ Verified: `prisma validate`, `db:generate`, `npm test` (56), `lint`, `format:che
 Not verified: no database has run the squashed migration — `DATABASE_URL` is still the stock Prisma placeholder, and nothing consumes the Prisma client at runtime yet, so the schema half is type-checked but never executed.
 
 Still open: team-season ratings don't exist and `RATED_PLAYER_SEASONS` still has no consumer — both are Phase 10, along with the first real Neon connection. Team logo PNGs still don't exist. No touch-drag support.
+
+### Phase 10 (part 1) — Team Rating Engine & DB Data Files
+
+**Phase 10 stays 🟡** — part 2 (Neon setup + ingestion runner) is untouched. This part turns `RATED_PLAYER_SEASONS` into the seven committed table files under `src/data/db/` that the runner will load, plus the team-season rating engine Phase 8 deferred. Ships `scripts/build-db-data.mts` (`npm run build:db-data`), `src/types/db-data.ts`, and 17 Vitest tests. No database was touched.
+
+Row counts, all asserted in both the generator and the tests: `player.ts` 3,755 · `team.ts` 40 · `team_season.ts` 1,292 · `player_season.ts` 20,260 · `player_season_team.ts` 22,705 · `player_season_data.ts` 20,260 · `playoff_participation.ts` 0.
+
+Gotchas:
+
+- **The team rating needed a normalization stage the spec didn't have.** The specced flat mean of five positional bests produced a 55–87 band with *no team above 90* — averaging five numbers destroys variance, and nothing rescaled the result. The engine now runs three stages: same lineup selection → star-weighted aggregate (`0.32/0.24/0.19/0.14/0.11` by rating) → z-score over all 1,292 rows → logistic `35 + 64 / (1 + e^(−1.15z))`. Result: 36–95, median 69, 4.7% at 90+. **This is the same shape Phase 8 uses for players; the original spec simply omitted the step.**
+- **The floor is 35, not 0.** A plain 0–100 logistic rates the 7-59 Bobcats a `1`. Star weighting also reordered the top — the '92 Bulls and '13 Thunder rose past balanced-but-starless rosters like the '96 Magic.
+- **Only `team_season.ts` changed when the algorithm changed** — verified by hash. Team ratings feed no other table.
+- **`RatedPlayerSeason.Position` is typed `string` and nothing in the pipeline normalizes it.** The raw CSVs still contain a bare `F` (Adam Keefe, 1997-98 UTA) that Phase 9 hand-corrected in the *generated* file, so `npm run rate:players` reintroduces it. The generator now hard-fails on any non-enum position — verified by injecting the exact regression.
+- **Node runs `.mts` with type stripping, so `import type` is erased** — that's why the generator can import `season_players.ts` (which itself imports `@/types/rating` as a type) without alias resolution. Needs `allowImportingTsExtensions` in `tsconfig.json`, since Node requires the `.ts` extension and tsc rejects it without the flag. The npm script passes `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON`; adding `"type": "module"` to `package.json` would have been the other fix, but it risks the Next build.
+- **Row types are `Omit<PrismaModel, "createdAt">`**, derived rather than hand-written, so a schema change breaks the generator instead of silently producing unloadable data. `PlayerSeasonTeamRow` also omits `id` (it keeps `@default(cuid())`); `TeamSeason.id` and `PlayerSeason.id` have no default and must always be supplied.
+- **Team slugs are Basketball-Reference codes** (`CHI`, `UTA`) — **this diverges from Phase 4's franchise-nickname convention**, where the slug doubles as the logo filename. All 40 codes are separate rows including defunct/relocated franchises (`SEA`, `VAN`, `WSB`, `KCK`, `SDC`, `NJN`, `CHH`, `NOK`), each with its historical name. `CHH` and `CHO` are both "Charlotte Hornets", so `name` is not unique — only `slug` is.
+- **All 1,292 team-seasons are included, not just playoff teams.** The schema comment calling `team_seasons` a playoff-only draftable pool does not hold until `playoff_participation.ts` is implemented.
+- **Two rosters have no listed `SF`** (2019-20 `LAL`, 2024-25 `MEM`); the empty slot takes the highest-rated uncounted player regardless of position.
+- **The test is an independent reimplementation, not a call into the generator** — it recomputes all 1,292 ratings from `PLAYER_SEASONS` + `PLAYER_SEASON_TEAMS`. The weights and constants are deliberately duplicated so a one-sided edit fails loudly.
+- **`serializeRow` would emit a literal `undefined`** if a field were ever undefined (`JSON.stringify(undefined)` returns the value, not `"null"`). Impossible today — `RatedPlayerSeason` types every metric as non-null — and the output contains zero `null`/`undefined`. Latent only if those types loosen.
+- `src/data/db` is prettier-ignored and written one object per line, matching `season_players.ts`.
+
+Known distortion carried in, not introduced here: because Phase 9 gives each player exactly one position, a roster's third-best player contributes nothing when he shares a slot with someone better — Draymond Green's 86 is discarded from the 2017 Warriors. **This systematically understates positionally-stacked teams and will flow into Phase 15's bracket seeding.**
+
+Verified: `npm test` (77), `tsc --noEmit`, `lint`, `format:check`, `build`, `prisma validate`; both routes still prerender static. Generator output byte-identical across runs. Failure paths driven for real — phantom team-directory entry, row-count drift, and the injected `F` position — each exiting 1 with nothing written.
+
+Not verified: no ingestion has run, so nothing here has been loaded into Postgres or checked against the live schema. No rating hand-checked against Basketball-Reference. `team.ts` names and conferences are hand-authored and unreviewed; a franchise that switched conference under one code is not representable in the single `conference` field (per-season conference belongs to `PlayoffParticipation`).
+
+Still open: Phase 10 part 2 — Neon setup, `prisma migrate deploy`, and the ingestion runner. `playoff_participation.ts` is an empty array. `DATABASE_URL` is still the stock Prisma placeholder and the squashed migration remains unapplied — **the window to rewrite that migration closes the moment it is deployed.**
