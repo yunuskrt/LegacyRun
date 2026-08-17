@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { PLAYERS } from "@/data/db/player";
 import { PLAYER_SEASONS } from "@/data/db/player_season";
@@ -6,7 +8,12 @@ import { PLAYER_SEASON_TEAMS } from "@/data/db/player_season_team";
 import { PLAYOFF_PARTICIPATION } from "@/data/db/playoff_participation";
 import { TEAMS } from "@/data/db/team";
 import { TEAM_SEASONS } from "@/data/db/team_season";
-import type { Position } from "@/generated/prisma/enums";
+import type {
+  Conference,
+  Position,
+  PlayoffRound,
+} from "@/generated/prisma/enums";
+import type { PlayoffParticipationRow } from "@/types/db-data";
 
 const POSITIONS: Position[] = ["PG", "SG", "SF", "PF", "C"];
 
@@ -17,10 +24,117 @@ const RATING_FLOOR = 35;
 const RATING_CEILING = 99;
 const RATING_STEEPNESS = 1.15;
 
+const PLAYOFF_ROUNDS: PlayoffRound[] = [
+  "FIRST_ROUND",
+  "CONFERENCE_SEMIS",
+  "CONFERENCE_FINALS",
+  "NBA_FINALS",
+  "CHAMPION",
+];
+
+// 12-team brackets — the top two seeds per conference had a first-round bye.
+const BYE_SEASONS = new Set([1981, 1982, 1983]);
+
 const playerSlugs = new Set(PLAYERS.map((player) => player.slug));
 const teamSlugs = new Set(TEAMS.map((team) => team.slug));
 const teamSeasonIds = new Set(TEAM_SEASONS.map((row) => row.id));
 const playerSeasonIds = new Set(PLAYER_SEASONS.map((row) => row.id));
+
+// Independent reimplementation of the playoff fold in scripts/build-db-data.mts,
+// resolving slugs off the generated team.ts rather than the generator's private
+// directory. See context/docs/playoff-participation-derivation.md.
+const foldPlayoffCsv = (): PlayoffParticipationRow[] => {
+  const slugsByName = new Map<string, string[]>();
+  for (const team of TEAMS) {
+    const slugs = slugsByName.get(team.name);
+    if (slugs) slugs.push(team.slug);
+    else slugsByName.set(team.name, [team.slug]);
+  }
+
+  const slugOf = (name: string, seasonYear: number): string => {
+    if (name === "Charlotte Hornets") return seasonYear <= 2002 ? "CHH" : "CHO";
+    const slugs = slugsByName.get(name) ?? [];
+    expect(slugs, name).toHaveLength(1);
+    return slugs[0];
+  };
+
+  const depthOf = (series: string): number => {
+    if (series === "Finals") return 4;
+    if (series.endsWith("First Round")) return 1;
+    if (series.endsWith("Semifinals")) return 2;
+    return 3;
+  };
+
+  const csv = readFileSync(
+    path.join(process.cwd(), "src/data/raw/playoffs/playoff_teams.csv"),
+    "utf8"
+  );
+  const rows = csv
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== "")
+    .slice(1)
+    .map((line) => line.split(","));
+
+  const folded = new Map<
+    string,
+    PlayoffParticipationRow & { depth: number; champion: boolean }
+  >();
+
+  for (const cells of rows) {
+    const seasonYear = Number(cells[0]);
+    const series = cells[2];
+    const depth = depthOf(series);
+    const conference: Conference | null = series.startsWith("Eastern")
+      ? "EAST"
+      : series.startsWith("Western")
+        ? "WEST"
+        : null;
+
+    for (const [self, other] of [
+      [5, 8],
+      [8, 5],
+    ]) {
+      const match = /^(.+) \((\d+)\)$/.exec(cells[self]);
+      expect(match, cells[self]).not.toBeNull();
+      const teamSlug = slugOf(match![1], seasonYear);
+      const wins = Number(cells[self + 1]);
+      const losses = Number(cells[other + 1]);
+      const id = `${teamSlug}-${seasonYear}`;
+      const entry = folded.get(id);
+
+      if (!entry) {
+        folded.set(id, {
+          id,
+          teamSlug,
+          seasonYear,
+          conference: conference as Conference,
+          seed: Number(match![2]),
+          roundReached: "FIRST_ROUND",
+          wins,
+          losses,
+          depth,
+          champion: depth === 4 && wins > losses,
+        });
+        continue;
+      }
+      if (conference !== null) entry.conference = conference;
+      entry.depth = Math.max(entry.depth, depth);
+      entry.wins += wins;
+      entry.losses += losses;
+      entry.champion ||= depth === 4 && wins > losses;
+    }
+  }
+
+  return [...folded.values()]
+    .sort(
+      (a, b) =>
+        a.seasonYear - b.seasonYear || a.teamSlug.localeCompare(b.teamSlug)
+    )
+    .map(({ depth, champion, ...row }) => ({
+      ...row,
+      roundReached: champion ? "CHAMPION" : PLAYOFF_ROUNDS[depth - 1],
+    }));
+};
 
 describe("generated db data", () => {
   it("has the expected row count per table", () => {
@@ -30,7 +144,7 @@ describe("generated db data", () => {
     expect(PLAYER_SEASONS).toHaveLength(20260);
     expect(PLAYER_SEASON_TEAMS).toHaveLength(22705);
     expect(PLAYER_SEASON_DATA).toHaveLength(20260);
-    expect(PLAYOFF_PARTICIPATION).toHaveLength(0);
+    expect(PLAYOFF_PARTICIPATION).toHaveLength(724);
   });
 
   it("keys every table by a unique identifier", () => {
@@ -230,5 +344,90 @@ describe("player_season_data.ts", () => {
         true
       );
     }
+  });
+});
+
+describe("playoff_participation.ts", () => {
+  it("derives id from teamSlug and seasonYear", () => {
+    for (const row of PLAYOFF_PARTICIPATION)
+      expect(row.id).toBe(`${row.teamSlug}-${row.seasonYear}`);
+  });
+
+  it("resolves to a team-season that exists", () => {
+    for (const row of PLAYOFF_PARTICIPATION) {
+      expect(teamSlugs, row.id).toContain(row.teamSlug);
+      expect(teamSeasonIds, row.id).toContain(row.id);
+    }
+  });
+
+  it("stays inside the enums and the legal seed range", () => {
+    for (const row of PLAYOFF_PARTICIPATION) {
+      expect(["EAST", "WEST"], row.id).toContain(row.conference);
+      expect(PLAYOFF_ROUNDS, row.id).toContain(row.roundReached);
+      expect(row.seed, row.id).toBeGreaterThanOrEqual(1);
+      expect(row.seed, row.id).toBeLessThanOrEqual(8);
+      expect(row.wins, row.id).toBeGreaterThanOrEqual(0);
+      expect(row.losses, row.id).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("fields a full bracket every season, with 12 teams in the bye era", () => {
+    const bySeason = new Map<number, number>();
+    for (const row of PLAYOFF_PARTICIPATION)
+      bySeason.set(row.seasonYear, (bySeason.get(row.seasonYear) ?? 0) + 1);
+
+    expect(bySeason.size).toBe(46);
+    for (const [seasonYear, count] of bySeason)
+      expect(count, String(seasonYear)).toBe(
+        BYE_SEASONS.has(seasonYear) ? 12 : 16
+      );
+  });
+
+  it("crowns exactly one champion per season", () => {
+    const champions = PLAYOFF_PARTICIPATION.filter(
+      (row) => row.roundReached === "CHAMPION"
+    );
+    expect(champions).toHaveLength(46);
+    expect(new Set(champions.map((row) => row.seasonYear)).size).toBe(46);
+    for (const champion of champions)
+      expect(champion.wins, champion.id).toBeGreaterThan(champion.losses);
+  });
+
+  it("records the season's conference, not the franchise's current one", () => {
+    // NOH played the East in 2003-2004 and the West from 2005; team.ts lists WEST.
+    expect(TEAMS.find((team) => team.slug === "NOH")?.conference).toBe("WEST");
+    for (const seasonYear of [2003, 2004])
+      expect(
+        PLAYOFF_PARTICIPATION.find((row) => row.id === `NOH-${seasonYear}`)
+          ?.conference
+      ).toBe("EAST");
+  });
+
+  it("splits Charlotte's two Hornets codes by era", () => {
+    const hornets = PLAYOFF_PARTICIPATION.filter((row) =>
+      ["CHH", "CHO"].includes(row.teamSlug)
+    );
+    for (const row of hornets)
+      expect(row.teamSlug, row.id).toBe(row.seasonYear <= 2002 ? "CHH" : "CHO");
+    expect(hornets.length).toBeGreaterThan(0);
+  });
+
+  it("gives bye-era top seeds no first round to lose", () => {
+    // 1981 PHO was the 1 seed in the West and entered at the Semifinals.
+    const suns = PLAYOFF_PARTICIPATION.find((row) => row.id === "PHO-1981");
+    expect(suns).toEqual({
+      id: "PHO-1981",
+      teamSlug: "PHO",
+      seasonYear: 1981,
+      conference: "WEST",
+      seed: 1,
+      roundReached: "CONFERENCE_SEMIS",
+      wins: 3,
+      losses: 4,
+    });
+  });
+
+  it("matches an independent fold of the source CSV", () => {
+    expect(foldPlayoffCsv()).toEqual(PLAYOFF_PARTICIPATION);
   });
 });
