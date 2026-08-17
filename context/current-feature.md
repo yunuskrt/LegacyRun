@@ -274,3 +274,28 @@ Verified: `npm test` (86), `tsc --noEmit`, `lint`, `format:check`, `build`, `pri
 Hand-checked against real NBA history (the first values in this pipeline verified against the actual record rather than reproduced from a doc): '96 Bulls 15-3 CHAMPION, '17 Warriors 16-1, '16 Cavs 16-5, '20 Lakers 16-5, '24 Celtics 16-3, '04 Pistons 16-7, '06 Heat 16-7 — all correct, plus `NOH-2003` = `EAST` and the `CHH`/`CHO` split.
 
 Still open: unchanged — Phase 10 part 2 is Neon setup, `prisma migrate deploy`, and the ingestion runner. `DATABASE_URL` is still the stock placeholder and the squashed migration remains unapplied, so **the window to rewrite it is still open but closes on first deploy.**
+
+### Phase 10 (part 2) — Neon Setup & Ingestion Runner
+
+**Phase 10 complete.** The project has a real database for the first time: `20260816000000_initial_schema` is applied to a live Neon branch and all **69,036 rows** of `src/data/db/` are loaded. Ships `scripts/ingest-db-data.mts` (`npm run db:ingest`), one regenerated `team_season.ts`, and the 🔒 lock section in `CLAUDE.md`. No schema change, no new dependency, no test added.
+
+Gotchas:
+
+- **The migration-rewrite window is now closed.** Everything Phases 9 and 10 squashed is permanent history; every future schema change is a new migration file.
+- **No `DIRECT_URL` was needed — the expectation was wrong.** Neon's pooler is PgBouncer in transaction mode, which normally drops migrate's session-level advisory lock, so `prisma.config.ts` was about to be split into pooled-runtime / direct-migrate URLs. `migrate status` and `migrate deploy` both ran clean over the `-pooler` host, so the file is untouched and `DATABASE_URL` is the only connection string. **Revisit only if a future migrate hangs on the lock.**
+- **NextAuth models were deliberately skipped** — the spec asks for `Account`/`Session`/`VerificationToken`, but nothing authenticates, accounts are postponed in the MVP scope, and the package isn't installed. Three dead tables in the one unrewritable migration was the cost of guessing wrong.
+- **The runner constructs its own `PrismaClient` — the one sanctioned exception to the `@/lib/db` singleton rule.** Node strips types but doesn't resolve the `@/` alias, so a value import of the generated client can't go through the alias. Type-only imports still work (Phase 10 part 1's finding), which is why the seven data files import fine.
+- **Idempotency is delete-then-load, not upsert.** Children first, then `createMany` in 1000-row chunks in FK order. Deterministic ids everywhere except `PlayerSeasonTeam`'s cuid mean a rerun reproduces the same table contents; the cuids differ, and nothing references them.
+- **`verify()` re-reads `count()` per table and exits 1 on drift** — the runner never reports success on a partial load.
+- **The 9 stale team ratings from the previous commit were regenerated here**, by a throwaway script mirroring the generator's algorithm, because `npm run build:db-data` would have reverted the Kuzma/Wells SF fix (it lives only in the generated `player_season.ts`; `season_players.ts` still says PF/SG). **That landmine is still armed by explicit decision — the generator no longer reproduces the committed `team_season.ts`.**
+- **`LAL-2020` fell 90 → 85 and `MEM-2025` 75 → 68.** With no SF listed, the empty slot used to grab the best uncounted player; now it takes Kuzma at 55 and Wells at 56. The 2020 champions rate 85. The other seven moved ±1 only because the mean and σ shifted under them.
+- **Neon reports 27 MB, against a ~14 MB estimate of table + index data** — the difference is retained WAL history from the ingest burst, not unexpected row size.
+- `postinstall` runs `prisma generate` and is read-only, so it stays outside the lock — a fresh clone still needs it.
+
+Verified beyond the usual suite: every row of all seven tables was read back out of Neon and hashed against the source arrays (identically sorted, `createdAt` and the generated cuid excluded) — **all seven match exactly**. Relational integrity: 0 player-seasons missing a `data` row, 0 without a team link, 0 null metrics, and traded players correctly carry 2+ links (Abdelnaby 1993 on both `BOS-1993` and `MIL-1993`). Hand-checked against real NBA history: 1996 CHI 15-3, 2017 GSW 16-1, 2020 LAL 16-5, 2024 BOS 16-3, all 1 seeds; Jordan 1995-96 reads PER 29.4 / WS/48 .317, matching Basketball-Reference. The `@/lib/db` runtime path was driven for real through a throwaway Vitest file (deleted — the standards forbid DB access in tests), returning `CHI-1996` with its team joined and LeBron's 2016 season with both relations.
+
+Also verified: `npm test` (86 — the 85/86 that was red at HEAD is green), `tsc --noEmit`, `lint`, `format:check`, `build` (all four routes still prerender static), `prisma validate`, `migrate status` in sync. `db:ingest` run three times with identical counts.
+
+Not verified: **whether `DATABASE_URL` points at a `development` branch or Neon's default production branch** — the connection string doesn't say, and no second branch was confirmed to exist. The spec's dev/production split is therefore unproven. Nothing has been promoted to a production branch; that is deliberate and manual.
+
+Still open: nothing in `src/` reads from the database — the draft still runs on the Phase 4 fixtures, and the typed query API is Phase 11. The team-rating engine's positional distortion is unchanged and now baked into stored data (top five are `PHI-1983` 95, `UTA-1997` 94, `ORL-1995` 94, `HOU-2018` 93, `OKC-2013` 93 — the '96 Bulls sit at 91), which flows into Phase 15's seeding. Team logo PNGs still don't exist; the slugs are Basketball-Reference codes, not the nicknames the logo convention expects. No touch-drag support.
