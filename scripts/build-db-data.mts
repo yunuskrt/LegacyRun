@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { RATED_PLAYER_SEASONS } from "../src/data/rating/season_players.ts";
 import type { RatedPlayerSeason } from "../src/types/rating.ts";
@@ -13,6 +13,14 @@ import type {
 } from "../src/types/db-data.ts";
 
 const OUT_DIR = path.join(process.cwd(), "src", "data", "db");
+const PLAYOFF_CSV = path.join(
+  process.cwd(),
+  "src",
+  "data",
+  "raw",
+  "playoffs",
+  "playoff_teams.csv"
+);
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
 type KnownPosition = (typeof POSITIONS)[number];
@@ -72,7 +80,7 @@ const EXPECTED_ROW_COUNTS = {
   "player_season.ts": 20_260,
   "player_season_team.ts": 22_705,
   "player_season_data.ts": 20_260,
-  "playoff_participation.ts": 0,
+  "playoff_participation.ts": 724,
 } as const;
 
 const errors: string[] = [];
@@ -293,6 +301,191 @@ const buildPlayerSeasonData = (): PlayerSeasonDataRow[] =>
     winSharesPer48: row.WinSharesPer48Min,
   }));
 
+type Conference = PlayoffParticipationRow["conference"];
+type PlayoffRound = PlayoffParticipationRow["roundReached"];
+
+const CONFERENCES: ReadonlySet<string> = new Set<Conference>(["EAST", "WEST"]);
+
+// Deepest series a team appears in becomes its roundReached. A Finals winner is
+// promoted to CHAMPION — the only value that depends on the outcome rather than
+// the appearance.
+const ROUND_BY_DEPTH: Record<number, PlayoffRound> = {
+  1: "FIRST_ROUND",
+  2: "CONFERENCE_SEMIS",
+  3: "CONFERENCE_FINALS",
+  4: "NBA_FINALS",
+};
+
+const PLAYOFF_ROUNDS: ReadonlySet<string> = new Set<PlayoffRound>([
+  ...Object.values(ROUND_BY_DEPTH),
+  "CHAMPION",
+]);
+
+// 1981-1983 ran 12-team brackets — the top two seeds in each conference had a
+// first-round bye, so those seasons have four fewer participants.
+const BYE_SEASON_TEAM_COUNT = 12;
+const BYE_SEASONS: ReadonlySet<number> = new Set([1981, 1982, 1983]);
+const STANDARD_SEASON_TEAM_COUNT = 16;
+
+// The one franchise name in TEAM_DIRECTORY that maps to two codes. Playoff
+// appearances run 1993-2002 under CHH and 2015-2016 under CHO, so the split is
+// unambiguous.
+const CHARLOTTE_HORNETS = "Charlotte Hornets";
+const CHARLOTTE_HORNETS_SPLIT_YEAR = 2002;
+
+const TEAM_SLUGS_BY_NAME = (() => {
+  const byName = new Map<string, string[]>();
+  for (const [slug, { name }] of Object.entries(TEAM_DIRECTORY)) {
+    const slugs = byName.get(name);
+    if (slugs) slugs.push(slug);
+    else byName.set(name, [slug]);
+  }
+  return byName;
+})();
+
+const playoffTeamSlugOf = (name: string, seasonYear: number): string | null => {
+  const slugs = TEAM_SLUGS_BY_NAME.get(name) ?? [];
+  if (slugs.length === 1) return slugs[0];
+  if (name === CHARLOTTE_HORNETS)
+    return seasonYear <= CHARLOTTE_HORNETS_SPLIT_YEAR ? "CHH" : "CHO";
+  fail(
+    slugs.length === 0
+      ? `playoff team "${name}" (${seasonYear}) has no TEAM_DIRECTORY entry`
+      : `playoff team "${name}" (${seasonYear}) is ambiguous across ${slugs.join(", ")}`
+  );
+  return null;
+};
+
+const seriesDepthOf = (series: string): number | null => {
+  if (series === "Finals") return 4;
+  if (series.endsWith("First Round")) return 1;
+  if (series.endsWith("Semifinals")) return 2;
+  if (series.endsWith("Conf Finals")) return 3;
+  return null;
+};
+
+// Finals rows carry no conference, but both finalists also appear in their own
+// Conference Finals row, so every team still resolves.
+const seriesConferenceOf = (series: string): Conference | null => {
+  if (series.startsWith("Eastern")) return "EAST";
+  if (series.startsWith("Western")) return "WEST";
+  return null;
+};
+
+type PlayoffAppearance = {
+  teamSlug: string;
+  seasonYear: number;
+  conference: Conference | null;
+  seed: number;
+  depth: number;
+  wins: number;
+  losses: number;
+  wonFinals: boolean;
+};
+
+const PLAYOFF_CSV_COLUMNS = 13;
+const TEAM_NAME_PATTERN = /^(.+) \((\d+)\)$/;
+
+// Series-level source (one row per series, both teams on it) folded into
+// team-level rows. Full derivation: context/docs/playoff-participation-derivation.md
+const buildPlayoffParticipation = async (): Promise<
+  PlayoffParticipationRow[]
+> => {
+  const csv = await readFile(PLAYOFF_CSV, "utf8");
+  const lines = csv
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+  const appearances = new Map<string, PlayoffAppearance>();
+
+  for (const [index, line] of lines.slice(1).entries()) {
+    const cells = line.split(",");
+    if (cells.length !== PLAYOFF_CSV_COLUMNS) {
+      fail(
+        `playoff CSV line ${index + 2} has ${cells.length} columns, expected ${PLAYOFF_CSV_COLUMNS}`
+      );
+      continue;
+    }
+
+    const seasonYear = Number(cells[0]);
+    const series = cells[2];
+    const depth = seriesDepthOf(series);
+    if (!Number.isInteger(seasonYear) || depth === null) {
+      fail(`playoff CSV line ${index + 2} has an unrecognized year or series`);
+      continue;
+    }
+    const conference = seriesConferenceOf(series);
+
+    for (const [self, opponent] of [
+      [5, 8],
+      [8, 5],
+    ]) {
+      const match = TEAM_NAME_PATTERN.exec(cells[self]);
+      if (!match) {
+        fail(
+          `playoff CSV line ${index + 2} has an unparseable team cell "${cells[self]}"`
+        );
+        continue;
+      }
+      const teamSlug = playoffTeamSlugOf(match[1], seasonYear);
+      if (teamSlug === null) continue;
+
+      const seed = Number(match[2]);
+      const wins = Number(cells[self + 1]);
+      const losses = Number(cells[opponent + 1]);
+      const key = teamSeasonIdOf(teamSlug, seasonYear);
+      const existing = appearances.get(key);
+
+      if (!existing) {
+        appearances.set(key, {
+          teamSlug,
+          seasonYear,
+          conference,
+          seed,
+          depth,
+          wins,
+          losses,
+          wonFinals: depth === 4 && wins > losses,
+        });
+        continue;
+      }
+      if (existing.seed !== seed)
+        fail(
+          `${key} is seeded ${existing.seed} in one series and ${seed} in another`
+        );
+      if (conference !== null) existing.conference = conference;
+      existing.depth = Math.max(existing.depth, depth);
+      existing.wins += wins;
+      existing.losses += losses;
+      if (depth === 4 && wins > losses) existing.wonFinals = true;
+    }
+  }
+
+  return [...appearances.values()]
+    .sort(
+      (a, b) =>
+        a.seasonYear - b.seasonYear || a.teamSlug.localeCompare(b.teamSlug)
+    )
+    .map((appearance) => {
+      if (appearance.conference === null)
+        fail(
+          `${teamSeasonIdOf(appearance.teamSlug, appearance.seasonYear)} appears only in Finals rows, so its conference is unresolvable`
+        );
+      return {
+        id: teamSeasonIdOf(appearance.teamSlug, appearance.seasonYear),
+        teamSlug: appearance.teamSlug,
+        seasonYear: appearance.seasonYear,
+        conference: appearance.conference as Conference,
+        seed: appearance.seed,
+        roundReached: appearance.wonFinals
+          ? "CHAMPION"
+          : ROUND_BY_DEPTH[appearance.depth],
+        wins: appearance.wins,
+        losses: appearance.losses,
+      };
+    });
+};
+
 const validate = (data: {
   players: PlayerRow[];
   teams: TeamRow[];
@@ -300,6 +493,7 @@ const validate = (data: {
   playerSeasons: PlayerSeasonRow[];
   playerSeasonTeams: PlayerSeasonTeamRow[];
   playerSeasonData: PlayerSeasonDataRow[];
+  playoffParticipation: PlayoffParticipationRow[];
 }) => {
   const {
     players,
@@ -308,6 +502,7 @@ const validate = (data: {
     playerSeasons,
     playerSeasonTeams,
     playerSeasonData,
+    playoffParticipation,
   } = data;
 
   const playerSlugs = new Set(players.map((player) => player.slug));
@@ -395,6 +590,55 @@ const validate = (data: {
   }
   if (dataIds.size !== playerSeasonIds.size)
     fail("player_season_data row count does not match player_season");
+
+  const participationIds = new Set(playoffParticipation.map((row) => row.id));
+  if (participationIds.size !== playoffParticipation.length)
+    fail("playoff_participation.ts has duplicate ids");
+  const championsBySeason = new Map<number, number>();
+  const teamsBySeason = new Map<number, number>();
+  for (const row of playoffParticipation) {
+    if (row.id !== teamSeasonIdOf(row.teamSlug, row.seasonYear))
+      fail(
+        `participation ${row.id} does not match its teamSlug and seasonYear`
+      );
+    if (!teamSlugs.has(row.teamSlug))
+      fail(`participation ${row.id} references unknown team ${row.teamSlug}`);
+    if (!teamSeasonIds.has(row.id))
+      fail(`participation ${row.id} has no matching team-season`);
+    if (!CONFERENCES.has(row.conference))
+      fail(`participation ${row.id} has an invalid conference`);
+    if (!PLAYOFF_ROUNDS.has(row.roundReached))
+      fail(`participation ${row.id} has an invalid roundReached`);
+    if (!Number.isInteger(row.seed) || row.seed < 1 || row.seed > 8)
+      fail(`participation ${row.id} has seed ${row.seed}, outside 1-8`);
+    if (!Number.isInteger(row.wins) || row.wins < 0)
+      fail(`participation ${row.id} has an invalid wins value`);
+    if (!Number.isInteger(row.losses) || row.losses < 0)
+      fail(`participation ${row.id} has an invalid losses value`);
+
+    teamsBySeason.set(
+      row.seasonYear,
+      (teamsBySeason.get(row.seasonYear) ?? 0) + 1
+    );
+    if (row.roundReached === "CHAMPION")
+      championsBySeason.set(
+        row.seasonYear,
+        (championsBySeason.get(row.seasonYear) ?? 0) + 1
+      );
+  }
+  for (const [seasonYear, count] of teamsBySeason) {
+    const expected = BYE_SEASONS.has(seasonYear)
+      ? BYE_SEASON_TEAM_COUNT
+      : STANDARD_SEASON_TEAM_COUNT;
+    if (count !== expected)
+      fail(
+        `season ${seasonYear} has ${count} playoff teams, expected ${expected}`
+      );
+    if (championsBySeason.get(seasonYear) !== 1)
+      fail(
+        `season ${seasonYear} has ${championsBySeason.get(seasonYear) ?? 0} champions, expected exactly 1`
+      );
+  }
 };
 
 const serializeRow = (row: object): string => {
@@ -431,7 +675,7 @@ const main = async () => {
   const playerSeasons = buildPlayerSeasons();
   const playerSeasonTeams = buildPlayerSeasonTeams(rosters);
   const playerSeasonData = buildPlayerSeasonData();
-  const playoffParticipation: PlayoffParticipationRow[] = [];
+  const playoffParticipation = await buildPlayoffParticipation();
 
   validate({
     players,
@@ -440,6 +684,7 @@ const main = async () => {
     playerSeasons,
     playerSeasonTeams,
     playerSeasonData,
+    playoffParticipation,
   });
 
   const files = [

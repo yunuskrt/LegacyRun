@@ -114,8 +114,10 @@ model PlayerSeasonData {
   @@map("player_season_data")
 }
 
+// `id` is deterministic — `{teamSlug}-{seasonYear}` — and has no default, so
+// every create must supply it rather than falling back to a random cuid.
 model PlayoffParticipation {
-  id           String       @id @default(cuid())
+  id           String       @id
   teamSlug     String       @map("team_slug")
   seasonYear   Int          @map("season_year")
   conference   Conference

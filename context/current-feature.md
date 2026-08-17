@@ -248,3 +248,29 @@ Verified: `npm test` (77), `tsc --noEmit`, `lint`, `format:check`, `build`, `pri
 Not verified: no ingestion has run, so nothing here has been loaded into Postgres or checked against the live schema. No rating hand-checked against Basketball-Reference. `team.ts` names and conferences are hand-authored and unreviewed; a franchise that switched conference under one code is not representable in the single `conference` field (per-season conference belongs to `PlayoffParticipation`).
 
 Still open: Phase 10 part 2 — Neon setup, `prisma migrate deploy`, and the ingestion runner. `playoff_participation.ts` is an empty array. `DATABASE_URL` is still the stock Prisma placeholder and the squashed migration remains unapplied — **the window to rewrite that migration closes the moment it is deployed.**
+
+### Phase 10 (part 1b) — Playoff Participation Data
+
+**Phase 10 stays 🟡** — part 2 (Neon setup + ingestion runner) is still untouched. Filled the last empty table file: `playoff_participation.ts` goes from `[]` to **724 rows** covering all 46 postseasons, 1981–2026. Ships the new raw export `src/data/raw/playoffs/playoff_teams.csv`, `buildPlayoffParticipation()` in `scripts/build-db-data.mts`, the method spec at `context/docs/playoff-participation-derivation.md`, and 9 more Vitest tests (77 → 86). Still no database.
+
+The source is **series-level** (678 rows, one per playoff series, both teams on the same row); the table is **team-level**. The whole job is folding one into the other. 43 seasons × 16 + 1981/82/83 × 12 = 724.
+
+Gotchas:
+
+- **`Finals` rows carry no conference.** The `Series` column reads `Eastern Conf …` / `Western Conf …` everywhere except the Finals, which is bare `Finals`. Both finalists also appear in their own Conference Finals row, so conference always resolves — take it from any non-`Finals` series and ignore Finals rows for that field. The generator fails loudly if a team ever ends up unresolved.
+- **`Team.conference` is not a valid fallback, and this table is why.** `NOH` played the **East** in 2003 and 2004 and the West from 2005; `team.ts` lists it `WEST`. Per-season conference genuinely differs from the franchise's single directory value — this is the realignment case Phase 10 part 1 flagged as unrepresentable.
+- **1981–1983 were 12-team brackets** — the top two seeds in each conference had a first-round bye, so they have no `FIRST_ROUND` series at all. Taking the *maximum* round depth handles it for free; anything that assumes every team played a first round breaks. `PHO-1981` is the pinned test case: 1 seed, entered at the Semifinals.
+- **`CHAMPION` is the only outcome-dependent round value.** Every other round is claimed by appearance alone — losing the Conference Finals still reads `CONFERENCE_FINALS`. Only winning the `Finals` series promotes past `NBA_FINALS`.
+- **No second name→slug table.** `teamSlug` reverse-maps `TEAM_DIRECTORY` on `name`, so the two can't drift. Names are unique there with exactly one collision: **`Charlotte Hornets` is both `CHH` and `CHO`**, split on `seasonYear <= 2002`. Playoff appearances are 1993–2002 and 2015–2016, so the boundary is unambiguous. Unknown or ambiguous names are hard failures.
+- **`PlayoffParticipation.id` lost its `@default(cuid())`** and is now `{teamSlug}-{seasonYear}`, matching `TeamSeason` and `PlayerSeason`. **The regenerated migration is byte-identical** — third confirmation that `@default(cuid())` is client-side only and never emitted a Postgres `DEFAULT`.
+- **The seed is the post-play-in bracket seed**, not a standings rank. From 2021 on, seeds 7 and 8 are decided by the play-in tournament, so a 7 seed didn't necessarily have the 7th-best record. Seed is also fully independent of `TeamSeason.rating` — `PHI-2026` entered 7th and reached the Conference Finals while the 1-seed `DET-2026` went out in the semis.
+- **The test re-parses the CSV and folds it independently**, resolving slugs off the generated `team.ts` rather than the generator's private `TEAM_DIRECTORY`, then asserts deep equality. Same pattern as the team-rating test — a one-sided edit fails loudly.
+- The CSV has no quoted fields and no trailing newline; blank-line filtering plus a 13-column assertion covers it without a CSV library.
+
+**Scope deliberately not widened:** `team_season.ts` still holds all 1,292 team-seasons, playoff or not. Membership in this table is now the "made the playoffs" signal (there is no `MISSED` round by design), but the join that filters the draft pool belongs to Phase 11's data access layer.
+
+Verified: `npm test` (86), `tsc --noEmit`, `lint`, `format:check`, `build`, `prisma validate`; both routes still prerender static. Generator output byte-identical across runs, and only `playoff_participation.ts` changed among the seven files. Failure paths driven for real — a corrupted franchise name and a deleted Finals series — each exiting 1 with nothing written, the CSV hash-verified restored afterward.
+
+Hand-checked against real NBA history (the first values in this pipeline verified against the actual record rather than reproduced from a doc): '96 Bulls 15-3 CHAMPION, '17 Warriors 16-1, '16 Cavs 16-5, '20 Lakers 16-5, '24 Celtics 16-3, '04 Pistons 16-7, '06 Heat 16-7 — all correct, plus `NOH-2003` = `EAST` and the `CHH`/`CHO` split.
+
+Still open: unchanged — Phase 10 part 2 is Neon setup, `prisma migrate deploy`, and the ingestion runner. `DATABASE_URL` is still the stock placeholder and the squashed migration remains unapplied, so **the window to rewrite it is still open but closes on first deploy.**
