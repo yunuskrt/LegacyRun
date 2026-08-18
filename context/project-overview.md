@@ -45,6 +45,7 @@ Home → Start Game → Select Formation → Draft → Team Complete
 
 - **The draft pool is every real team+season, playoff or not** — all 1,292 of them. A player may be drafted off a team that missed the playoffs that year; rosters come from regular-season membership (`player_season_teams`).
 - **`playoff_participation` is for the tournament only** — it defines the bracket's real historical opponents, their conference, seed, and how far they went. It never filters what the draft offers.
+- **Every team-season covers all five positions** — all 1,292 list at least one PG, SG, SF, PF, and C, so any offered roster can fill any open slot. A data change that breaks this makes some draft rounds unplayable.
 - Every player-season and team-season carries a reproducible strength rating (not an arbitrary number) — see Data Architecture below.
 
 ### D) Tournament

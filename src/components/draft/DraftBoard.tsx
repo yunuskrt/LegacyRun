@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Dices } from "lucide-react";
+import { Dices, Loader2 } from "lucide-react";
 import RerollPool from "@/components/draft/RerollPool";
 import RosterPlayerCard from "@/components/draft/RosterPlayerCard";
 import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
@@ -22,12 +22,15 @@ type Props = {
   rerollsLeft: number;
   totalRerolls: number;
   isComplete: boolean;
+  isFetchingTeam: boolean;
   canGetTeam: boolean;
   canReroll: boolean;
   onGetRandomTeam: () => void;
   onReroll: (kind: RerollKind) => void;
   onDraftPlayer: (player: DraftablePlayer, position: Position) => void;
 };
+
+const STAGGER_CAP = 9;
 
 const PLACEHOLDER_ICON =
   "border-border text-muted-foreground mx-auto flex size-16 items-center justify-center rounded-xl border border-dashed";
@@ -40,13 +43,20 @@ const DraftBoard = ({
   rerollsLeft,
   totalRerolls,
   isComplete,
+  isFetchingTeam,
   canGetTeam,
   canReroll,
   onGetRandomTeam,
   onReroll,
   onDraftPlayer,
 }: Props) => {
-  const stateKey = isComplete ? "complete" : team ? team.teamSeasonId : "idle";
+  const stateKey = isComplete
+    ? "complete"
+    : isFetchingTeam && !team
+      ? "loading"
+      : team
+        ? team.teamSeasonId
+        : "idle";
 
   return (
     <Card className="shadow-panel gap-0 p-5">
@@ -117,13 +127,18 @@ const DraftBoard = ({
                 )}
               </p>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid max-h-[26rem] grid-cols-2 gap-3 overflow-y-auto pr-1">
                 {team.players.map((player, index) => (
                   <motion.div
                     key={player.playerSeasonId}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.22, delay: index * 0.03 }}
+                    transition={{
+                      duration: 0.22,
+                      // Real rosters run past 20 players; an uncapped stagger
+                      // would take most of a second to finish revealing.
+                      delay: Math.min(index, STAGGER_CAP) * 0.03,
+                    }}
                   >
                     <RosterPlayerCard
                       player={player}
@@ -139,6 +154,16 @@ const DraftBoard = ({
                   </motion.div>
                 ))}
               </div>
+            </div>
+          ) : isFetchingTeam ? (
+            <div className="py-6 text-center">
+              <span className={PLACEHOLDER_ICON}>
+                <Loader2 className="size-7 animate-spin" />
+              </span>
+              <p className="mt-5 text-lg font-bold">Drawing a team</p>
+              <p className="text-muted-foreground mt-1">
+                Pulling a season from 1,292 historical rosters.
+              </p>
             </div>
           ) : (
             <div className="py-6 text-center">
