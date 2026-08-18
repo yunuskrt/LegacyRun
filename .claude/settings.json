@@ -13,7 +13,8 @@
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_console_messages",
       "Bash(npx prettier *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "mcp__playwright__browser_snapshot"
     ]
   }
 }

@@ -11,8 +11,6 @@ export const TOTAL_REROLLS = 3;
 // type, which Safari drops on drop.
 export const PLAYER_DRAG_TYPE = "text/plain";
 
-export type Rng = () => number;
-
 // The three reroll buttons draw on one shared pool — hard constraint 7.
 export type RerollKind = "ANOTHER_TEAM" | "ANOTHER_SEASON" | "SKIP_ROUND";
 
@@ -142,40 +140,6 @@ export const toSquadMember = (
   position,
   rating: player.rating,
 });
-
-const pickRandom = <T>(items: readonly T[], rng: Rng): T | null =>
-  items.length === 0
-    ? null
-    : items[Math.floor(rng() * items.length) % items.length];
-
-export const randomTeamSeason = (
-  teams: readonly DraftTeam[],
-  rng: Rng = Math.random
-): DraftTeam | null => pickRandom(teams, rng);
-
-export const randomOtherTeam = (
-  teams: readonly DraftTeam[],
-  current: DraftTeam,
-  rng: Rng = Math.random
-): DraftTeam | null =>
-  pickRandom(
-    teams.filter((team) => team.teamSlug !== current.teamSlug),
-    rng
-  );
-
-export const randomOtherSeason = (
-  teams: readonly DraftTeam[],
-  current: DraftTeam,
-  rng: Rng = Math.random
-): DraftTeam | null =>
-  pickRandom(
-    teams.filter(
-      (team) =>
-        team.teamSlug === current.teamSlug &&
-        team.teamSeasonId !== current.teamSeasonId
-    ),
-    rng
-  );
 
 export const createDraftReducer =
   (slots: readonly Position[]) =>

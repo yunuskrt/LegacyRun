@@ -158,9 +158,17 @@ seasons it appears under that code; the per-season conference belongs to
    logistic (rather than a linear stretch) squashes the tails smoothly, so no
    clipping is needed and outliers cannot exceed the ceiling.
 
-Two team-seasons in the current data trigger the Stage 1 fallback — 2019-20 `LAL`
-and 2024-25 `MEM`, both with no listed `SF`. Every roster has at least 11 players,
-so five distinct players are always available.
+Two team-seasons triggered the Stage 1 fallback when this was written — 2019-20
+`LAL` and 2024-25 `MEM`, both with no listed `SF`. **Both were corrected in
+`c9f18ce`** (Kuzma → `SF`, Wells → `SF`), so the fallback is now unreachable:
+every one of the 1,292 team-seasons lists all five positions. Every roster also
+has at least 11 players, so five distinct players are always available.
+
+That correction lives only in the generated `src/data/db/player_season.ts` —
+`src/data/rating/season_players.ts` still lists the two at `PF`/`SG`. It is not
+at risk: `npm run build:db-data` is a locked regeneration script under
+`CLAUDE.md`, and `src/data/` is frozen. If the lock is ever lifted, fix
+`season_players.ts` before regenerating.
 
 Resulting distribution: range 36–95, median 69, with 61 team-seasons (4.7%) at 90+
 and 20 (1.5%) below 40. The three constants are the tuning dials — `1.15` controls

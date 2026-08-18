@@ -17,19 +17,21 @@ import {
   isDraftComplete,
   openPositions,
   playerAvailability,
-  randomOtherSeason,
-  randomOtherTeam,
-  randomTeamSeason,
   TOTAL_REROLLS,
   validateDraft,
   type DraftRejection,
   type RerollKind,
 } from "@/lib/draft";
+import {
+  DRAFT_FETCH_MESSAGE,
+  requestDraftTeam,
+  rerollRequest,
+  type DraftRequest,
+} from "@/lib/draft-client";
 import { cn } from "@/lib/utils";
 import type { DraftablePlayer, DraftTeam, Position } from "@/types/game";
 
 type Props = {
-  teams: DraftTeam[];
   slots: readonly Position[];
 };
 
@@ -41,41 +43,54 @@ const REJECTION_MESSAGE: Record<DraftRejection, string> = {
   ALREADY_DRAFTED: "That player is already on your roster.",
 };
 
-const DraftExperience = ({ teams, slots }: Props) => {
+const DraftExperience = ({ slots }: Props) => {
   const router = useRouter();
   const reducer = React.useMemo(() => createDraftReducer(slots), [slots]);
   const [state, dispatch] = React.useReducer(reducer, INITIAL_DRAFT_STATE);
+  const [isFetchingTeam, setIsFetchingTeam] = React.useState(false);
+  const inFlight = React.useRef<AbortController | null>(null);
 
   const open = openPositions(state, slots);
   const isComplete = isDraftComplete(state, slots);
 
-  const handleGetRandomTeam = () => {
-    const team = randomTeamSeason(teams);
-    if (!team) return;
-    dispatch({ type: "OFFER_TEAM", team });
-  };
+  React.useEffect(() => () => inFlight.current?.abort(), []);
 
-  const handleReroll = (kind: RerollKind) => {
-    const current = state.offeredTeam;
-    if (!current || !canReroll(state, slots)) return;
+  // Aborting the previous request is the race guard: a superseded response
+  // rejects before it can overwrite the newer team.
+  const loadTeam = async (request: DraftRequest): Promise<DraftTeam | null> => {
+    inFlight.current?.abort();
+    const controller = new AbortController();
+    inFlight.current = controller;
+    setIsFetchingTeam(true);
 
-    const team =
-      kind === "ANOTHER_TEAM"
-        ? randomOtherTeam(teams, current)
-        : kind === "ANOTHER_SEASON"
-          ? randomOtherSeason(teams, current)
-          : randomTeamSeason(teams);
+    const result = await requestDraftTeam(request, fetch, controller.signal);
 
-    if (!team) {
-      toast.error(
-        kind === "ANOTHER_SEASON"
-          ? "No other season available for this franchise."
-          : "No other team available."
-      );
-      return;
+    if (controller.signal.aborted) return null;
+    inFlight.current = null;
+    setIsFetchingTeam(false);
+
+    if (!result.ok) {
+      toast.error(DRAFT_FETCH_MESSAGE[result.error]);
+      return null;
     }
 
-    dispatch({ type: "REROLL", team });
+    return result.team;
+  };
+
+  const handleGetRandomTeam = async () => {
+    if (!canOfferTeam(state, slots) || isFetchingTeam) return;
+
+    const team = await loadTeam({ mode: "random" });
+    if (team) dispatch({ type: "OFFER_TEAM", team });
+  };
+
+  const handleReroll = async (kind: RerollKind) => {
+    const current = state.offeredTeam;
+    if (!current || !canReroll(state, slots) || isFetchingTeam) return;
+
+    // The reroll is only spent once a team actually arrives.
+    const team = await loadTeam(rerollRequest(kind, current.teamSeasonId));
+    if (team) dispatch({ type: "REROLL", team });
   };
 
   const handleDraftPlayer = (player: DraftablePlayer, position: Position) => {
@@ -129,8 +144,9 @@ const DraftExperience = ({ teams, slots }: Props) => {
             rerollsLeft={state.rerollsLeft}
             totalRerolls={TOTAL_REROLLS}
             isComplete={isComplete}
-            canGetTeam={canOfferTeam(state, slots)}
-            canReroll={canReroll(state, slots)}
+            isFetchingTeam={isFetchingTeam}
+            canGetTeam={canOfferTeam(state, slots) && !isFetchingTeam}
+            canReroll={canReroll(state, slots) && !isFetchingTeam}
             onGetRandomTeam={handleGetRandomTeam}
             onReroll={handleReroll}
             onDraftPlayer={handleDraftPlayer}

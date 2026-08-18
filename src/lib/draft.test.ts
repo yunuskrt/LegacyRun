@@ -11,9 +11,6 @@ import {
   isDraftComplete,
   openPositions,
   playerAvailability,
-  randomOtherSeason,
-  randomOtherTeam,
-  randomTeamSeason,
   TOTAL_REROLLS,
   validateDraft,
   type DraftState,
@@ -308,48 +305,5 @@ describe("reroll pool", () => {
     expect(spent.rerollsLeft).toBe(0);
     expect(canReroll(spent, slots)).toBe(false);
     expect(spend(spent, "heat-2013")).toBe(spent);
-  });
-});
-
-describe("random team selection", () => {
-  const firstRng = () => 0;
-  const lastRng = () => 0.999;
-
-  it("picks from the whole pool", () => {
-    expect(randomTeamSeason(MOCK_DRAFT_TEAMS, firstRng)).toBe(
-      MOCK_DRAFT_TEAMS[0]
-    );
-    expect(randomTeamSeason(MOCK_DRAFT_TEAMS, lastRng)).toBe(
-      MOCK_DRAFT_TEAMS[MOCK_DRAFT_TEAMS.length - 1]
-    );
-    expect(randomTeamSeason([], firstRng)).toBeNull();
-  });
-
-  it("another team never returns the same franchise", () => {
-    for (const current of MOCK_DRAFT_TEAMS) {
-      for (const rng of [firstRng, lastRng, () => 0.5]) {
-        const next = randomOtherTeam(MOCK_DRAFT_TEAMS, current, rng);
-        expect(next, current.teamSeasonId).not.toBeNull();
-        expect(next?.teamSlug, current.teamSeasonId).not.toBe(current.teamSlug);
-      }
-    }
-  });
-
-  it("another season keeps the franchise and changes the year", () => {
-    for (const current of MOCK_DRAFT_TEAMS) {
-      for (const rng of [firstRng, lastRng]) {
-        const next = randomOtherSeason(MOCK_DRAFT_TEAMS, current, rng);
-        expect(next, current.teamSeasonId).not.toBeNull();
-        expect(next?.teamSlug).toBe(current.teamSlug);
-        expect(next?.seasonYear, current.teamSeasonId).not.toBe(
-          current.seasonYear
-        );
-      }
-    }
-  });
-
-  it("reports when a franchise has no other season", () => {
-    const only = MOCK_DRAFT_TEAMS[0];
-    expect(randomOtherSeason([only], only, firstRng)).toBeNull();
   });
 });
