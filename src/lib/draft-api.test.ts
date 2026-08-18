@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  anotherSeasonFilter,
+  anotherTeamFilter,
   drawIndex,
   fetchDraftTeam,
   parseDraftTeamQuery,
@@ -121,6 +123,119 @@ describe("parseTeamSeasonId", () => {
 
   it("rejects an over-long segment", () => {
     expect(parseTeamSeasonId("x".repeat(65))).toBeNull();
+  });
+});
+
+describe("anotherTeamFilter", () => {
+  const anchor = { teamSlug: "CHI", seasonYear: 1996 };
+
+  it("changes the franchise but pins the anchor's season", () => {
+    expect(anotherTeamFilter(anchor)).toEqual({
+      teamSlug: { not: "CHI" },
+      seasonYear: 1996,
+    });
+  });
+
+  it("never lets the anchor's own franchise back in", () => {
+    expect(anotherTeamFilter(anchor).teamSlug).toEqual({ not: "CHI" });
+  });
+});
+
+describe("anotherSeasonFilter", () => {
+  const anchor = { teamSlug: "CHI", seasonYear: 1996 };
+
+  it("keeps the franchise and excludes the anchor itself", () => {
+    expect(anotherSeasonFilter(anchor, "CHI-1996")).toEqual({
+      teamSlug: "CHI",
+      id: { not: "CHI-1996" },
+    });
+  });
+
+  it("leaves the season open — that is the axis it varies", () => {
+    expect(anotherSeasonFilter(anchor, "CHI-1996")).not.toHaveProperty(
+      "seasonYear"
+    );
+  });
+});
+
+describe("the two anchored rerolls", () => {
+  const anchor = { teamSlug: "CHI", seasonYear: 1996 };
+
+  it("vary opposite axes, so neither can return the anchor", () => {
+    const byTeam = anotherTeamFilter(anchor);
+    const bySeason = anotherSeasonFilter(anchor, "CHI-1996");
+
+    // Another Team pins the season and frees the franchise.
+    expect(byTeam.seasonYear).toBe(1996);
+    expect(byTeam).not.toHaveProperty("id");
+
+    // Another Season pins the franchise and frees the season.
+    expect(bySeason.teamSlug).toBe("CHI");
+    expect(bySeason).not.toHaveProperty("seasonYear");
+  });
+});
+
+// Applying the filters to a pool pins what they select, not how they are
+// spelled — the shape assertions above would survive a wrong axis being
+// pinned under a different representation.
+describe("what the anchored filters select", () => {
+  type Row = { id: string; teamSlug: string; seasonYear: number };
+
+  const pool: Row[] = ["CHI", "LAL", "BOS"].flatMap((teamSlug) =>
+    [1996, 1997].map((seasonYear) => ({
+      id: `${teamSlug}-${seasonYear}`,
+      teamSlug,
+      seasonYear,
+    }))
+  );
+
+  const anchor = { teamSlug: "CHI", seasonYear: 1996 };
+
+  const select = (filter: {
+    id?: { not: string };
+    teamSlug?: string | { not: string };
+    seasonYear?: number;
+  }) =>
+    pool
+      .filter((row) => {
+        if (filter.id && row.id === filter.id.not) return false;
+        if (typeof filter.teamSlug === "string") {
+          if (row.teamSlug !== filter.teamSlug) return false;
+        } else if (filter.teamSlug && row.teamSlug === filter.teamSlug.not) {
+          return false;
+        }
+        if (filter.seasonYear !== undefined) {
+          return row.seasonYear === filter.seasonYear;
+        }
+        return true;
+      })
+      .map((row) => row.id);
+
+  it("Another Team yields every other franchise in the anchor's season only", () => {
+    expect(select(anotherTeamFilter(anchor)).sort()).toEqual([
+      "BOS-1996",
+      "LAL-1996",
+    ]);
+  });
+
+  it("Another Season yields every other season of the anchor's franchise", () => {
+    expect(select(anotherSeasonFilter(anchor, "CHI-1996")).sort()).toEqual([
+      "CHI-1997",
+    ]);
+  });
+
+  it("neither can ever select the anchor itself", () => {
+    expect(select(anotherTeamFilter(anchor))).not.toContain("CHI-1996");
+    expect(select(anotherSeasonFilter(anchor, "CHI-1996"))).not.toContain(
+      "CHI-1996"
+    );
+  });
+
+  it("the two selections never overlap", () => {
+    const byTeam = new Set(select(anotherTeamFilter(anchor)));
+    const bySeason = select(anotherSeasonFilter(anchor, "CHI-1996"));
+
+    expect(bySeason.filter((id) => byTeam.has(id))).toEqual([]);
   });
 });
 

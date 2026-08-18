@@ -20,8 +20,10 @@ Scope is **draft selection only** — the four buttons already on `/play/draft`:
 | # | Method | Endpoint | Triggered by | Purpose |
 | --- | --- | --- | --- | --- |
 | 1 | `GET` | `/api/draft/team` | `Get Random Team`, `Skip Round` | Draw one random team-season from all 1,292 with its full roster. Opens each draft round. |
-| 2 | `GET` | `/api/draft/team?mode=another-team&exclude=<teamSeasonId>` | `Another Team` | Draw a random team-season from a **different franchise** than the one on the board. |
+| 2 | `GET` | `/api/draft/team?mode=another-team&exclude=<teamSeasonId>` | `Another Team` | Draw a **different franchise from the same season** as the one on the board. |
 | 3 | `GET` | `/api/draft/team?mode=another-season&exclude=<teamSeasonId>` | `Another Season` | Draw a **different season of the same franchise**. |
+
+Endpoints 2 and 3 are symmetric: each holds one half of the anchor's identity and varies the other. `Another Team` pins the season, `Another Season` pins the franchise.
 | 4 | `GET` | `/api/draft/team/[teamSeasonId]` | Not a button — refresh recovery, deep links, tests | Deterministic fetch of one specific team-season. |
 
 `Skip Round` is endpoint 1 with no extra parameter — it differs from `Get Random Team` only in costing a reroll, which is client state.
@@ -59,11 +61,13 @@ All four resolve the same two-step shape: **pick one `team_seasons` row, then hy
 | Endpoint | Table | Filter | Selection |
 | --- | --- | --- | --- |
 | 1 · random | `team_seasons` | `id NOT IN excludeSeasons` (when given) | Count matching rows, pick an offset with `Math.random()`, re-query with `skip`/`take: 1`. Cheaper than `ORDER BY random()` over 1,292 rows and keeps randomness in one place. |
-| 2 · another-team | `team_seasons` | `teamSlug != <slug of exclude>` | Same count-then-offset draw. Derive the slug from the `exclude` id's own row, not by string-splitting the id. |
+| 2 · another-team | `team_seasons` | `teamSlug != <slug of exclude>` AND `seasonYear = <year of exclude>` | Same count-then-offset draw, over the ~23–30 other franchises in that one season. |
 | 3 · another-season | `team_seasons` | `teamSlug = <slug of exclude>` AND `id != exclude` | Same draw over a much smaller set (a franchise has ≤ 46 rows). Empty result → `404 NO_ELIGIBLE_TEAM`. |
 | 4 · by id | `team_seasons` | `id = <teamSeasonId>` | `findUnique`. Null → `404`. |
 
-Endpoints 2 and 3 need the anchor's `teamSlug` first, so they are two round trips: read `exclude`'s row, then draw. If `exclude` doesn't resolve, that's a `404`.
+Endpoints 2 and 3 read the anchor's `teamSlug` and `seasonYear` from its own row first, so they are two round trips. Deriving them from the row rather than string-splitting `{teamSlug}-{seasonYear}` keeps the id format a convention rather than an API contract. If `exclude` doesn't resolve, that's a `404`.
+
+The two filters live in `src/lib/draft-api.ts` as `anotherTeamFilter` / `anotherSeasonFilter` — pure, unit-tested, and deliberately not inlined into the Prisma call, because the rule they encode is the one most likely to be misremembered.
 
 ### Step 2 — hydrating the roster
 
@@ -121,7 +125,7 @@ curl -s "http://localhost:3000/api/draft/team?mode=random" | jq
 # 1 · Skip Round with already-offered ids excluded
 curl -s "http://localhost:3000/api/draft/team?excludeSeasons=CHI-1996,LAL-2020" | jq
 
-# 2 · Another Team — anchored on the 1996 Bulls, must return a different franchise
+# 2 · Another Team — anchored on the 1996 Bulls: different franchise, still 1996
 curl -s "http://localhost:3000/api/draft/team?mode=another-team&exclude=CHI-1996" | jq
 
 # 3 · Another Season — must return a different Bulls season
@@ -134,11 +138,12 @@ curl -s "http://localhost:3000/api/draft/team/CHI-1996" | jq
 ### What to check
 
 ```bash
-# #2 never returns the anchor's franchise — run 20 times, CHI must not appear
+# #2 never returns the anchor's franchise and never leaves its season —
+# run 20 times: CHI must not appear, and every seasonYear must read 1996
 for i in $(seq 20); do
   curl -s "http://localhost:3000/api/draft/team?mode=another-team&exclude=CHI-1996" \
-    | jq -r '.data.teamSlug'
-done | sort -u
+    | jq -r '"\(.data.teamSlug) \(.data.seasonYear)"'
+done | sort | uniq -c
 
 # #3 always returns CHI, never CHI-1996 itself
 for i in $(seq 20); do

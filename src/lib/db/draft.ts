@@ -1,6 +1,15 @@
 import { prisma } from "@/lib/db";
-import { drawIndex, toDraftTeam } from "@/lib/draft-api";
-import type { Rng, TeamSeasonRosterRow } from "@/lib/draft-api";
+import {
+  anotherSeasonFilter,
+  anotherTeamFilter,
+  drawIndex,
+  toDraftTeam,
+} from "@/lib/draft-api";
+import type {
+  Rng,
+  TeamSeasonAnchor,
+  TeamSeasonRosterRow,
+} from "@/lib/draft-api";
 import type { Prisma } from "@/generated/prisma/client";
 import type { DraftTeam } from "@/types/game";
 
@@ -51,14 +60,13 @@ const drawTeamSeason = async (
   return row ?? null;
 };
 
-const teamSlugOf = async (teamSeasonId: string): Promise<string | null> => {
-  const anchor = await prisma.teamSeason.findUnique({
+const anchorOf = async (
+  teamSeasonId: string
+): Promise<TeamSeasonAnchor | null> =>
+  await prisma.teamSeason.findUnique({
     where: { id: teamSeasonId },
-    select: { teamSlug: true },
+    select: { teamSlug: true, seasonYear: true },
   });
-
-  return anchor?.teamSlug ?? null;
-};
 
 export const getRandomTeamSeason = async (
   excludeSeasons: readonly string[] = [],
@@ -76,13 +84,13 @@ export const getRandomOtherTeam = async (
   excludeTeamSeasonId: string,
   rng: Rng = Math.random
 ): Promise<DraftTeam | null> => {
-  const teamSlug = await teamSlugOf(excludeTeamSeasonId);
+  const anchor = await anchorOf(excludeTeamSeasonId);
 
-  if (!teamSlug) {
+  if (!anchor) {
     return null;
   }
 
-  const row = await drawTeamSeason({ teamSlug: { not: teamSlug } }, rng);
+  const row = await drawTeamSeason(anotherTeamFilter(anchor), rng);
 
   return row ? toDraftTeam(row) : null;
 };
@@ -91,14 +99,14 @@ export const getRandomOtherSeason = async (
   excludeTeamSeasonId: string,
   rng: Rng = Math.random
 ): Promise<DraftTeam | null> => {
-  const teamSlug = await teamSlugOf(excludeTeamSeasonId);
+  const anchor = await anchorOf(excludeTeamSeasonId);
 
-  if (!teamSlug) {
+  if (!anchor) {
     return null;
   }
 
   const row = await drawTeamSeason(
-    { teamSlug, id: { not: excludeTeamSeasonId } },
+    anotherSeasonFilter(anchor, excludeTeamSeasonId),
     rng
   );
 
