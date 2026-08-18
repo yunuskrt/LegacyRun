@@ -1,6 +1,6 @@
-import type { Position } from "@/generated/prisma/client";
+import type { Conference, Position } from "@/generated/prisma/client";
 
-export type { Position };
+export type { Conference, Position };
 
 export type FormationId = "TRADITIONAL";
 
@@ -44,4 +44,11 @@ export type Squad = {
   formation: FormationId;
   rating?: number;
   players: SquadMember[];
+};
+
+// The confirmed squad plus the conference it will play. Runtime state only —
+// nothing about a run is persisted.
+export type Run = {
+  squad: Squad;
+  conference: Conference;
 };

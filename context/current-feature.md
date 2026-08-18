@@ -376,3 +376,33 @@ Gotchas:
 Verified: `npm test` (142), `tsc --noEmit`, `lint`, `format:check`, `build` — routes unchanged. Against live Neon: 20 draws anchored on `CHI-1996` gave 16 franchises, **every one in 1996**, zero CHI; 15 draws on `LAL-2020` gave 13 franchises, **every one in 2020**, zero LAL; `Another Season` unchanged at 14 distinct CHI seasons, never `CHI-1996`; error paths still `400` on a missing anchor / unknown mode / inapplicable parameter and `404` on an unresolvable anchor. Browser-driven with zero console errors: MEM '20 → **DEN '20** (season held, franchise changed) → **DEN '23** (franchise held, season changed).
 
 Also in this commit: Phase 13 ticked complete in `context/todo.md` (12/27).
+
+### Phase 12 — Squad Confirmation & Run Handoff
+
+**Phase 12 complete.** The draft no longer ends at a dead end. `Start Tournament` opens a confirmation dialog — review the five drafted players, optionally name the squad, pick a conference (required) — and confirming carries the run to `/play/tournament`, which prints it as plain text. Ships `src/lib/run.ts`, `src/components/play/RunProvider.tsx`, `src/app/play/layout.tsx`, `src/components/draft/SquadConfirmDialog.tsx`, the shadcn `dialog` + `input` primitives, and 14 Vitest tests (142 → 156). No schema change, no migration, no new endpoint, no database read.
+
+**This phase is three old todo lines merged into one** — the former Phase 12 (game state), Phase 14 (team review) and Phase 18 (conference select). Bracket generation stayed out; it is the new Phase 14. Everything from the old Phase 19 up was renumbered down by one, so the list now runs 1–25 with no gaps.
+
+Gotchas:
+
+- **The old Phase 12's "duplicate & reroll guards" were already done in Phase 6** and were not touched. Only the *state handoff* half of that line was outstanding.
+- **`buildRun` takes `slots` as a second argument**, against the spec's `buildRun(members, name, conference)`. Slot ordering (PG→C) needs the formation, and doing it in the dialog would put untested logic in a component. `orderMembersBySlots` is pure and pinned; members whose position isn't a slot go to the tail rather than being dropped.
+- **The handoff is a React context, and `src/app/play/layout.tsx` had to be created for it** — `/play/draft` and `/play/tournament` shared no layout before. The layout stays a server component rendering the client `RunProvider`, so **`/play/draft` and `/play/tournament` both still prerender static** even though the page is now a client component.
+- **Context is in-memory, so the run does not survive a reload of `/play/tournament`** — the no-run fallback ("No squad in play" + a link back) is the expected behaviour this phase, not a bug. `sessionStorage` was the alternative and was explicitly rejected by decision.
+- **Navigating draft → tournament unmounts `DraftExperience`, so browser Back lands on an empty draft board.** Same root cause: only the confirmed run lives in the provider, the reducer state doesn't. A second, more reachable path to losing a run than the reload case, and it is still open.
+- **The dialog's confirm button needed explicit muted styling when disabled.** shadcn's default primary variant renders gold-tinted at reduced opacity, against the mockup's grey — caught in the browser, not in review.
+- **Only the roster scrolls, not the dialog.** The first cut let the whole `DialogContent` scroll, which at 1280×600 put `Cancel` and `Start Tournament` below the fold with nothing indicating they existed (703px of content in a 552px box). Now the header, name input, conference row and footer are `shrink-0` and the `<ul>` absorbs the squeeze.
+- **The roster's 96px floor is height-gated: `[@media(min-height:40rem)]:min-h-24`.** At a flat `min-h-24` a 320×568 device still clipped the hint text; the floor now only applies where there is room for it, and below that the list shrinks so the controls always win. At 1280×400 the roster collapses to a 4px scroll strip — deliberate, and only reachable on a landscape phone.
+- **A test can assert the code back to itself.** The name-cap tests built their expectations from `MAX_SQUAD_NAME_LENGTH`, so moving the constant 40 → 60 left all 13 green. Added one test spelling the literal out; the same mutation now turns it red. Same failure mode the "Another Team" fix hit with its shape assertions.
+- **`npx shadcn add dialog` prompts to overwrite `button.tsx`** and aborts the whole add if the prompt isn't answered — answer `n`, then `prettier --write` the generated files as usual.
+- `Squad.rating` stays `undefined` — rating a *drafted* squad is a decision for the phase that seeds the bracket.
+
+Verified: `npm test` (156), `tsc --noEmit`, `lint`, `format:check`, `build` — all pages still prerender static, both API routes still dynamic. Browser-driven against live Neon with **zero console errors or warnings**: full 5/5 lineup drafted twice; confirm disabled with no conference picked; Escape and Cancel both dismiss without navigating, leaving the board at 5/5 and the typed name intact on reopen; `"  Dynasty Five  "` arrives trimmed; no name renders `(unnamed)`; EAST and WEST both carry across; reloading `/play/tournament` shows the fallback. Every control checked for clipping at **1440×1000, 1280×600, 1280×500, 1280×400, 390×844, 360×640 and 320×568** — all visible at every size. Mutation-checked: dropping `.trim()` turns 5 red, neutering `orderMembersBySlots` turns 3 red, moving the cap turns 1 red.
+
+Not verified: the `useRun()`-outside-provider throw is unreachable through the UI and has no test — components and providers aren't tested per the standards.
+
+Found but not fixed, pre-existing: **at 320px wide the draft page itself overflows horizontally** (scrollWidth 351 vs 320), identical with the dialog open and closed. The board was styled against ≥390px in Phase 13.
+
+Still open: run state is not persisted (reload or Back loses it); no touch-drag support; `/play/tournament` is text only until the new Phase 14 puts a bracket behind it. The team-rating positional distortion is unchanged and still flows into that seeding.
+
+Also in this commit: the three merged todo lines collapsed into one and phases renumbered in `context/todo.md`, with Phase 12 ticked complete (13/25). The two dialog mockups moved to `context/screenshots/squad/`.
