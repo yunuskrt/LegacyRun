@@ -299,3 +299,34 @@ Also verified: `npm test` (86 — the 85/86 that was red at HEAD is green), `tsc
 Not verified: **whether `DATABASE_URL` points at a `development` branch or Neon's default production branch** — the connection string doesn't say, and no second branch was confirmed to exist. The spec's dev/production split is therefore unproven. Nothing has been promoted to a production branch; that is deliberate and manual.
 
 Still open: nothing in `src/` reads from the database — the draft still runs on the Phase 4 fixtures, and the typed query API is Phase 11. The team-rating engine's positional distortion is unchanged and now baked into stored data (top five are `PHI-1983` 95, `UTA-1997` 94, `ORL-1995` 94, `HOU-2018` 93, `OKC-2013` 93 — the '96 Bulls sit at 91), which flows into Phase 15's seeding. Team logo PNGs still don't exist; the slugs are Basketball-Reference codes, not the nicknames the logo convention expects. No touch-drag support.
+
+### Phase 11 — Data Access Layer
+
+**Phase 11 complete.** The first code in `src/` that reads from Neon. Four `GET` route handlers over a typed query API serve the draft board, all returning the existing `DraftTeam` type so Phase 13 can re-point the UI without reshaping it. Ships `src/lib/draft-api.ts`, `src/lib/db/draft.ts`, `src/lib/api-response.ts`, `src/types/api.ts`, two `route.ts` files, and 33 Vitest tests (86 → 119). No schema change, no migration, no new dependency, no database write.
+
+| Endpoint | Triggered by |
+| --- | --- |
+| `GET /api/draft/team` | `Get Random Team`, `Skip Round` |
+| `GET /api/draft/team?mode=another-team&exclude=<id>` | `Another Team` |
+| `GET /api/draft/team?mode=another-season&exclude=<id>` | `Another Season` |
+| `GET /api/draft/team/[teamSeasonId]` | refresh recovery, deep links, tests |
+
+Gotchas:
+
+- **The draft pool is all 1,292 team-seasons, playoff or not** — a player may be drafted off a team that missed the playoffs. `playoff_participation` is not read at all; it is bracket-only. `project-overview.md` §C said the opposite (a Phase 1 assumption that never got revisited) and was corrected in this phase.
+- **`@/lib/db` builds the `PrismaClient` at module scope and throws without `DATABASE_URL`, which vitest never loads.** Anything a test imports must not reach it — that is why parsing and the row → `DraftTeam` mapper live in the pure `src/lib/draft-api.ts` and not alongside the queries, diverging from the spec's file layout. **Any future testable logic in a `src/lib/db/*` module has the same constraint.**
+- **The `mode` dispatch and the random offset were lifted out of `route.ts` for the same reason.** `fetchDraftTeam(query, fetchers)` takes injectable fetchers and `drawIndex(total, rng)` takes an injectable `Rng` — the same shape Phase 6 used to keep `Math.random` out of the reducer. `route.ts` now holds no logic at all.
+- **A parameter that doesn't apply to the given `mode` is a `400`, not an ignored no-op** — `exclude` on `random`, `excludeSeasons` on the anchored modes. Caught by curl mid-implementation: `?exclude=CHI-1996` was returning a random team while silently dropping the filter, which reads as a working filter to the caller.
+- **Random selection is count-then-offset** (`count`, pick a skip, `findMany({ skip, take: 1, orderBy: { id: "asc" } })`), not `ORDER BY random()`. The `orderBy` is load-bearing — without it `skip` addresses an undefined row order. `drawIndex` takes `% total` so an `rng()` of exactly 1 wraps to 0 instead of indexing past the end.
+- **Endpoints 2 and 3 resolve the anchor's `teamSlug` from its own row — two round trips — rather than string-splitting `{teamSlug}-{seasonYear}`.** The id format is a convention, and parsing it would couple the API to it.
+- **`NO_ELIGIBLE_TEAM` covers two causes on those endpoints** (anchor doesn't resolve / filter matched nothing). Both are 404 by spec; split them if the UI ever needs to tell them apart.
+- **The "franchise with no other season" branch is unreachable against real data** — the smallest franchise, `NOK`, has 2 team-seasons. It is covered by unit test only, never by curl.
+- **`player_season_data` is not joined and no gameplay query ever joins it** — it is an audit table for recomputing ratings. The draft card reads only `player_seasons.rating`.
+- Rosters are ordered `rating DESC` in the query via `orderBy: { playerSeason: { rating: "desc" } }` on the join table, so the board order is the query's job, not the component's.
+- Endpoints 1–3 send `Cache-Control: no-store` (they are random by definition); endpoint 4 sends `max-age=31536000` on success only — the data is frozen history, but a 404 must not be cached.
+
+Verified: `npm test` (119), `tsc --noEmit`, `lint`, `format:check`, `build` — both API routes render dynamic, all four pages still prerender static. Driven against live Neon on a real dev server: `CHI-1996` returns Jordan 98 / Pippen 92 / Kukoč 90, rating-sorted; 20 `another-team` draws off `CHI-1996` gave 16 distinct franchises and zero CHI; 20 `another-season` draws gave 18 distinct CHI seasons and never `CHI-1996`; 30 random draws spread 1984–2025; `excludeSeasons` held over 15 draws; `VAN-1997` (14-68, missed the playoffs) is draftable at rating 40, proving the pool is not playoff-filtered. All error paths driven for real: `400` on a missing anchor, an unknown `mode`, a blank anchor, and an inapplicable parameter; `404` on an unknown id and an unresolvable anchor.
+
+Not verified: **no Vitest coverage of the four query functions in `src/lib/db/draft.ts`** — they are Prisma calls end to end (the `select` shape, the nested `orderBy`, the count-then-offset draw, the null paths). Testing them needs either a live database, which `coding-standards.md` forbids, or a Prisma mock that would only assert the mock matches the query. They are covered by the curl suite instead. Nothing renders this data yet — no browser check beyond the API.
+
+Still open: **nothing consumes these endpoints** — `/play/draft` still runs on the Phase 4 fixtures, and `src/lib/draft.ts`'s three fixture selectors stay until Phase 13 removes their last caller. Two things Phase 13 will hit immediately: real slugs are Basketball-Reference codes (`CHI`), not the nicknames the `/logos/<slug>.png` convention expects, so every card falls back to initials; and real rosters run 17–23 players where the fixtures carried 9–11, which the `DraftBoard` list was styled against. Reroll counting, duplicate blocking, and position matching remain client-side and stateless on the server.

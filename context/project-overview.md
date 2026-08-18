@@ -6,7 +6,7 @@
 
 ## 📌 Core Idea
 
-A browser-based NBA draft & playoff simulation game. The player drafts a **5-player team** from real historical NBA playoff rosters (**1980–2026**), then takes that team through a playoff bracket against real historical teams.
+A browser-based NBA draft & playoff simulation game. The player drafts a **5-player team** from real historical NBA rosters (**1980–2026**, any team+season, playoff or not), then takes that team through a playoff bracket against real historical playoff teams.
 
 Feel: NBA fantasy draft + roguelike decisions + team-building strategy + historical simulation.
 
@@ -43,7 +43,8 @@ Home → Start Game → Select Formation → Draft → Team Complete
 
 ### C) Historical Data Pool
 
-- Only real playoff team+season combinations exist in the pool — a team that missed the playoffs that year is never offered.
+- **The draft pool is every real team+season, playoff or not** — all 1,292 of them. A player may be drafted off a team that missed the playoffs that year; rosters come from regular-season membership (`player_season_teams`).
+- **`playoff_participation` is for the tournament only** — it defines the bracket's real historical opponents, their conference, seed, and how far they went. It never filters what the draft offers.
 - Every player-season and team-season carries a reproducible strength rating (not an arbitrary number) — see Data Architecture below.
 
 ### D) Tournament
@@ -118,7 +119,7 @@ Two routes, not five+: keeps the live simulation and bracket experience continuo
 
 ## 🎯 MVP Scope
 
-- **Data:** historical playoff teams/rosters/positions, player- and team-season ratings (1980–2026)
+- **Data:** historical teams/rosters/positions (all team-seasons), player- and team-season ratings, and playoff participation for the bracket (1980–2026)
 - **Game:** formation select, draft w/ 3 rerolls, duplicate-player prevention, team completion, conference select, tournament, match simulation, manual/automatic modes, 3 speeds, live bracket, win/loss result
 - **UI:** Home, Draft, Team, Bracket, Simulation, Results
 - **Postponed:** AI commentary, advanced animation, accounts, leaderboards, multiplayer, deep statistics
