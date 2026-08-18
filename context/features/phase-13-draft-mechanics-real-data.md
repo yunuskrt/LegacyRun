@@ -28,8 +28,8 @@ Scope is the draft round loop only. No schema change, no migration, no new endpo
 | --- | --- |
 | `Get Random Team` | `GET /api/draft/team` |
 | `Skip Round` | `GET /api/draft/team` |
-| `Another Team` | `GET /api/draft/team?mode=another-team&exclude=<current id>` |
-| `Another Season` | `GET /api/draft/team?mode=another-season&exclude=<current id>` |
+| `Another Team` | `GET /api/draft/team?mode=another-team&exclude=<current id>` — different franchise, same season |
+| `Another Season` | `GET /api/draft/team?mode=another-season&exclude=<current id>` — same franchise, different season |
 
 `RerollKind` already distinguishes the three reroll buttons, so `handleReroll` only swaps its three `random*` calls for three request builders.
 

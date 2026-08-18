@@ -13,7 +13,7 @@ Quick-reference list of what's being built, in build order. For the detailed, pa
 - [x] **Phase 9 — Type Alignment**: reshape the schema and runtime types around what the scraper actually yields — `slug` as the key for `players`/`teams`, a single `Position` per player-season, `overallRating` → `rating`, unused columns dropped, `updatedAt` gone, with fixtures and draft UI updated to match. Full spec: `context/features/phase-09-type-alignement.md`.
 - [x] **Phase 10 — Team Rating Aggregation & Ingestion Runner**: Neon Setup, .ts files formed for db tables, load validated, rated data into Neon. Full spec: `context/features/phase-10-team-rating-data-ingestion-01.md`.
 - [x] **Phase 11 — Data Access Layer**: typed query API for draft pool, rosters, eligibility, ratings.
-- [ ] **Phase 13 — Draft Mechanics (Real Data)**: swap the Phase 6 mock fixtures for the Phase 11 query API — real random playoff team+season presentation, player selection, position matching.
+- [x] **Phase 13 — Draft Mechanics (Real Data)**: swap the Phase 6 mock fixtures for the Phase 11 query API — real random playoff team+season presentation, player selection, position matching.
 - [ ] **Phase 12 — Game State Management System**: draft/tournament runtime state, duplicate & reroll guards.
 - [ ] **Phase 14 — Team Review & Completion**: review filled roster, confirm team.
 - [ ] **Phase 15 — Bracket Generation**: seeded, rating-based bracket with increasing round difficulty.

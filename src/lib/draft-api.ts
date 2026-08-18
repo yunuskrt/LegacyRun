@@ -108,6 +108,23 @@ export const parseTeamSeasonId = (value: string): string | null => {
   return parsed.success ? parsed.data : null;
 };
 
+export type TeamSeasonAnchor = { teamSlug: string; seasonYear: number };
+
+// The two anchored rerolls are symmetric: Another Team holds the season and
+// changes the franchise, Another Season holds the franchise and changes the year.
+export const anotherTeamFilter = (anchor: TeamSeasonAnchor) => ({
+  teamSlug: { not: anchor.teamSlug },
+  seasonYear: anchor.seasonYear,
+});
+
+export const anotherSeasonFilter = (
+  anchor: TeamSeasonAnchor,
+  anchorId: string
+) => ({
+  teamSlug: anchor.teamSlug,
+  id: { not: anchorId },
+});
+
 export type DraftTeamFetchers = {
   random: (excludeSeasons: readonly string[]) => Promise<DraftTeam | null>;
   anotherTeam: (excludeTeamSeasonId: string) => Promise<DraftTeam | null>;

@@ -356,3 +356,23 @@ Verified: `npm test` (133), `tsc --noEmit`, `lint`, `format:check`, `build` — 
 Not verified: **the cross-season duplicate block was never exercised in the browser** — the offered team is server-random and can't be targeted from the UI, so the same player can't be forced onto a second board. It is covered by unit test, and this phase changed neither `validateDraft` nor `playerAvailability`, but it is a real gap against the spec's verification list. Also unverified: no Vitest coverage of the four Prisma query functions in `src/lib/db/draft.ts` (unchanged from Phase 11 — testing them needs a live database, which `coding-standards.md` forbids).
 
 Still open: no touch-drag support (unchanged since Phase 6). `Start Tournament` still routes to the `/play/tournament` placeholder until Phase 18. The team-rating positional distortion is unchanged and still flows into Phase 15's seeding. There is no refresh recovery — a page reload drops the run, and endpoint 4 (`GET /api/draft/team/[teamSeasonId]`) still has no caller; persisting run state is Phase 12.
+
+### Fix — Another Team stays in the same season
+
+**A behaviour correction to Phase 11's endpoint 2, not a bug in Phase 13.** `Another Team` drew a different franchise from *any* season; it must draw a different franchise from the **same season** as the team on the board. The two anchored rerolls are now symmetric — `Another Team` pins the season and varies the franchise, `Another Season` pins the franchise and varies the season. Ships 9 Vitest tests (133 → 142). No client change, no schema change, no migration, no data write.
+
+**The endpoint contract changed, not its signature.** `GET /api/draft/team?mode=another-team&exclude=<id>` takes the same parameters and returns the same shape; only the filter behind it moved. `draftTeamUrl` and `rerollRequest` were already correct and were not touched.
+
+Gotchas:
+
+- **The filters were lifted out of the Prisma call into `anotherTeamFilter` / `anotherSeasonFilter` in `src/lib/draft-api.ts`.** Editing the inline `where` clause would have been a one-line fix, but this is precisely the rule that was misremembered once, and inline it cannot be tested — `src/lib/db/*` can never be imported by a test (Phase 11's `PrismaClient`-at-module-scope constraint). The pure module is the only place a rule like this can be pinned.
+- **`teamSlugOf` became `anchorOf`, returning `{ teamSlug, seasonYear }`.** Still one `findUnique`, still no string-splitting of `{teamSlug}-{seasonYear}` — the id format stays a convention rather than an API contract.
+- **Shape assertions were not enough.** The first 5 tests asserted what the filter object *looks like*; 4 more were added that apply both filters to a 3-franchise × 2-season pool and assert the ids selected, plus the invariants that neither filter can return the anchor and that the two selections never overlap. These pin behaviour rather than representation.
+- **Mutation-checked.** Reverting `anotherTeamFilter` to the old version turns 3 tests red, including the new behaviour test — the suite catches the regression rather than asserting the code back to itself.
+- **`Another Team` now draws from ~23–30 rows instead of ~1,270**, so repeats within a run are far more likely than before. With only 3 rerolls this is not a practical problem, but it is a real narrowing of the pool and the reason `excludeSeasons` might eventually earn its place after all.
+- **`NO_ELIGIBLE_TEAM` stays unreachable here** — every season has 20+ franchises, so the filter always matches. Unchanged from before.
+- **Phase 11 and Phase 13 History entries still describe the old behaviour and were deliberately not rewritten.** They record what was true when written; editing them would erase that the contract ever changed. This entry is the correction.
+
+Verified: `npm test` (142), `tsc --noEmit`, `lint`, `format:check`, `build` — routes unchanged. Against live Neon: 20 draws anchored on `CHI-1996` gave 16 franchises, **every one in 1996**, zero CHI; 15 draws on `LAL-2020` gave 13 franchises, **every one in 2020**, zero LAL; `Another Season` unchanged at 14 distinct CHI seasons, never `CHI-1996`; error paths still `400` on a missing anchor / unknown mode / inapplicable parameter and `404` on an unresolvable anchor. Browser-driven with zero console errors: MEM '20 → **DEN '20** (season held, franchise changed) → **DEN '23** (franchise held, season changed).
+
+Also in this commit: Phase 13 ticked complete in `context/todo.md` (12/27).
