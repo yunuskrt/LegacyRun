@@ -8,6 +8,8 @@ import DraftBoard from "@/components/draft/DraftBoard";
 import DraftCourt from "@/components/draft/DraftCourt";
 import DraftSectionHeading from "@/components/draft/DraftSectionHeading";
 import DraftTopBar from "@/components/draft/DraftTopBar";
+import SquadConfirmDialog from "@/components/draft/SquadConfirmDialog";
+import { useRun } from "@/components/play/RunProvider";
 import { Button } from "@/components/ui/button";
 import {
   canOfferTeam,
@@ -28,8 +30,14 @@ import {
   rerollRequest,
   type DraftRequest,
 } from "@/lib/draft-client";
+import { buildRun } from "@/lib/run";
 import { cn } from "@/lib/utils";
-import type { DraftablePlayer, DraftTeam, Position } from "@/types/game";
+import type {
+  Conference,
+  DraftablePlayer,
+  DraftTeam,
+  Position,
+} from "@/types/game";
 
 type Props = {
   slots: readonly Position[];
@@ -45,9 +53,11 @@ const REJECTION_MESSAGE: Record<DraftRejection, string> = {
 
 const DraftExperience = ({ slots }: Props) => {
   const router = useRouter();
+  const { setRun } = useRun();
   const reducer = React.useMemo(() => createDraftReducer(slots), [slots]);
   const [state, dispatch] = React.useReducer(reducer, INITIAL_DRAFT_STATE);
   const [isFetchingTeam, setIsFetchingTeam] = React.useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const inFlight = React.useRef<AbortController | null>(null);
 
   const open = openPositions(state, slots);
@@ -100,6 +110,12 @@ const DraftExperience = ({ slots }: Props) => {
       return;
     }
     dispatch({ type: "DRAFT_PLAYER", player, position });
+  };
+
+  const handleConfirmSquad = (name: string, conference: Conference) => {
+    setRun(buildRun(state.members, slots, name, conference));
+    setIsConfirmOpen(false);
+    router.push("/play/tournament");
   };
 
   const handleDropPlayer = (playerSeasonId: string, position: Position) => {
@@ -158,7 +174,7 @@ const DraftExperience = ({ slots }: Props) => {
               variant={isComplete ? "default" : "secondary"}
               size="lg"
               disabled={!isComplete}
-              onClick={() => router.push("/play/tournament")}
+              onClick={() => setIsConfirmOpen(true)}
               className={cn(
                 "h-14 w-full text-base font-bold tracking-[0.18em] uppercase",
                 isComplete && "bg-gold"
@@ -175,6 +191,14 @@ const DraftExperience = ({ slots }: Props) => {
           </div>
         </section>
       </div>
+
+      <SquadConfirmDialog
+        open={isConfirmOpen}
+        members={state.members}
+        slots={slots}
+        onOpenChange={setIsConfirmOpen}
+        onConfirm={handleConfirmSquad}
+      />
     </main>
   );
 };
