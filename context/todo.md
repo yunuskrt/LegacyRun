@@ -16,14 +16,13 @@ Quick-reference list of what's being built, in build order. For the detailed, pa
 - [x] **Phase 13 — Draft Mechanics (Real Data)**: swap the Phase 6 mock fixtures for the Phase 11 query API — real random playoff team+season presentation, player selection, position matching.
 - [x] **Phase 12 — Squad Confirmation & Run Handoff**: `Start Tournament` opens a confirmation dialog — review the filled roster, optionally name the squad in its header, and pick a conference (required) before confirming. On confirm, redirect to `/play/tournament`, which renders the run as plain text (players with positions, squad name if given, selected conference) — no tournament UI yet. Merges the old Phases 12, 14 and 18; the point is the state handoff between the two pages.
 - [x] **Phase 14 — Bracket Generation**: seeded, rating-based bracket with increasing round difficulty.
-- [ ] **Phase 15 — Match Simulation Engine: Rating-Based Core**: ⏳ TBD — not yet decided.
-- [ ] **Phase 16 — Match Simulation: AI-Assisted Decision Layer**: ⏳ TBD — not yet decided.
-- [ ] **Phase 17 — Live Bracket UI**: visual bracket, updates after every round. **Carries a debt from Phase 14:** only the run's own conference has a bracket — the Finals opponent is drawn, not played into. This must be compensated in the UI by rendering that opponent as an other-conference champion stub (logo, season, real seed and playoff record), never as an empty second bracket. Rationale and the full obligation: `context/docs/bracket-generation.md` §10.
-- [ ] **Phase 18 — Live Scoreboard & Match Presentation**: quarter-by-quarter scoreboard, event feed.
-- [ ] **Phase 19 — Simulation Mode & Speed Controls**: Manual/Automatic modes, Slow/Normal/Fast speeds.
-- [ ] **Phase 20 — Results & Run Summary**: victory/defeat screen, run recap.
-- [ ] **Phase 21 — Player & Team Card Components**: bespoke visual cards used across screens.
-- [ ] **Phase 22 — Motion & Transition Polish**: Framer Motion across draft reveals, rounds, score updates.
-- [ ] **Phase 23 — Home Screen**: landing page and Start Game CTA.
-- [ ] **Phase 24 — AI Commentary (Post-MVP)**: optional, non-authoritative match commentary.
-- [ ] **Phase 25 — Production Deployment**: Vercel + Neon production setup, smoke test.
+- [ ] **Phase 15 — Match Simulation Engine**: possession-level, seeded, computed to a full event log before presentation, so Slow/Normal/Fast and Manual/Automatic can only ever replay it. Best-of-7 series. Strength comes from `player_season_data.boxPlusMinus` weighted by minutes — never `team_seasons.rating`, for the same reason Phase 14 excludes it. **Explicit boundary: no adaptive coaching AI and no LLM anywhere in the engine** — opponent tactics and in-match decision-making are out of scope, and commentary is Phase 23. Full spec: `context/docs/match-simulation.md`.
+- [ ] **Phase 16 — Live Bracket UI**: visual bracket, updates after every round. **Carries a debt from Phase 14:** only the run's own conference has a bracket — the Finals opponent is drawn, not played into. This must be compensated in the UI by rendering that opponent as an other-conference champion stub (logo, season, real seed and playoff record), never as an empty second bracket. Rationale and the full obligation: `context/docs/bracket-generation.md` §10.
+- [ ] **Phase 17 — Live Scoreboard & Match Presentation**: quarter-by-quarter scoreboard, event feed. **Owns the live feel.** Phase 15 hands over a finished event log precisely so this phase can pace it without stalls — events on a game clock, scores that climb rather than teleport, quarters as beats, and never revealing a result ahead of the replay. Full obligation: `context/docs/match-simulation.md` §6.1.
+- [ ] **Phase 18 — Simulation Mode & Speed Controls**: Manual/Automatic modes, Slow/Normal/Fast speeds.
+- [ ] **Phase 19 — Results & Run Summary**: victory/defeat screen, run recap.
+- [ ] **Phase 20 — Player & Team Card Components**: bespoke visual cards used across screens.
+- [ ] **Phase 21 — Motion & Transition Polish**: Framer Motion across draft reveals, rounds, score updates.
+- [ ] **Phase 22 — Home Screen**: landing page and Start Game CTA.
+- [ ] **Phase 23 — AI Commentary (Post-MVP)**: optional, non-authoritative match commentary.
+- [ ] **Phase 24 — Production Deployment**: Vercel + Neon production setup, smoke test.

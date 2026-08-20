@@ -402,7 +402,7 @@ persistence is unchanged by this phase and remains open.
 
 ---
 
-## 10. Only one conference has a bracket — and what Phase 17 owes for it
+## 10. Only one conference has a bracket — and what Phase 16 owes for it
 
 There is no bracket for the other conference. The run plays an 8-slot bracket in its
 own conference; the Finals opponent is drawn straight from the Finals band and never
@@ -418,7 +418,7 @@ to produce one team name. The drawn opponent is not arbitrary in the way a gener
 one would be: it is a real champion with a real seed and a real record, and that is
 what makes it read as earned.
 
-**The compensation is a UI obligation, and it belongs to Phase 17.** Because the
+**The compensation is a UI obligation, and it belongs to Phase 16.** Because the
 mechanic is deliberately thin here, the presentation has to carry it:
 
 - Render the Finals slot as an **other-conference champion stub** — logo, franchise,
@@ -428,7 +428,7 @@ mechanic is deliberately thin here, the presentation has to carry it:
 - Never draw an empty or "TBD" second bracket beside it. There is no second bracket;
   implying one is worse than omitting it.
 - `bracketSlot: null` on that opponent is the signal it sits outside the 8-slot
-  bracket. Phase 17 should branch on it rather than special-casing the round id.
+  bracket. Phase 16 should branch on it rather than special-casing the round id.
 - Optional and cheap, worth considering then: **hide the Finals opponent until the
   squad reaches the Conference Finals.** The slot and the distance to it stay visible,
   so `project-overview.md` §D's "always sees how far the Finals are" still holds, and
@@ -443,5 +443,5 @@ an answer.
 ## 11. Out of scope
 
 Match simulation (Phase 15) — the bracket produces matchups, not results. The visual
-bracket (Phase 17). Persistence — bracket state is runtime only, alongside the run,
+bracket (Phase 16). Persistence — bracket state is runtime only, alongside the run,
 and is lost on reload like everything else in `RunProvider`.
