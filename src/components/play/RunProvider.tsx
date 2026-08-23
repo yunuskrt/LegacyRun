@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { Bracket } from "@/types/bracket";
+import type { MatchData, SeriesState } from "@/types/match";
 import type { Run } from "@/types/game";
 
 type RunContextValue = {
@@ -9,6 +10,10 @@ type RunContextValue = {
   setRun: (run: Run) => void;
   bracket: Bracket | null;
   setBracket: (bracket: Bracket | null) => void;
+  matchData: MatchData | null;
+  setMatchData: (data: MatchData | null) => void;
+  series: SeriesState[];
+  setSeries: React.Dispatch<React.SetStateAction<SeriesState[]>>;
 };
 
 const RunContext = React.createContext<RunContextValue | null>(null);
@@ -20,9 +25,20 @@ type Props = {
 const RunProvider = ({ children }: Props) => {
   const [run, setRun] = React.useState<Run | null>(null);
   const [bracket, setBracket] = React.useState<Bracket | null>(null);
+  const [matchData, setMatchData] = React.useState<MatchData | null>(null);
+  const [series, setSeries] = React.useState<SeriesState[]>([]);
   const value = React.useMemo(
-    () => ({ run, setRun, bracket, setBracket }),
-    [run, bracket]
+    () => ({
+      run,
+      setRun,
+      bracket,
+      setBracket,
+      matchData,
+      setMatchData,
+      series,
+      setSeries,
+    }),
+    [run, bracket, matchData, series]
   );
 
   return <RunContext.Provider value={value}>{children}</RunContext.Provider>;
