@@ -72,8 +72,22 @@ opponentNet     = 5 × weightedMeanBpm
 The ×5 is not a fudge factor: BPM is a per-player on-court figure and five players are
 on the court, so the five on-court BPMs sum to the team's net rating. Because a
 season's minutes are already distributed across the real rotation, this lands in the
-genuine NBA range (roughly −10 to +14) with **no calibration at all**. The 1996 Bulls
-should come out near +13, the 2017 Warriors near +11.5.
+genuine NBA range with **no calibration at all**.
+
+Measured against the committed tables (Phase 15), with the real figure alongside:
+
+| Team-season | this formula | real net rating |
+| --- | --- | --- |
+| `CHI-1996` | **+13.9** | +13.4 |
+| `GSW-2017` | **+10.8** | +11.6 |
+| `CHI-1992` | **+10.1** | +9.9 |
+| `LAL-2020` | **+6.0** | +6.4 |
+| `VAN-1997` | **−13.1** | −11.4 |
+
+Every one within about a point, and the full 1,292-row range comes out −17.2 to +13.9.
+Compare `team_seasons.rating`, which puts `PHI-1983` (95) and `ORL-1995` (94) above the
+72-10 Bulls (91); this formula gives them **+6.0** and **+7.4** against Chicago's +13.9.
+That comparison is pinned by test.
 
 **Rows with `boxPlusMinus = null` are `MP = 0` players** (Phase 7's finding) and
 contribute nothing to a minutes-weighted mean anyway. Skip them; do not substitute.
@@ -147,8 +161,13 @@ differential is halved onto each side:
 effectivePpp(A) = BASE_PPP + (netA − netB) / 200
 ```
 
-with `BASE_PPP = 1.08`. This is self-checking: over 100 possessions each, the expected
-margin is exactly the net differential. A +10 side beats a +0 side 113-103 on average.
+with **`BASE_PPP = 1.05`**. This is self-checking: over 100 possessions each, the
+expected margin is exactly the net differential — measured at 10.43 for a +8 side with
+home court, against 8 + 2.0 predicted.
+
+**Corrected in Phase 15: this constant was 1.08, which contradicted §9.** 1.08 × 100
+possessions × 2 sides is 216 combined points, outside §9's own 200–215 target. 1.05
+lands at a measured 210.8, mid-range for 1981–2026.
 
 ### 4.2 Resolving one possession
 
@@ -162,8 +181,11 @@ hit that side's `effectivePpp`:
 | Shot — three | 20% of shots | 3 |
 | Shot — and-one / free throws | 8% of shots | 2 or 3 |
 
-Expected points per made possession ≈ 2.24, so the make probability is
-`effectivePpp / (0.87 × 2.24)` — about 0.554 at league average. Missed shots and
+An and-one is a made two plus a free throw that drops 75% of the time, so expected
+points per made possession is **2.26** and the make probability is
+`effectivePpp / (0.87 × 2.26)` — about 0.534 at league average. That 2.26 is **derived
+from the table in code rather than written down**, so the table and the
+points-per-possession target cannot drift apart. Missed shots and
 turnovers simply end the possession; **offensive rebounds are not modeled**, since no
 rebounding data was ingested. Pace is a flat **100 possessions per side per game**
 (era pace isn't in the database either); overtime adds ~11 per side.
@@ -191,9 +213,27 @@ Every draw comes from `seededRng` in [`src/lib/rng.ts`](../../src/lib/rng.ts), s
 `${runSeed}:${matchupId}:g${gameNumber}`. `Math.random` never appears in the engine, no
 test stubs it, and replaying a game after a refresh gives the identical result.
 
-Note that with ~200 scoring possessions per game the emergent margin standard deviation
-lands near 16 points, which keeps upsets genuinely live: a side that is +10 better wins
-a single game about 73% of the time, and the series about 89%.
+With ~200 possessions per game the margin standard deviation is **emergent, not a
+parameter** — nobody chose how often upsets happen; it falls out of the possession
+draws. Measured at **16.9**, which keeps upsets genuinely live:
+
+| Net gap | one game | best-of-7 |
+| --- | --- | --- |
+| 0 (home court only) | 54.8% | 52.1% |
+| +2 | 58.4% | 62.5% |
+| +6 | 69.7% | 79.8% |
+| +10 | 77.5% | 92.5% |
+| +14 | 82.8% | 97.3% |
+
+**Known limitation:** the real NBA's margin SD is nearer 13.5. Independent possessions
+overstate variance — real games have negatively correlated ones (garbage time, pace
+adjustment) that this does not model. 16.9 is inside §9's 13–17 band but at the top of
+it, so upsets here run a little livelier than history's. Damping it would mean modelling
+possession correlation, which is out of scope.
+
+Note the series column is *lower* than the game column at a 0 gap: the home-court holder
+hosts games 1, 2, 5 and 7, but short series never reach game 7, so its edge is diluted.
+Real basketball behaves the same way.
 
 ---
 
@@ -265,39 +305,56 @@ throw away everything this design bought. What that phase owes:
 
 ## 7. Shape
 
+**Sides are `HOME`/`AWAY`, not `SQUAD`/`OPPONENT`.** An earlier draft of this section
+labelled them by kind, which §8.3 makes impossible: the far half plays itself out, and
+both sides of those matchups are historical teams. `HOME`/`AWAY` are the two slots of a
+`BracketMatchup`, fixed for the whole series; `hostSide` names the venue for one game,
+which 2-2-1-1-1 alternates. Which slot holds the squad comes from the bracket.
+
 ```ts
+type MatchSideId = "HOME" | "AWAY";
+
 type MatchEvent = {
   possession: number;
   period: number; // 1-4, then 5+ for overtime
   clock: string; // presentation only, derived from possession index
-  side: "SQUAD" | "OPPONENT";
+  side: MatchSideId;
   playerSeasonId: string;
   playerName: string;
   points: 2 | 3;
   andOne: boolean;
-  squadScore: number; // running totals after this event
-  opponentScore: number;
+  homeScore: number; // running totals after this event
+  awayScore: number;
 };
 
 type GameResult = {
   gameNumber: number; // 1-7
   seed: string;
-  homeSide: "SQUAD" | "OPPONENT";
-  squadScore: number;
-  opponentScore: number;
-  periodScores: { period: number; squad: number; opponent: number }[];
-  winner: "SQUAD" | "OPPONENT";
+  hostSide: MatchSideId;
+  homeScore: number;
+  awayScore: number;
+  periodScores: { period: number; home: number; away: number }[];
+  winner: MatchSideId;
   events: MatchEvent[];
-  scoring: { playerSeasonId: string; playerName: string; points: number }[];
+  scoring: {
+    side: MatchSideId;
+    playerSeasonId: string;
+    playerName: string;
+    points: number;
+  }[];
 };
 
 type SeriesState = {
   matchupId: string;
-  squadWins: number; // series ends at 4
-  opponentWins: number;
+  homeWins: number; // series ends at 4
+  awayWins: number;
+  winner: MatchSideId | null;
   games: GameResult[];
 };
 ```
+
+The rating rules still dispatch on kind — a `MatchTeam` carries
+`kind: "SQUAD" | "OPPONENT"`, which is what decides between §3.1 and §3.2.
 
 `MatchEvent` has no field for rebounds, assists, or shot attempts — the same
 enforcement-by-type Phase 14 used to keep team ratings out of the bracket.
@@ -394,8 +451,9 @@ each series resolves.
 The engine is arithmetic over committed data, so it can be pinned hard:
 
 - **Determinism:** same seed → byte-identical `GameResult`, asserted directly.
-- **Calibration**, over a few thousand simulated games: mean combined score **200–215**,
-  margin standard deviation **13–17**, home side wins about **56%** of even matchups.
+- **Calibration**, over a few thousand simulated games: mean combined score **200–215**
+  (measured 210.8), margin standard deviation **13–17** (measured 16.9 — see §4.4), home
+  side wins about **55%** of even matchups (measured 54.8%).
 - **Monotonicity:** across the net-differential range, single-game win probability
   rises monotonically and matches the logistic within tolerance.
 - **Upsets stay live:** the strongest realistic favourite still loses a single game
