@@ -1,0 +1,63 @@
+import React from "react";
+import type { SeriesSideView } from "@/lib/tournament-view";
+import type { ScoringLine } from "@/types/match";
+
+type Props = {
+  home: SeriesSideView;
+  away: SeriesSideView;
+  leaders: { home: ScoringLine[]; away: ScoringLine[] };
+};
+
+const SideColumn = ({
+  side,
+  lines,
+}: {
+  side: SeriesSideView;
+  lines: ScoringLine[];
+}) => (
+  <div className="min-w-0">
+    <h4
+      className={`text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
+        side.isSquad ? "text-primary" : "text-muted-foreground"
+      }`}
+    >
+      {side.name}
+    </h4>
+    <ul className="mt-2 flex flex-col gap-2">
+      {lines.length === 0 && (
+        <li className="text-muted-foreground text-xs">No points yet</li>
+      )}
+      {lines.map((line) => (
+        <li
+          key={line.playerSeasonId}
+          className="bg-court flex items-center justify-between gap-2 rounded-lg px-3 py-2"
+        >
+          <span className="text-foreground min-w-0 truncate text-sm">
+            {line.playerName}
+          </span>
+          <span
+            className={`shrink-0 text-sm font-bold tabular-nums ${
+              side.isSquad ? "text-primary" : "text-foreground"
+            }`}
+          >
+            {line.points}
+          </span>
+        </li>
+      ))}
+    </ul>
+  </div>
+);
+
+const ScoringLeaders = ({ home, away, leaders }: Props) => (
+  <div className="bg-card shadow-panel rounded-2xl px-4 py-4">
+    <p className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.18em]">
+      SCORING LEADERS · POINTS
+    </p>
+    <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-1 xl:gap-5">
+      <SideColumn side={home} lines={leaders.home} />
+      <SideColumn side={away} lines={leaders.away} />
+    </div>
+  </div>
+);
+
+export default ScoringLeaders;

@@ -131,6 +131,45 @@ export const finalsOpponent = (bracket: Bracket): BracketOpponent | null => {
   return drawn?.side === "OPPONENT" ? drawn.opponent : null;
 };
 
+export type SeriesSideView = {
+  id: MatchSideId;
+  name: string;
+  code: string;
+  isSquad: boolean;
+  teamLogo: string | null;
+};
+
+const sideView = (
+  id: MatchSideId,
+  slot: BracketSlot | null,
+  squad: Squad
+): SeriesSideView =>
+  slot === null || slot.side === "SQUAD"
+    ? {
+        id,
+        name: squadDisplayName(squad),
+        code: SQUAD_SHORT_CODE,
+        isSquad: true,
+        teamLogo: null,
+      }
+    : {
+        id,
+        name: `${slot.opponent.seasonYear} ${slot.opponent.teamName}`,
+        code: slot.opponent.teamSlug,
+        isSquad: false,
+        teamLogo: slot.opponent.teamLogo,
+      };
+
+// The replay labels its two sides by matchup slot, not by "squad" and
+// "opponent" — the far half has neither.
+export const seriesSides = (
+  matchup: BracketMatchup,
+  squad: Squad
+): { home: SeriesSideView; away: SeriesSideView } => ({
+  home: sideView("HOME", matchup.home, squad),
+  away: sideView("AWAY", matchup.away, squad),
+});
+
 export type MatchupCardState = "UPCOMING" | "NEXT" | "RESOLVED";
 
 export const matchupCardState = (

@@ -1,0 +1,67 @@
+import React from "react";
+import type { SeriesSideView } from "@/lib/tournament-view";
+
+type Props = {
+  home: SeriesSideView;
+  away: SeriesSideView;
+  gameNumber: number;
+  hostCode: string;
+  wins: { home: number; away: number };
+};
+
+// One dot per game already played, filled for the home side's wins. The count
+// is the series so far, never the length of a finished series.
+const Dots = ({ won, lost }: { won: number; lost: number }) => (
+  <span className="flex items-center gap-1" aria-hidden="true">
+    {Array.from({ length: won + lost }, (_, index) => (
+      <span
+        key={index}
+        className={`size-1.5 rounded-full ${
+          index < won ? "bg-primary" : "bg-muted-foreground/50"
+        }`}
+      />
+    ))}
+  </span>
+);
+
+const SideLabel = ({ side }: { side: SeriesSideView }) => (
+  <span
+    className={`text-sm font-bold tracking-wide uppercase ${
+      side.isSquad ? "text-primary" : "text-foreground"
+    }`}
+  >
+    {side.name}
+  </span>
+);
+
+const SeriesBanner = ({ home, away, gameNumber, hostCode, wins }: Props) => (
+  <div className="border-border/70 bg-card/70 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+      <SideLabel side={home} />
+      <span className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.18em]">
+        VS
+      </span>
+      <SideLabel side={away} />
+    </div>
+
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <span className="text-primary text-[0.6875rem] font-bold tracking-[0.18em]">
+        GAME {gameNumber}
+      </span>
+      <span className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.14em]">
+        AT {hostCode}
+      </span>
+      <span className="flex items-center gap-2">
+        <span className="sr-only">
+          Series {wins.home}-{wins.away}
+        </span>
+        <Dots won={wins.home} lost={wins.away} />
+        <span className="text-muted-foreground text-[0.625rem] font-semibold">
+          {wins.home}-{wins.away}
+        </span>
+      </span>
+    </div>
+  </div>
+);
+
+export default SeriesBanner;
