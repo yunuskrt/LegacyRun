@@ -3,7 +3,7 @@
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
-export type StageId = "BRACKET" | "SERIES" | "RESULT";
+export type StageId = "BRACKET" | "SERIES" | "RESULT" | "ARCHIVE";
 
 type Props = {
   stage: StageId;

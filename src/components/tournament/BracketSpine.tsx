@@ -17,6 +17,9 @@ type Props = {
   farConference: Conference;
   finalsOpponent: BracketOpponent | null;
   roundsUntilFinals: number;
+  // The archive: the run is over, so no matchup is "next" and the whole
+  // bracket opens expanded — there is nothing left to spoil.
+  readOnly?: boolean;
 };
 
 const BracketSpine = ({
@@ -27,15 +30,17 @@ const BracketSpine = ({
   farConference,
   finalsOpponent,
   roundsUntilFinals,
+  readOnly = false,
 }: Props) => {
-  const [showFull, setShowFull] = React.useState(false);
+  const [showFull, setShowFull] = React.useState(readOnly);
+  const activeMatchupId = readOnly ? null : nextMatchupId;
 
   return (
     <div className="flex flex-col gap-6">
       <ol className="border-border/60 flex flex-col gap-6 border-l pl-5">
         {rounds.map((round) => {
           const squadMatchup = round.matchups.find(isSquadMatchup) ?? null;
-          const isNext = squadMatchup?.id === nextMatchupId;
+          const isNext = squadMatchup?.id === activeMatchupId;
           const others = showFull
             ? round.matchups.filter((matchup) => !isSquadMatchup(matchup))
             : [];
@@ -62,7 +67,7 @@ const BracketSpine = ({
                 {squadMatchup ? (
                   <MatchupCard
                     matchup={squadMatchup}
-                    state={matchupCardState(squadMatchup, nextMatchupId)}
+                    state={matchupCardState(squadMatchup, activeMatchupId)}
                     squad={squad}
                     series={series}
                     compact
@@ -77,7 +82,7 @@ const BracketSpine = ({
                   <MatchupCard
                     key={matchup.id}
                     matchup={matchup}
-                    state={matchupCardState(matchup, nextMatchupId)}
+                    state={matchupCardState(matchup, activeMatchupId)}
                     squad={squad}
                     series={series}
                     compact
