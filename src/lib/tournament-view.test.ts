@@ -15,6 +15,7 @@ import {
   isFinalsOpponentRevealed,
   matchupCardState,
   nextSquadMatchup,
+  opponentOf,
   revealedThroughFor,
   roundsUntilFinals,
   runOutcome,
@@ -214,6 +215,39 @@ describe("seriesSides", () => {
     expect(squadOf(named).name).toBe("Dynasty Five");
     expect(squadOf(unnamed).name).toBe(SQUAD_FALLBACK_NAME);
     expect(squadOf(unnamed).teamLogo).toBeNull();
+  });
+});
+
+describe("opponentOf", () => {
+  it("finds the historical side whichever slot the squad took", () => {
+    const matchup = nextSquadMatchup(buildResolvedBracket())!;
+    const opponent = opponentOf(matchup);
+
+    expect(opponent).not.toBeNull();
+    expect(opponent!.teamSlug).not.toBe(SQUAD_SHORT_CODE);
+
+    const squadSlot =
+      squadSideOf(matchup) === "HOME" ? matchup.home : matchup.away;
+    const otherSlot =
+      squadSideOf(matchup) === "HOME" ? matchup.away : matchup.home;
+
+    expect(squadSlot?.side).toBe("SQUAD");
+    expect(otherSlot?.side).toBe("OPPONENT");
+    expect(opponent).toBe(
+      otherSlot?.side === "OPPONENT" ? otherSlot.opponent : null
+    );
+  });
+
+  it("returns null when neither slot is filled", () => {
+    expect(
+      opponentOf({
+        id: "empty",
+        round: "NBA_FINALS",
+        home: null,
+        away: null,
+        winner: null,
+      })
+    ).toBeNull();
   });
 });
 

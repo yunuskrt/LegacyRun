@@ -49,6 +49,10 @@ const TournamentPage = ({}: Props) => {
     setMatchData,
     series,
     setSeries,
+    speed,
+    setSpeed,
+    mode,
+    setMode,
   } = useRun();
   const [error, setError] = React.useState<string | null>(null);
   const [retryToken, setRetryToken] = React.useState(0);
@@ -313,7 +317,11 @@ const TournamentPage = ({}: Props) => {
               matchup={activeMatchup}
               series={activeSeries}
               squad={squad}
+              speed={speed}
+              mode={mode}
               ctaLabel={seriesCtaLabel}
+              onSpeedChange={setSpeed}
+              onModeChange={setMode}
               onContinue={continueFromSeries}
             />
           ) : stage === "RESULT" ? (

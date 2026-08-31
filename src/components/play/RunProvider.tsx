@@ -1,6 +1,9 @@
 "use client";
 
 import React from "react";
+import { DEFAULT_MODE, DEFAULT_SPEED } from "@/lib/series-flow";
+import type { ReplayMode } from "@/lib/series-flow";
+import type { ReplaySpeed } from "@/lib/replay";
 import type { Bracket } from "@/types/bracket";
 import type { MatchData, SeriesState } from "@/types/match";
 import type { Run } from "@/types/game";
@@ -14,6 +17,12 @@ type RunContextValue = {
   setMatchData: (data: MatchData | null) => void;
   series: SeriesState[];
   setSeries: React.Dispatch<React.SetStateAction<SeriesState[]>>;
+  // Run-level preferences: they outlive a game and a round, and changing one
+  // never touches replay state.
+  speed: ReplaySpeed;
+  setSpeed: (speed: ReplaySpeed) => void;
+  mode: ReplayMode;
+  setMode: (mode: ReplayMode) => void;
 };
 
 const RunContext = React.createContext<RunContextValue | null>(null);
@@ -27,6 +36,8 @@ const RunProvider = ({ children }: Props) => {
   const [bracket, setBracket] = React.useState<Bracket | null>(null);
   const [matchData, setMatchData] = React.useState<MatchData | null>(null);
   const [series, setSeries] = React.useState<SeriesState[]>([]);
+  const [speed, setSpeed] = React.useState<ReplaySpeed>(DEFAULT_SPEED);
+  const [mode, setMode] = React.useState<ReplayMode>(DEFAULT_MODE);
   const value = React.useMemo(
     () => ({
       run,
@@ -37,8 +48,12 @@ const RunProvider = ({ children }: Props) => {
       setMatchData,
       series,
       setSeries,
+      speed,
+      setSpeed,
+      mode,
+      setMode,
     }),
-    [run, bracket, matchData, series]
+    [run, bracket, matchData, series, speed, mode]
   );
 
   return <RunContext.Provider value={value}>{children}</RunContext.Provider>;

@@ -15,6 +15,7 @@ import {
   eventDelayMs,
   eventsThrough,
   feedThrough,
+  gameBudgetMs,
   isLeadChange,
   leadersSoFar,
   lineScoreThrough,
@@ -164,21 +165,49 @@ describe("eventDelayMs", () => {
 
 describe("pacing budget", () => {
   const budgetFor = (game: GameResult, speed: ReplaySpeed): number =>
-    game.events.reduce(
-      (total, current, index) =>
-        total +
-        eventDelayMs(index > 0 ? game.events[index - 1] : null, current, speed),
-      0
+    gameBudgetMs(game.events, speed);
+
+  const meanSeconds = (speed: ReplaySpeed): number => {
+    const budgets = Array.from({ length: 12 }, (_, index) =>
+      budgetFor(realGame(`budget-${index}`), speed)
     );
 
+    return budgets.reduce((a, b) => a + b, 0) / budgets.length / 1000;
+  };
+
   it("finishes a Normal game inside the specced ~25s budget", () => {
-    const budgets = Array.from({ length: 12 }, (_, index) =>
-      budgetFor(realGame(`budget-${index}`), "NORMAL")
-    );
-    const mean = budgets.reduce((a, b) => a + b, 0) / budgets.length / 1000;
+    const mean = meanSeconds("NORMAL");
 
     expect(mean).toBeGreaterThan(20);
     expect(mean).toBeLessThan(30);
+  });
+
+  // Wall-clock adds ~1.5s per quarter break on top of each of these; the
+  // budget is the run of play only.
+  it("lands Slow and Fast on their own documented budgets", () => {
+    expect(meanSeconds("SLOW")).toBeGreaterThan(40);
+    expect(meanSeconds("SLOW")).toBeLessThan(50);
+
+    // The upper bound is deliberately under the ~12s the old 120ms floor gave,
+    // so raising the floor back fails here rather than passing quietly.
+    expect(meanSeconds("FAST")).toBeGreaterThan(9);
+    expect(meanSeconds("FAST")).toBeLessThan(11.5);
+  });
+
+  // Fast is floor-bound, not factor-bound: halving the factor would not move
+  // it, and only the floor decides whether it reads as a game or as a skip.
+  it("clamps almost every Fast event to the floor", () => {
+    const game = realGame("budget-floor");
+    const floored = game.events.filter(
+      (event, index) =>
+        eventDelayMs(
+          index > 0 ? game.events[index - 1] : null,
+          event,
+          "FAST"
+        ) === MIN_EVENT_DELAY_MS
+    );
+
+    expect(floored.length / game.events.length).toBeGreaterThan(0.8);
   });
 
   it("keeps Slow and Fast either side of Normal", () => {

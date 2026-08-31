@@ -131,6 +131,16 @@ export const finalsOpponent = (bracket: Bracket): BracketOpponent | null => {
   return drawn?.side === "OPPONENT" ? drawn.opponent : null;
 };
 
+// A squad matchup has exactly one historical side; the far half has two, and
+// this returns the first of them, which no squad-facing screen ever asks for.
+export const opponentOf = (matchup: BracketMatchup): BracketOpponent | null => {
+  for (const slot of [matchup.home, matchup.away]) {
+    if (slot?.side === "OPPONENT") return slot.opponent;
+  }
+
+  return null;
+};
+
 export type SeriesSideView = {
   id: MatchSideId;
   name: string;
