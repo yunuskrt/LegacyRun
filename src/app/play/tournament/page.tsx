@@ -6,7 +6,7 @@ import { Crown, Trophy } from "lucide-react";
 import { useRun } from "@/components/play/RunProvider";
 import BracketLadder from "@/components/tournament/BracketLadder";
 import BracketSpine from "@/components/tournament/BracketSpine";
-import SeriesResultCard from "@/components/tournament/SeriesResultCard";
+import SeriesReplay from "@/components/tournament/SeriesReplay";
 import SquadRail from "@/components/tournament/SquadRail";
 import TournamentEmptyState from "@/components/tournament/TournamentEmptyState";
 import TournamentStage from "@/components/tournament/TournamentStage";
@@ -309,7 +309,7 @@ const TournamentPage = ({}: Props) => {
       <TournamentStage stage={stage}>
         <div className="flex flex-col gap-8">
           {stage === "SERIES" && activeMatchup && activeSeries ? (
-            <SeriesResultCard
+            <SeriesReplay
               matchup={activeMatchup}
               series={activeSeries}
               squad={squad}

@@ -18,7 +18,9 @@ import {
   revealedThroughFor,
   roundsUntilFinals,
   runOutcome,
+  SQUAD_SHORT_CODE,
   seriesScoreLabel,
+  seriesSides,
   squadDisplayName,
   squadPath,
   squadSeriesScore,
@@ -178,6 +180,42 @@ const seriesRow = (
     games: [],
   };
 };
+
+describe("seriesSides", () => {
+  const matchupWithSquad = (): BracketMatchup =>
+    nextSquadMatchup(buildBracket())!;
+
+  it("labels the sides by matchup slot, not by squad and opponent", () => {
+    const sides = seriesSides(matchupWithSquad(), squad("Dynasty Five"));
+
+    expect(sides.home.id).toBe("HOME");
+    expect(sides.away.id).toBe("AWAY");
+    expect([sides.home.isSquad, sides.away.isSquad]).toContain(true);
+  });
+
+  it("names a historical side by season and franchise, with its slug as the code", () => {
+    const sides = seriesSides(matchupWithSquad(), squad());
+    const opponent = sides.home.isSquad ? sides.away : sides.home;
+
+    expect(opponent.name).toMatch(/^\d{4} /);
+    expect(opponent.code).not.toBe(SQUAD_SHORT_CODE);
+    expect(opponent.teamLogo).not.toBeNull();
+  });
+
+  // The crest code can't come from the name, because the name is optional.
+  it("gives the squad a fixed code whether or not it is named", () => {
+    const named = seriesSides(matchupWithSquad(), squad("Dynasty Five"));
+    const unnamed = seriesSides(matchupWithSquad(), squad());
+    const squadOf = (sides: ReturnType<typeof seriesSides>) =>
+      sides.home.isSquad ? sides.home : sides.away;
+
+    expect(squadOf(named).code).toBe(SQUAD_SHORT_CODE);
+    expect(squadOf(unnamed).code).toBe(SQUAD_SHORT_CODE);
+    expect(squadOf(named).name).toBe("Dynasty Five");
+    expect(squadOf(unnamed).name).toBe(SQUAD_FALLBACK_NAME);
+    expect(squadOf(unnamed).teamLogo).toBeNull();
+  });
+});
 
 describe("squadDisplayName", () => {
   it("returns the squad's name when it is set", () => {
