@@ -2,7 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
+import { Crown, Trophy } from "lucide-react";
 import { useRun } from "@/components/play/RunProvider";
+import BracketLadder from "@/components/tournament/BracketLadder";
+import BracketSpine from "@/components/tournament/BracketSpine";
+import SeriesResultCard from "@/components/tournament/SeriesResultCard";
+import SquadRail from "@/components/tournament/SquadRail";
+import TournamentEmptyState from "@/components/tournament/TournamentEmptyState";
+import TournamentStage from "@/components/tournament/TournamentStage";
 import {
   BRACKET_FETCH_MESSAGE,
   bracketRequestFor,
@@ -13,44 +20,25 @@ import {
   matchDataRequestFor,
   requestMatchData,
 } from "@/lib/match-client";
+import { findMatchup, playMatchup, resolveOpponentMatchups } from "@/lib/match";
+import { ROUND_LABELS, oppositeConference } from "@/lib/bracket";
 import {
-  allMatchups,
-  findMatchup,
-  isSquadMatchup,
-  playMatchup,
-  resolveOpponentMatchups,
-} from "@/lib/match";
-import { ROUND_LABELS } from "@/lib/bracket";
-import { formatSeason, formatSeasonShort } from "@/lib/format";
-import type { BracketMatchup, BracketSlot } from "@/types/bracket";
-import type { MatchSideId, SeriesState } from "@/types/match";
+  CONFERENCE_NAME,
+  PLAY_CTA,
+  ROUND_PHRASE,
+  finalsOpponent,
+  isFinalsOpponentRevealed,
+  nextSquadMatchup,
+  revealedThroughFor,
+  roundsUntilFinals,
+  runOutcome,
+  seriesFor,
+  squadDisplayName,
+  visibleRounds,
+} from "@/lib/tournament-view";
+import type { StageId } from "@/components/tournament/TournamentStage";
 
 type Props = {};
-
-const describeSlot = (slot: BracketSlot | null, squadName: string): string => {
-  if (!slot) return "TBD";
-  if (slot.side === "SQUAD") return `${slot.bracketSlot}. ${squadName}`;
-
-  const { opponent, bracketSlot } = slot;
-  const prefix = bracketSlot === null ? "" : `${bracketSlot}. `;
-
-  return `${prefix}${formatSeasonShort(opponent.seasonYear)} ${opponent.teamName} (P${opponent.pedigree}, ${opponent.seed} seed, ${opponent.wins}-${opponent.losses})`;
-};
-
-const squadSideOf = (matchup: BracketMatchup): MatchSideId =>
-  matchup.home?.side === "SQUAD" ? "HOME" : "AWAY";
-
-const seriesHeadline = (
-  series: SeriesState,
-  matchup: BracketMatchup,
-  squadName: string
-): string => {
-  const home = describeSlot(matchup.home, squadName);
-  const away = describeSlot(matchup.away, squadName);
-  const winner = series.winner === "HOME" ? home : away;
-
-  return `${home} ${series.homeWins}-${series.awayWins} ${away} — ${winner} wins`;
-};
 
 const TournamentPage = ({}: Props) => {
   const {
@@ -63,15 +51,17 @@ const TournamentPage = ({}: Props) => {
     setSeries,
   } = useRun();
   const [error, setError] = React.useState<string | null>(null);
-  const requestRef = React.useRef<AbortController | null>(null);
-  const matchRequestRef = React.useRef<AbortController | null>(null);
+  const [retryToken, setRetryToken] = React.useState(0);
+  const [stage, setStage] = React.useState<StageId>("BRACKET");
+  const [activeMatchupId, setActiveMatchupId] = React.useState<string | null>(
+    null
+  );
   const farHalfRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (!run || bracket || requestRef.current) return;
+    if (!run || bracket) return;
 
     const controller = new AbortController();
-    requestRef.current = controller;
 
     const load = async () => {
       const result = await requestBracket(
@@ -82,26 +72,19 @@ const TournamentPage = ({}: Props) => {
 
       if (controller.signal.aborted) return;
 
-      if (result.ok) {
-        setBracket(result.bracket);
-      } else {
-        setError(BRACKET_FETCH_MESSAGE[result.error]);
-      }
+      if (result.ok) setBracket(result.bracket);
+      else setError(BRACKET_FETCH_MESSAGE[result.error]);
     };
 
     void load();
 
-    return () => {
-      controller.abort();
-      requestRef.current = null;
-    };
-  }, [run, bracket, setBracket]);
+    return () => controller.abort();
+  }, [run, bracket, setBracket, retryToken]);
 
   React.useEffect(() => {
-    if (!run || !bracket || matchData || matchRequestRef.current) return;
+    if (!run || !bracket || matchData) return;
 
     const controller = new AbortController();
-    matchRequestRef.current = controller;
 
     const load = async () => {
       const result = await requestMatchData(
@@ -118,13 +101,11 @@ const TournamentPage = ({}: Props) => {
 
     void load();
 
-    return () => {
-      controller.abort();
-      matchRequestRef.current = null;
-    };
-  }, [run, bracket, matchData, setMatchData]);
+    return () => controller.abort();
+  }, [run, bracket, matchData, setMatchData, retryToken]);
 
-  // The far half plays itself out so the bracket can show who is coming.
+  // The far half plays itself out on arrival; `visibleRounds` is what keeps it
+  // hidden until the squad has completed the same round.
   React.useEffect(() => {
     if (!run || !bracket || !matchData || farHalfRef.current) return;
 
@@ -133,7 +114,7 @@ const TournamentPage = ({}: Props) => {
     const resolved = resolveOpponentMatchups(
       bracket,
       matchData,
-      run.squad.name ?? "Your squad",
+      squadDisplayName(run.squad),
       bracket.runSeed
     );
 
@@ -141,25 +122,61 @@ const TournamentPage = ({}: Props) => {
     setSeries((current) => [...current, ...resolved.series]);
   }, [run, bracket, matchData, setBracket, setSeries]);
 
-  const nextMatchup =
-    bracket && matchData
-      ? (allMatchups(bracket).find(
-          (matchup) =>
-            isSquadMatchup(matchup) &&
-            !matchup.winner &&
-            matchup.home &&
-            matchup.away
-        ) ?? null)
-      : null;
+  const retry = () => {
+    setError(null);
+    setRetryToken((current) => current + 1);
+  };
+
+  if (!run) {
+    return (
+      <main className="bg-room flex flex-1 flex-col justify-center px-6 py-10">
+        <TournamentEmptyState kind="NO_RUN" />
+      </main>
+    );
+  }
+
+  const { squad, conference } = run;
+
+  if (error) {
+    return (
+      <main className="bg-room flex flex-1 flex-col justify-center px-6 py-10">
+        <TournamentEmptyState kind="ERROR" message={error} onRetry={retry} />
+      </main>
+    );
+  }
+
+  if (!bracket || !matchData) {
+    return (
+      <main className="bg-room flex flex-1 flex-col justify-center px-6 py-10">
+        <TournamentEmptyState kind="LOADING" />
+      </main>
+    );
+  }
+
+  const nextMatchup = nextSquadMatchup(bracket);
+  const rounds = visibleRounds(bracket, revealedThroughFor(bracket));
+  const outcome = runOutcome(bracket, series);
+  const farConference = oppositeConference(conference);
+  const champion = isFinalsOpponentRevealed(bracket)
+    ? finalsOpponent(bracket)
+    : null;
+  const squadName = squadDisplayName(squad);
+
+  const activeMatchup = activeMatchupId
+    ? findMatchup(bracket, activeMatchupId)
+    : null;
+  const activeSeries = activeMatchupId
+    ? seriesFor(series, activeMatchupId)
+    : null;
 
   const playNextRound = () => {
-    if (!run || !bracket || !matchData || !nextMatchup) return;
+    if (!nextMatchup) return;
 
     const played = playMatchup(
       bracket,
       nextMatchup.id,
       matchData,
-      run.squad.name ?? "Your squad",
+      squadName,
       bracket.runSeed
     );
 
@@ -167,144 +184,145 @@ const TournamentPage = ({}: Props) => {
 
     setBracket(played.bracket);
     setSeries((current) => [...current, played.series]);
+    setActiveMatchupId(nextMatchup.id);
+    setStage("SERIES");
   };
 
-  if (!run) {
-    return (
-      <main className="bg-room flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16">
-        <p className="text-muted-foreground text-center text-lg">
-          No squad in play. Draft a lineup to start a tournament.
-        </p>
-        <Link href="/play/draft" className="text-primary underline">
-          Back to the draft
-        </Link>
-      </main>
-    );
-  }
+  const continueFromSeries = () => {
+    setActiveMatchupId(null);
+    setStage(outcome.kind === "IN_PROGRESS" ? "BRACKET" : "RESULT");
+  };
 
-  const { squad, conference } = run;
-  const squadName = squad.name ?? "Your squad";
+  const seriesCtaLabel =
+    outcome.kind === "IN_PROGRESS" && nextMatchup
+      ? `Continue to ${ROUND_PHRASE[nextMatchup.round]}`
+      : outcome.kind === "CHAMPION"
+        ? "See the result"
+        : "See how the run ended";
 
-  const squadSeries = bracket
-    ? series.flatMap((entry) => {
-        const matchup = findMatchup(bracket, entry.matchupId);
-
-        return matchup && isSquadMatchup(matchup) ? [{ entry, matchup }] : [];
-      })
-    : [];
-
-  const eliminated = squadSeries.find(
-    ({ entry, matchup }) => entry.winner !== squadSideOf(matchup)
-  );
-  const champion = squadSeries.find(
-    ({ entry, matchup }) =>
-      matchup.round === "NBA_FINALS" && entry.winner === squadSideOf(matchup)
-  );
-
-  const outcome = eliminated
-    ? `Eliminated in ${ROUND_LABELS[eliminated.matchup.round]}.`
-    : champion
-      ? `${squadName} are NBA champions.`
+  const finalsSlot =
+    nextMatchup?.round === "NBA_FINALS"
+      ? nextMatchup.home?.side === "OPPONENT"
+        ? nextMatchup.home.opponent
+        : nextMatchup.away?.side === "OPPONENT"
+          ? nextMatchup.away.opponent
+          : null
       : null;
 
-  return (
-    <main className="bg-room flex flex-1 flex-col gap-6 px-6 py-16">
-      <div className="text-muted-foreground mx-auto w-full max-w-2xl space-y-4 text-sm">
-        <p>
-          <strong className="text-foreground">Squad:</strong>{" "}
-          {squad.name ?? "(unnamed)"}
-        </p>
-        <p>
-          <strong className="text-foreground">Conference:</strong> {conference}
-        </p>
-        <ul className="space-y-1">
-          {squad.players.map((player) => (
-            <li key={player.playerSeasonId}>
-              {player.position} — {player.name} · {player.teamName} ·{" "}
-              {formatSeason(player.seasonYear)} · {player.rating}
-            </li>
-          ))}
-        </ul>
-
-        {error && <p className="text-destructive">{error}</p>}
-
-        {!bracket && !error && <p className="text-xs">Building bracket…</p>}
-
-        {bracket && (
-          <div className="space-y-4">
-            <p>
-              <strong className="text-foreground">Bracket:</strong> slot{" "}
-              {bracket.squadSlot} · run seed {bracket.runSeed}
-            </p>
-            {bracket.rounds.map((round) => (
-              <div key={round.id} className="space-y-1">
-                <p className="text-foreground font-semibold">{round.label}</p>
-                <ul className="space-y-1">
-                  {round.matchups.map((matchup) => {
-                    const played = series.find(
-                      (entry) => entry.matchupId === matchup.id
-                    );
-
-                    return (
-                      <li key={matchup.id}>
-                        {describeSlot(matchup.home, squadName)} vs{" "}
-                        {describeSlot(matchup.away, squadName)}
-                        {played && (
-                          <span className="text-foreground">
-                            {" "}
-                            — {played.homeWins}-{played.awayWins},{" "}
-                            {describeSlot(matchup.winner, squadName)} advances
-                          </span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {bracket && !matchData && !error && (
-          <p className="text-xs">Loading rosters…</p>
-        )}
+  const bracketView = (
+    <>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-primary text-[0.6875rem] font-semibold tracking-[0.18em]">
+            {CONFERENCE_NAME[conference].toUpperCase()} CONFERENCE BRACKET
+          </p>
+          <h1 className="text-foreground mt-1 flex items-center gap-3 text-3xl font-bold sm:text-4xl">
+            {nextMatchup?.round === "NBA_FINALS" && (
+              <Trophy className="text-primary size-7" aria-hidden="true" />
+            )}
+            {nextMatchup ? ROUND_LABELS[nextMatchup.round] : "Your bracket"}
+          </h1>
+        </div>
 
         {nextMatchup && (
           <button
             type="button"
             onClick={playNextRound}
-            className="bg-primary text-primary-foreground rounded px-4 py-2 text-sm font-semibold"
+            className="bg-gold text-primary-foreground rounded-xl px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase"
           >
-            Play {nextMatchup.round.replace(/_/g, " ").toLowerCase()}
+            {PLAY_CTA[nextMatchup.round]}
           </button>
         )}
+      </header>
 
-        {squadSeries.length > 0 && (
-          <div className="space-y-3">
-            <p className="text-foreground font-semibold">Your series</p>
-            {squadSeries.map(({ entry, matchup }) => (
-              <div key={entry.matchupId} className="space-y-1">
-                <p className="text-foreground">
-                  {seriesHeadline(entry, matchup, squadName)}
-                </p>
-                <ul className="space-y-0.5 text-xs">
-                  {entry.games.map((game) => (
-                    <li key={game.seed}>
-                      Game {game.gameNumber}: {game.homeScore}-{game.awayScore}
-                      {game.periodScores.length > 4 &&
-                        ` (${game.periodScores.length - 4}OT)`}{" "}
-                      · top scorer {game.scoring[0]?.playerName} (
-                      {game.scoring[0]?.points})
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
+      {finalsSlot && (
+        <p className="border-primary/50 bg-card/60 text-foreground flex items-center gap-3 rounded-xl border px-4 py-3 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
+          <Crown className="text-primary size-4 shrink-0" aria-hidden="true" />
+          One series from the title — {squadName} vs {finalsSlot.seasonYear}{" "}
+          {finalsSlot.teamName}
+        </p>
+      )}
 
-        {outcome && <p className="text-foreground font-semibold">{outcome}</p>}
+      <div className="hidden md:block">
+        <BracketLadder
+          rounds={rounds}
+          squad={squad}
+          series={series}
+          nextMatchupId={nextMatchup?.id ?? null}
+          farConference={farConference}
+          finalsOpponent={champion}
+          roundsUntilFinals={roundsUntilFinals(bracket)}
+        />
       </div>
+
+      <div className="md:hidden">
+        <BracketSpine
+          rounds={rounds}
+          squad={squad}
+          series={series}
+          nextMatchupId={nextMatchup?.id ?? null}
+          farConference={farConference}
+          finalsOpponent={champion}
+          roundsUntilFinals={roundsUntilFinals(bracket)}
+        />
+      </div>
+    </>
+  );
+
+  const resultView = (
+    <div className="mx-auto w-full max-w-xl py-10 text-center">
+      <h1
+        className={`text-3xl font-bold tracking-wide uppercase ${
+          outcome.kind === "CHAMPION" ? "text-primary" : "text-destructive"
+        }`}
+      >
+        {outcome.kind === "CHAMPION" ? "NBA Champions" : "Run ended"}
+      </h1>
+      <p className="text-foreground mt-3 text-lg font-semibold">{squadName}</p>
+      {outcome.kind === "ELIMINATED" && (
+        <p className="text-muted-foreground mt-2 text-sm">
+          Eliminated in {ROUND_PHRASE[outcome.round]}.
+        </p>
+      )}
+      <div className="mt-8 flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setStage("BRACKET")}
+          className="border-border text-muted-foreground rounded-lg border px-4 py-3 text-xs font-semibold tracking-[0.16em] uppercase"
+        >
+          Review bracket
+        </button>
+        <Link
+          href="/play/draft"
+          className="text-primary text-sm font-semibold underline"
+        >
+          Start a new run
+        </Link>
+      </div>
+    </div>
+  );
+
+  return (
+    <main className="bg-room flex flex-1 flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10">
+      <SquadRail squad={squad} conference={conference} />
+
+      <TournamentStage stage={stage}>
+        <div className="flex flex-col gap-8">
+          {stage === "SERIES" && activeMatchup && activeSeries ? (
+            <SeriesResultCard
+              matchup={activeMatchup}
+              series={activeSeries}
+              squad={squad}
+              ctaLabel={seriesCtaLabel}
+              onContinue={continueFromSeries}
+            />
+          ) : stage === "RESULT" ? (
+            resultView
+          ) : (
+            bracketView
+          )}
+        </div>
+      </TournamentStage>
     </main>
   );
 };

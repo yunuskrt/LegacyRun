@@ -26,6 +26,14 @@ export const POSITION_BG: Record<Position, string> = {
   C: "bg-pos-c",
 };
 
+export const POSITION_SOFT_BG: Record<Position, string> = {
+  PG: "bg-pos-pg/20",
+  SG: "bg-pos-sg/20",
+  SF: "bg-pos-sf/20",
+  PF: "bg-pos-pf/20",
+  C: "bg-pos-c/20",
+};
+
 export const POSITION_GLOW: Record<Position, string> = {
   PG: "shadow-[0_0_1.25rem_-0.65rem_var(--pos-pg)]",
   SG: "shadow-[0_0_1.25rem_-0.65rem_var(--pos-sg)]",
