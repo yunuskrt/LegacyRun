@@ -23,6 +23,9 @@ type RunContextValue = {
   setSpeed: (speed: ReplaySpeed) => void;
   mode: ReplayMode;
   setMode: (mode: ReplayMode) => void;
+  // Clears everything a run owns. Speed and mode survive on purpose — they are
+  // preferences about how the player watches, not part of any one run.
+  resetRun: () => void;
 };
 
 const RunContext = React.createContext<RunContextValue | null>(null);
@@ -38,6 +41,14 @@ const RunProvider = ({ children }: Props) => {
   const [series, setSeries] = React.useState<SeriesState[]>([]);
   const [speed, setSpeed] = React.useState<ReplaySpeed>(DEFAULT_SPEED);
   const [mode, setMode] = React.useState<ReplayMode>(DEFAULT_MODE);
+
+  const resetRun = React.useCallback(() => {
+    setRun(null);
+    setBracket(null);
+    setMatchData(null);
+    setSeries([]);
+  }, []);
+
   const value = React.useMemo(
     () => ({
       run,
@@ -52,8 +63,9 @@ const RunProvider = ({ children }: Props) => {
       setSpeed,
       mode,
       setMode,
+      resetRun,
     }),
-    [run, bracket, matchData, series, speed, mode]
+    [run, bracket, matchData, series, speed, mode, resetRun]
   );
 
   return <RunContext.Provider value={value}>{children}</RunContext.Provider>;

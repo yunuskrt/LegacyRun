@@ -18,6 +18,7 @@ Not Started
 
 ## History
 
+
 ### Phase 1 — Project Foundation Setup
 
 Cleared the `create-next-app` boilerplate and installed the stack: Prisma 7 + `@prisma/adapter-neon`, `motion`, Zod, shadcn/ui (`radix`/`nova` preset), Vitest, Prettier. Set up the `src/` folder structure with `prisma/` and `scripts/` at the root.
@@ -577,3 +578,37 @@ Not verified: **the post-Finals hand-off was never exercised** — `CONTINUE TO 
 Still open: **run state is not persisted** — a reload loses the run, its bracket and its results, unchanged since Phase 12 and now Phase 19's to settle. Phase 13's draft-board race guard still wedges the board on "Drawing a team" under scripted clicking; the driver waits it out. No touch-drag support.
 
 Also in this commit: Phase 18 ticked complete in `context/todo.md` (18/24).
+
+### Phase 19 — Results & Run Summary
+
+**Phase 19 complete.** The run has an ending: `/play/tournament` now runs bracket → series → result with no dead ends, closing the four-phase tournament UI arc. Ships `src/lib/run-summary.ts`, four components under `src/components/tournament/`, a `readOnly` prop on `BracketLadder`/`BracketSpine`, `resetRun` on `RunProvider`, and 27 Vitest tests (430 → 457). No schema change, no migration, no new dependency, no database read or write — every figure is derived from the `SeriesState[]` Phase 15 already computed.
+
+**Run persistence is settled, and the answer is no.** A reload still loses the run, its bracket and its results; D2 (`No squad in play`) remains the reload behaviour everywhere, the result screen included. Phase 12's rejection of `sessionStorage` stands rather than being reversed — the alternative buys re-opening an ending at the cost of a real failure mode (a bracket serialized by an older build rehydrating into new code) against hard constraint 13. **The question open since Phase 12 is now closed, not deferred.**
+
+Gotchas:
+
+- **`runOutcome` was deliberately not reimplemented.** The spec lists it as a `run-summary.ts` function returning `opponent` and `seriesScore` on the eliminated branch, but Phase 16 already exports one and the page routes stages off it; widening its return type breaks that test's `toEqual`. Those two fields are exactly the last `runPath` row's, already computed, so `eliminationRow(path)` supplies them. **One traversal, one source of the CHAMPION/ELIMINATED decision.**
+- **`signatureGame`'s ordering rule is stated in the module and pinned by test:** later round → game 7 → larger margin → later game, over the squad's **wins only** (the line reads "over the …", which a defeat cannot be phrased as; a run that never won has no signature). Both mockups reproduce under it. It got a genuine test in the browser — a run whose Round 1 held both a **game-7 win (+8)** and a **+11 blowout** correctly showed the Semifinals' only win at **margin +1**, which is the case that separates this ordering from "biggest margin".
+- **The margin-first alternative was rejected on the spec's own wording** ("preferring the latest round"). Putting game 7 above round would also reproduce both mockups, so the mockups alone could not decide it.
+- **`RunPathRow` is the module's unit, not the bracket.** `runPath` traverses once via Phase 16's `squadPath`; `playoffRecord`, `runScoringLeader`, `signatureGame` and `eliminationRow` all take rows. That is what makes them testable against hand-built fixtures with no bracket at all — and the fixtures deliberately put the squad on `AWAY`, which catches anything reading `HOME`.
+- **Two rules were extracted out of `RunResultScreen` during `/feature test`.** `eliminationHeadline` carries the article (Phase 16's `ROUND_PHRASE`, not the bare label) and `defeatSubtitle` reads **opponent-first** — deliberately the inverse of `squadSeriesScore`'s squad-first ordering used everywhere else on the screen. Neither could be pinned while it sat in a component. Same move as Phase 18's `gameAdvance`/`seriesStageOf`, Phase 17's `nextTick`, Phase 13's `rerollRequest`, Phase 11's `mode` dispatch.
+- **`signatureLine` builds the whole sentence in the module** so a matchup with no resolved opponent drops the clause instead of rendering "over the the field".
+- **The archive is unmasked on purpose.** C3 passes `bracket.rounds` rather than `visibleRounds(...)`, and reveals `finalsOpponent(bracket)` unconditionally — after the run ends, "3 ROUNDS AWAY" on the champion stub would be wrong. `readOnly` also forces `matchupCardState` to never be `NEXT` and opens `BracketSpine` expanded; `nextSquadMatchup` already returns null on a finished run, so the prop is explicitness, not mechanism.
+- **The squad rail is hidden on the RESULT stage only** — the recap lists the five itself, and the rail would print them twice.
+- **`resetRun` clears run, bracket, matchData and series but not speed or mode** — those are preferences about how the player watches, not part of any one run.
+- **The champion path is still unreachable by playing**, fourth phase running. C1 was reached through a temporary `?dev=champion` shortcut that reseeded `playMatchup` until the squad won — so the games, logs and every recap figure stayed real — **deleted before commit** (`grep` for `dev=champion`, `DEV SHORTCUT`, `devWin` returns nothing). Phase 16 used the same device.
+- **Playwright's `browser_resize` still scales by 4/3 on this machine** (request `width × 0.75`), unchanged since Phase 16.
+
+**One defect found by driving, and it was a repeat.** The elimination overline read **"ELIMINATED IN THE ROUND 1"** — precisely the article bug Phase 16 solved with `ROUND_PHRASE`, in a phase that had `ROUND_PHRASE` imported two files away. Fixed, then extracted and pinned across all four rounds during `/feature test`.
+
+**Ten mutations, `run-summary.ts` byte-identical after each.** Killed: signature ordering by margin before round, signature accepting defeats, the leader's opposing-side guard, `runPath` reading `homeWins`, `runPath` including undecided series, the signature tie-break inverted, `eliminationRow` returning the last row regardless of outcome, points-per-game undivided, the headline rebuilt from the bare label with a hardcoded article, and the subtitle flipped to squad-first. **One survived first time:** dropping the leader's side guard passed all 23 tests, because the fixture gave the opponent exactly 60 against Jordan's 60 and the tie resolved back by insertion order. The fixture was raised to 70; the mutant now dies. Same class of hole as Phase 12's name-cap test and Phase 14's non-overlapping bands.
+
+Verified: `npm test` (457), `tsc --noEmit`, `lint`, `format:check`, `build` — both pages still prerender static, both API routes still dynamic. Browser-driven against live Neon with **zero console errors or warnings**, no horizontal overflow at true CSS widths of **391, 768, 1024, 1280 and 1440**, both CTAs 44px and full-width on mobile with the primary on top.
+
+Two full runs, **both unnamed**, so `YOUR SQUAD` was checked as the ~40px hero on C1 and C2: a **champion** reading `16-9` against a path of 4-3 / 4-3 / 4-2 / 4-1, and an **elimination** reading `5-7` against game logs captured off the series cards. A third, earlier run went out in Round 1 and correctly showed a one-row path with `1-4`. C3 round-trips with no `NEXT UP` ring, no play CTA, the far half resolved and the Western champion revealed — and **its four squad rows independently matched the recap path**, which is a cross-check of `runPath` against a different rendering of the same data. `Start a new run` landed on an empty board, and the next run drew a fresh WEST bracket instead of the previous EAST one — that, not the empty board, is what proves `resetRun` cleared the context. `Dynasty` appears in `src/` only inside test fixtures.
+
+Not verified, all recorded before ticking the phase: **C1 was photographed at 1440 but never at 390** (C2 was, and they share components); **the result screen was not re-driven after `/feature test` extracted the two copy rules**, though both are now pinned by test and the wiring typechecks; **reload-shows-`No squad in play` was not re-checked here**, unchanged since Phase 12; and the **Round-1 headline after the fix** rests on its test rather than a browser sighting. The four components have no tests and `resetRun` has none, both per `coding-standards.md` — after the extraction there is nothing left in them a test would not be asserting back to itself.
+
+Still open: **the champion path cannot be reached by playing** — four phases of evidence now, and Phase 15's §3.2 saturation concern is the standing explanation. No touch-drag support. `bracketSlot` remains unrendered by design.
+
+Also in this commit: Phase 19 ticked complete in `context/todo.md` (19/24), and the `next dev` agent-rules block in `CLAUDE.md` committed with the work to keep the tree clean.

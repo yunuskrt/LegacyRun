@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Crown, Trophy } from "lucide-react";
 import { useRun } from "@/components/play/RunProvider";
 import BracketLadder from "@/components/tournament/BracketLadder";
 import BracketSpine from "@/components/tournament/BracketSpine";
+import RunResultScreen from "@/components/tournament/RunResultScreen";
 import SeriesReplay from "@/components/tournament/SeriesReplay";
 import SquadRail from "@/components/tournament/SquadRail";
 import TournamentEmptyState from "@/components/tournament/TournamentEmptyState";
@@ -53,7 +54,9 @@ const TournamentPage = ({}: Props) => {
     setSpeed,
     mode,
     setMode,
+    resetRun,
   } = useRun();
+  const router = useRouter();
   const [error, setError] = React.useState<string | null>(null);
   const [retryToken, setRetryToken] = React.useState(0);
   const [stage, setStage] = React.useState<StageId>("BRACKET");
@@ -213,6 +216,18 @@ const TournamentPage = ({}: Props) => {
           : null
       : null;
 
+  const startNewRun = () => {
+    resetRun();
+    router.push("/play/draft");
+  };
+
+  // The archive shows the finished bracket in full: no masking, no "next up"
+  // ring, and the far-conference champion revealed whatever round the run
+  // ended in.
+  const isArchive = stage === "ARCHIVE";
+  const bracketRounds = isArchive ? bracket.rounds : rounds;
+  const bracketChampion = isArchive ? finalsOpponent(bracket) : champion;
+
   const bracketView = (
     <>
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -221,25 +236,39 @@ const TournamentPage = ({}: Props) => {
             {CONFERENCE_NAME[conference].toUpperCase()} CONFERENCE BRACKET
           </p>
           <h1 className="text-foreground mt-1 flex items-center gap-3 text-3xl font-bold sm:text-4xl">
-            {nextMatchup?.round === "NBA_FINALS" && (
+            {!isArchive && nextMatchup?.round === "NBA_FINALS" && (
               <Trophy className="text-primary size-7" aria-hidden="true" />
             )}
-            {nextMatchup ? ROUND_LABELS[nextMatchup.round] : "Your bracket"}
+            {isArchive
+              ? "The run is complete"
+              : nextMatchup
+                ? ROUND_LABELS[nextMatchup.round]
+                : "Your bracket"}
           </h1>
         </div>
 
-        {nextMatchup && (
+        {isArchive ? (
           <button
             type="button"
-            onClick={playNextRound}
-            className="bg-gold text-primary-foreground rounded-xl px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase"
+            onClick={() => setStage("RESULT")}
+            className="border-border bg-secondary text-foreground min-h-11 rounded-xl border px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase"
           >
-            {PLAY_CTA[nextMatchup.round]}
+            Back to results
           </button>
+        ) : (
+          nextMatchup && (
+            <button
+              type="button"
+              onClick={playNextRound}
+              className="bg-gold text-primary-foreground rounded-xl px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase"
+            >
+              {PLAY_CTA[nextMatchup.round]}
+            </button>
+          )
         )}
       </header>
 
-      {finalsSlot && (
+      {!isArchive && finalsSlot && (
         <p className="border-primary/50 bg-card/60 text-foreground flex items-center gap-3 rounded-xl border px-4 py-3 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
           <Crown className="text-primary size-4 shrink-0" aria-hidden="true" />
           One series from the title — {squadName} vs {finalsSlot.seasonYear}{" "}
@@ -249,66 +278,50 @@ const TournamentPage = ({}: Props) => {
 
       <div className="hidden md:block">
         <BracketLadder
-          rounds={rounds}
+          rounds={bracketRounds}
           squad={squad}
           series={series}
           nextMatchupId={nextMatchup?.id ?? null}
           farConference={farConference}
-          finalsOpponent={champion}
+          finalsOpponent={bracketChampion}
           roundsUntilFinals={roundsUntilFinals(bracket)}
+          readOnly={isArchive}
         />
       </div>
 
       <div className="md:hidden">
         <BracketSpine
-          rounds={rounds}
+          rounds={bracketRounds}
           squad={squad}
           series={series}
           nextMatchupId={nextMatchup?.id ?? null}
           farConference={farConference}
-          finalsOpponent={champion}
+          finalsOpponent={bracketChampion}
           roundsUntilFinals={roundsUntilFinals(bracket)}
+          readOnly={isArchive}
         />
       </div>
     </>
   );
 
   const resultView = (
-    <div className="mx-auto w-full max-w-xl py-10 text-center">
-      <h1
-        className={`text-3xl font-bold tracking-wide uppercase ${
-          outcome.kind === "CHAMPION" ? "text-primary" : "text-destructive"
-        }`}
-      >
-        {outcome.kind === "CHAMPION" ? "NBA Champions" : "Run ended"}
-      </h1>
-      <p className="text-foreground mt-3 text-lg font-semibold">{squadName}</p>
-      {outcome.kind === "ELIMINATED" && (
-        <p className="text-muted-foreground mt-2 text-sm">
-          Eliminated in {ROUND_PHRASE[outcome.round]}.
-        </p>
-      )}
-      <div className="mt-8 flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={() => setStage("BRACKET")}
-          className="border-border text-muted-foreground rounded-lg border px-4 py-3 text-xs font-semibold tracking-[0.16em] uppercase"
-        >
-          Review bracket
-        </button>
-        <Link
-          href="/play/draft"
-          className="text-primary text-sm font-semibold underline"
-        >
-          Start a new run
-        </Link>
-      </div>
-    </div>
+    <RunResultScreen
+      bracket={bracket}
+      series={series}
+      squad={squad}
+      squadName={squadName}
+      isChampion={outcome.kind === "CHAMPION"}
+      onReviewBracket={() => setStage("ARCHIVE")}
+      onNewRun={startNewRun}
+    />
   );
 
   return (
     <main className="bg-room flex flex-1 flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10">
-      <SquadRail squad={squad} conference={conference} />
+      {/* The result screen lists the five itself, so the rail would repeat them. */}
+      {stage !== "RESULT" && (
+        <SquadRail squad={squad} conference={conference} />
+      )}
 
       <TournamentStage stage={stage}>
         <div className="flex flex-col gap-8">

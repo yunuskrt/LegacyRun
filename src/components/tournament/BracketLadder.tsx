@@ -15,6 +15,9 @@ type Props = {
   farConference: Conference;
   finalsOpponent: BracketOpponent | null;
   roundsUntilFinals: number;
+  // The archive: the run is over, so no matchup is "next" and nothing here is
+  // an affordance.
+  readOnly?: boolean;
 };
 
 const BracketLadder = ({
@@ -25,6 +28,7 @@ const BracketLadder = ({
   farConference,
   finalsOpponent,
   roundsUntilFinals,
+  readOnly = false,
 }: Props) => (
   <div className="grid grid-cols-1 gap-x-10 gap-y-8 md:grid-cols-2 lg:grid-cols-4">
     {rounds.map((round, columnIndex) => (
@@ -45,7 +49,7 @@ const BracketLadder = ({
             <MatchupCard
               key={matchup.id}
               matchup={matchup}
-              state={matchupCardState(matchup, nextMatchupId)}
+              state={matchupCardState(matchup, readOnly ? null : nextMatchupId)}
               squad={squad}
               series={series}
             />
