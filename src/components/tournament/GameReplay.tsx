@@ -10,9 +10,12 @@ import ReplayControlBar from "@/components/tournament/ReplayControlBar";
 import ReplayScoreboard from "@/components/tournament/ReplayScoreboard";
 import ScoringLeaders from "@/components/tournament/ScoringLeaders";
 import SeriesBanner from "@/components/tournament/SeriesBanner";
+import { useAutoAdvance } from "@/hooks/useAutoAdvance";
 import { useReplay } from "@/hooks/useReplay";
 import { periodSummary } from "@/lib/replay";
+import { gameAdvance } from "@/lib/series-flow";
 import type { ReplaySpeed } from "@/lib/replay";
+import type { ReplayMode } from "@/lib/series-flow";
 import type { SeriesSideView } from "@/lib/tournament-view";
 import type { GameResult } from "@/types/match";
 
@@ -22,7 +25,10 @@ type Props = {
   away: SeriesSideView;
   winsBefore: { home: number; away: number };
   speed: ReplaySpeed;
+  mode: ReplayMode;
   ctaLabel: string;
+  onSpeedChange: (speed: ReplaySpeed) => void;
+  onModeChange: (mode: ReplayMode) => void;
   onFinish: () => void;
 };
 
@@ -32,11 +38,22 @@ const GameReplay = ({
   away,
   winsBefore,
   speed,
+  mode,
   ctaLabel,
+  onSpeedChange,
+  onModeChange,
   onFinish,
 }: Props) => {
-  const { frame, cursor, status } = useReplay(game, speed);
+  const { frame, cursor, status, jumpToEnd } = useReplay(game, speed);
+  const [skipped, setSkipped] = React.useState(false);
   const host = game.hostSide === "HOME" ? home : away;
+
+  useAutoAdvance(gameAdvance(status === "FINAL", mode, skipped), onFinish);
+
+  const skip = () => {
+    setSkipped(true);
+    jumpToEnd();
+  };
 
   // At the final buzzer this game joins the series count — and the winner comes
   // from the score on screen, not from `game.winner`.
@@ -49,7 +66,10 @@ const GameReplay = ({
       : winsBefore;
 
   return (
-    <div className="flex flex-col gap-5">
+    // The control bar is pinned to the viewport below md, so the column has to
+    // reserve its height or the CTA scrolls underneath it. 144px covers the
+    // two-row bar the narrowest widths wrap to (measured 141px at 390).
+    <div className="flex flex-col gap-5 pb-36 md:pb-0">
       <SeriesBanner
         home={home}
         away={away}
@@ -120,7 +140,14 @@ const GameReplay = ({
         </button>
       )}
 
-      <ReplayControlBar speed={speed} />
+      <ReplayControlBar
+        speed={speed}
+        mode={mode}
+        canSkip={status !== "FINAL"}
+        onSpeedChange={onSpeedChange}
+        onModeChange={onModeChange}
+        onSkip={skip}
+      />
     </div>
   );
 };

@@ -2,11 +2,24 @@
 
 import React from "react";
 import GameReplay from "@/components/tournament/GameReplay";
+import SeriesFaceOff from "@/components/tournament/SeriesFaceOff";
 import SeriesResultCard from "@/components/tournament/SeriesResultCard";
+import { useAutoAdvance } from "@/hooks/useAutoAdvance";
 import { ROUND_LABELS } from "@/lib/bracket";
 import { seriesWinsThrough } from "@/lib/replay";
-import { seriesSides } from "@/lib/tournament-view";
+import {
+  NO_ADVANCE,
+  isSeriesEnd,
+  seriesStageOf,
+  stageAdvance,
+} from "@/lib/series-flow";
+import {
+  opponentOf,
+  seriesSides,
+  squadDisplayName,
+} from "@/lib/tournament-view";
 import type { ReplaySpeed } from "@/lib/replay";
+import type { ReplayMode } from "@/lib/series-flow";
 import type { BracketMatchup } from "@/types/bracket";
 import type { Squad } from "@/types/game";
 import type { SeriesState } from "@/types/match";
@@ -15,24 +28,58 @@ type Props = {
   matchup: BracketMatchup;
   series: SeriesState;
   squad: Squad;
+  speed: ReplaySpeed;
+  mode: ReplayMode;
   ctaLabel: string;
+  onSpeedChange: (speed: ReplaySpeed) => void;
+  onModeChange: (mode: ReplayMode) => void;
   onContinue: () => void;
 };
-
-// Phase 18 owns the speed control; until then the replay runs at Normal.
-const SPEED: ReplaySpeed = "NORMAL";
 
 const SeriesReplay = ({
   matchup,
   series,
   squad,
+  speed,
+  mode,
   ctaLabel,
+  onSpeedChange,
+  onModeChange,
   onContinue,
 }: Props) => {
+  // The face-off plays once per series: this component is mounted when a
+  // series starts and unmounted when it hands back to the bracket, so game 1
+  // is the only game that ever sees `false` here.
+  const [tipped, setTipped] = React.useState(false);
   const [gameIndex, setGameIndex] = React.useState(0);
+
   const sides = seriesSides(matchup, squad);
+  const opponent = opponentOf(matchup);
+  const squadName = squadDisplayName(squad);
   const game = series.games[gameIndex];
-  const isLastGame = gameIndex === series.games.length - 1;
+
+  const tip = React.useCallback(() => setTipped(true), []);
+  const nextGame = React.useCallback(
+    () => setGameIndex((current) => current + 1),
+    []
+  );
+
+  const stage = seriesStageOf(tipped, Boolean(game), matchup, series);
+  const advance = stageAdvance(stage, mode);
+
+  useAutoAdvance(stage === "FACE_OFF" ? advance : NO_ADVANCE, tip);
+  useAutoAdvance(isSeriesEnd(stage) ? advance : NO_ADVANCE, onContinue);
+
+  if (stage === "FACE_OFF") {
+    return (
+      <SeriesFaceOff
+        round={matchup.round}
+        squad={squad}
+        squadName={squadName}
+        opponent={opponent}
+      />
+    );
+  }
 
   // Reading `games.length` here would be a leak if it reached the screen; it
   // only ever decides whether this replay hands over to the series card.
@@ -41,7 +88,8 @@ const SeriesReplay = ({
       <SeriesResultCard
         matchup={matchup}
         series={series}
-        squad={squad}
+        squadName={squadName}
+        opponent={opponent}
         ctaLabel={ctaLabel}
         onContinue={onContinue}
       />
@@ -60,9 +108,16 @@ const SeriesReplay = ({
         home={sides.home}
         away={sides.away}
         winsBefore={seriesWinsThrough(series.games, gameIndex)}
-        speed={SPEED}
-        ctaLabel={isLastGame ? "See the series result" : "Next game"}
-        onFinish={() => setGameIndex((current) => current + 1)}
+        speed={speed}
+        mode={mode}
+        ctaLabel={
+          gameIndex === series.games.length - 1
+            ? "See the series result"
+            : "Next game"
+        }
+        onSpeedChange={onSpeedChange}
+        onModeChange={onModeChange}
+        onFinish={nextGame}
       />
     </div>
   );

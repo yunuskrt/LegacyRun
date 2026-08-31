@@ -26,7 +26,12 @@ export const SPEED_FACTORS: Record<ReplaySpeed, number> = {
   FAST: 2.5,
 };
 
-export const MIN_EVENT_DELAY_MS = 120;
+// The floor, not the speed factor, is what sets the Fast budget: at 2.5 an
+// average ~32s scoring gap comes out under 80ms, so nearly every event at Fast
+// is clamped here. 100ms is the perceptual limit for reading changes as
+// discrete events rather than one blur — below it Fast stops being a game and
+// becomes a skip, which is what the design doc forbids.
+export const MIN_EVENT_DELAY_MS = 100;
 export const MAX_EVENT_DELAY_MS = 1200;
 export const BASE_PERIOD_BREAK_MS = 1500;
 
@@ -70,6 +75,18 @@ export const eventDelayMs = (
     Math.max(MIN_EVENT_DELAY_MS, gap * SPEED_FACTORS[speed])
   );
 };
+
+// The run of play only — quarter breaks are not in it, so a regulation game
+// spends this plus three breaks on screen.
+export const gameBudgetMs = (
+  events: readonly MatchEvent[],
+  speed: ReplaySpeed
+): number =>
+  events.reduce(
+    (total, event, index) =>
+      total + eventDelayMs(index > 0 ? events[index - 1] : null, event, speed),
+    0
+  );
 
 export const periodBreakMs = (speed: ReplaySpeed): number =>
   Math.round(

@@ -1,84 +1,113 @@
 import React from "react";
-import TeamSlotRow from "@/components/tournament/TeamSlotRow";
+import { Trophy } from "lucide-react";
 import { ROUND_LABELS } from "@/lib/bracket";
+import { squadGameLines } from "@/lib/series-flow";
 import {
-  seriesScoreLabel,
+  SQUAD_SHORT_CODE,
   squadSeriesScore,
   squadSideOf,
 } from "@/lib/tournament-view";
-import type { BracketMatchup } from "@/types/bracket";
-import type { Squad } from "@/types/game";
+import type { BracketMatchup, BracketOpponent } from "@/types/bracket";
 import type { SeriesState } from "@/types/match";
 
 type Props = {
   matchup: BracketMatchup;
   series: SeriesState;
-  squad: Squad;
+  squadName: string;
+  opponent: BracketOpponent | null;
   ctaLabel: string;
   onContinue: () => void;
 };
 
-// The Phase 17 seam: a plain, finished result. Phase 17 replaces this with a
-// paced replay and Phase 18 wraps it in controls.
+const Crest = ({ code, isSquad }: { code: string; isSquad: boolean }) => (
+  <span
+    className={`flex size-12 items-center justify-center rounded-full border text-[0.6875rem] font-bold tracking-tight ${
+      isSquad
+        ? "border-primary bg-primary/10 text-primary"
+        : "border-border bg-secondary text-muted-foreground"
+    }`}
+  >
+    {code}
+  </span>
+);
+
+// The series is over by the time this renders, so the full game-by-game list
+// reveals nothing ahead of its own replay.
 const SeriesResultCard = ({
   matchup,
   series,
-  squad,
+  squadName,
+  opponent,
   ctaLabel,
   onContinue,
 }: Props) => {
   const squadWon = series.winner === squadSideOf(matchup);
   const { squadWins, opponentWins } = squadSeriesScore(matchup, series);
-  const homeScore = seriesScoreLabel(series, "HOME");
-  const awayScore = seriesScoreLabel(series, "AWAY");
+  const lines = squadGameLines(matchup, series.games);
 
   return (
     <div className="mx-auto w-full max-w-xl">
       <div
-        className={`bg-card rounded-2xl border px-6 py-6 ${
+        className={`bg-card rounded-2xl border px-5 py-6 sm:px-6 ${
           squadWon ? "border-primary shadow-trophy" : "border-destructive/70"
         }`}
       >
-        <p className="text-muted-foreground text-center text-[0.625rem] font-semibold tracking-[0.18em]">
+        <p className="text-primary flex items-center justify-center gap-2 text-[0.625rem] font-bold tracking-[0.18em]">
+          {squadWon && <Trophy className="size-4" aria-hidden="true" />}
           {ROUND_LABELS[matchup.round].toUpperCase()}
         </p>
+
         <h2
-          className={`mt-2 text-center text-2xl font-bold tracking-wide uppercase ${
+          className={`mt-3 text-center text-3xl font-bold tracking-wide uppercase sm:text-4xl ${
             squadWon ? "text-primary" : "text-destructive"
           }`}
         >
           {squadWon ? "Series won" : "Series lost"} {squadWins}-{opponentWins}
         </h2>
 
-        <div className="mt-6 flex flex-col gap-4">
-          {matchup.home && (
-            <TeamSlotRow
-              slot={matchup.home}
-              squad={squad}
-              scoreLabel={homeScore}
-              eliminated={homeScore === null}
-              compact
-            />
-          )}
-          {matchup.away && (
-            <TeamSlotRow
-              slot={matchup.away}
-              squad={squad}
-              scoreLabel={awayScore}
-              eliminated={awayScore === null}
-              compact
-            />
-          )}
+        <div className="mt-6 flex items-start justify-center gap-6">
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+            <Crest code={SQUAD_SHORT_CODE} isSquad />
+            <p className="text-primary text-xs font-bold tracking-wide break-words uppercase">
+              {squadName}
+            </p>
+          </div>
+          <span className="text-muted-foreground mt-4 text-[0.625rem] font-bold tracking-[0.18em]">
+            VS
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
+            <Crest code={opponent?.teamSlug ?? "—"} isSquad={false} />
+            <p className="text-foreground text-xs font-semibold break-words">
+              {opponent
+                ? `${opponent.seasonYear} ${opponent.teamName}`
+                : "Opponent"}
+            </p>
+          </div>
         </div>
 
-        <ul className="border-border/70 text-muted-foreground mt-6 space-y-1 border-t pt-4 text-xs">
-          {series.games.map((game) => (
-            <li key={game.seed} className="flex justify-between gap-3">
-              <span>Game {game.gameNumber}</span>
-              <span className="text-foreground font-medium">
-                {game.homeScore}-{game.awayScore}
-                {game.periodScores.length > 4 &&
-                  ` (${game.periodScores.length - 4}OT)`}
+        <p className="text-muted-foreground mt-6 text-[0.625rem] font-bold tracking-[0.18em]">
+          GAME BY GAME
+        </p>
+        <ul className="mt-2 flex flex-col gap-1.5">
+          {lines.map((line) => (
+            <li
+              key={line.key}
+              className="bg-court flex items-center justify-between gap-3 rounded-lg px-3 py-2"
+            >
+              <span className="text-muted-foreground text-[0.625rem] font-bold tracking-[0.14em]">
+                GAME {line.gameNumber}
+              </span>
+              <span
+                className={`text-sm font-bold tabular-nums ${
+                  line.won ? "text-primary" : "text-muted-foreground"
+                }`}
+              >
+                {line.squadPoints}-{line.opponentPoints}
+                {line.overtimes > 0 && (
+                  <span className="ml-1 text-[0.625rem] font-semibold">
+                    {line.overtimes > 1 ? `${line.overtimes}OT` : "OT"}
+                  </span>
+                )}
               </span>
             </li>
           ))}
@@ -87,7 +116,11 @@ const SeriesResultCard = ({
         <button
           type="button"
           onClick={onContinue}
-          className="bg-gold text-primary-foreground mt-6 w-full rounded-lg px-4 py-3 text-xs font-bold tracking-[0.16em] uppercase"
+          className={`mt-6 min-h-11 w-full rounded-lg px-4 py-3 text-xs font-bold tracking-[0.16em] uppercase ${
+            squadWon
+              ? "bg-gold text-primary-foreground"
+              : "border-border text-foreground border"
+          }`}
         >
           {ctaLabel}
         </button>
