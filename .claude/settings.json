@@ -15,7 +15,9 @@
       "Bash(npx prettier *)",
       "Bash(npm run *)",
       "mcp__playwright__browser_snapshot",
-      "mcp__playwright__browser_type"
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_run_code_unsafe",
+      "mcp__playwright__browser_close"
     ]
   }
 }
