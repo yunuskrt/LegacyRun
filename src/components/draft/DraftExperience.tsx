@@ -58,6 +58,7 @@ const DraftExperience = ({ slots }: Props) => {
   const [state, dispatch] = React.useReducer(reducer, INITIAL_DRAFT_STATE);
   const [isFetchingTeam, setIsFetchingTeam] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [isHandingOff, setIsHandingOff] = React.useState(false);
   const inFlight = React.useRef<AbortController | null>(null);
 
   const open = openPositions(state, slots);
@@ -114,7 +115,9 @@ const DraftExperience = ({ slots }: Props) => {
 
   const handleConfirmSquad = (name: string, conference: Conference) => {
     setRun(buildRun(state.members, slots, name, conference));
-    setIsConfirmOpen(false);
+    // Unmounting skips the dialog's close animation, so its exit and the
+    // arriving page's entrance never run over each other.
+    setIsHandingOff(true);
     router.push("/play/tournament");
   };
 
@@ -192,13 +195,15 @@ const DraftExperience = ({ slots }: Props) => {
         </section>
       </div>
 
-      <SquadConfirmDialog
-        open={isConfirmOpen}
-        members={state.members}
-        slots={slots}
-        onOpenChange={setIsConfirmOpen}
-        onConfirm={handleConfirmSquad}
-      />
+      {!isHandingOff && (
+        <SquadConfirmDialog
+          open={isConfirmOpen}
+          members={state.members}
+          slots={slots}
+          onOpenChange={setIsConfirmOpen}
+          onConfirm={handleConfirmSquad}
+        />
+      )}
     </main>
   );
 };

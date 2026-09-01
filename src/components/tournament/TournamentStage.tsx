@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { FADE_RISE, transitionFor } from "@/lib/motion";
 
 export type StageId = "BRACKET" | "SERIES" | "RESULT" | "ARCHIVE";
 
@@ -14,10 +15,10 @@ const TournamentStage = ({ stage, children }: Props) => (
   <AnimatePresence mode="wait">
     <motion.div
       key={stage}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
+      initial={FADE_RISE.initial}
+      animate={FADE_RISE.animate}
+      exit={FADE_RISE.exit}
+      transition={transitionFor("base")}
     >
       {children}
     </motion.div>
