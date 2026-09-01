@@ -2,6 +2,7 @@
 
 import React from "react";
 import { animate, motion, useMotionValue, useTransform } from "motion/react";
+import { DURATION, EASE } from "@/lib/motion";
 
 type Props = {
   value: number;
@@ -15,7 +16,10 @@ const TweenNumber = ({ value, className }: Props) => {
   const rounded = useTransform(raw, (current) => Math.round(current));
 
   React.useEffect(() => {
-    const controls = animate(raw, value, { duration: 0.4, ease: "easeOut" });
+    const controls = animate(raw, value, {
+      duration: DURATION.slow,
+      ease: EASE.enter,
+    });
 
     return () => controls.stop();
   }, [raw, value]);

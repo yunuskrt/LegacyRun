@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Dices, Loader2 } from "lucide-react";
 import RerollPool from "@/components/draft/RerollPool";
 import RosterPlayerCard from "@/components/draft/RosterPlayerCard";
@@ -9,6 +9,7 @@ import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { formatSeason } from "@/lib/format";
+import { FADE_RISE, staggeredTransition, transitionFor } from "@/lib/motion";
 import { POSITION_TEXT } from "@/lib/position-style";
 import { cn } from "@/lib/utils";
 import type { PlayerAvailability, RerollKind } from "@/lib/draft";
@@ -30,8 +31,6 @@ type Props = {
   onDraftPlayer: (player: DraftablePlayer, position: Position) => void;
 };
 
-const STAGGER_CAP = 9;
-
 const PLACEHOLDER_ICON =
   "border-border text-muted-foreground mx-auto flex size-16 items-center justify-center rounded-xl border border-dashed";
 
@@ -50,6 +49,7 @@ const DraftBoard = ({
   onReroll,
   onDraftPlayer,
 }: Props) => {
+  const reduced = useReducedMotion() ?? false;
   const stateKey = isComplete
     ? "complete"
     : isFetchingTeam && !team
@@ -63,10 +63,10 @@ const DraftBoard = ({
       <AnimatePresence mode="wait">
         <motion.div
           key={stateKey}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+          initial={FADE_RISE.initial}
+          animate={FADE_RISE.animate}
+          exit={FADE_RISE.exit}
+          transition={transitionFor("base", reduced)}
           className="mb-5"
         >
           {isComplete ? (
@@ -131,14 +131,11 @@ const DraftBoard = ({
                 {team.players.map((player, index) => (
                   <motion.div
                     key={player.playerSeasonId}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.22,
-                      // Real rosters run past 20 players; an uncapped stagger
-                      // would take most of a second to finish revealing.
-                      delay: Math.min(index, STAGGER_CAP) * 0.03,
-                    }}
+                    initial={FADE_RISE.initial}
+                    animate={FADE_RISE.animate}
+                    transition={staggeredTransition("base", index, {
+                      reduced,
+                    })}
                   >
                     <RosterPlayerCard
                       player={player}

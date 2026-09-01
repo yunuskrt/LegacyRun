@@ -2,6 +2,7 @@
 
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { transitionFor } from "@/lib/motion";
 import { periodLabel } from "@/lib/replay";
 import type { FeedBadge, FeedRow } from "@/lib/replay";
 import type { SeriesSideView } from "@/lib/tournament-view";
@@ -48,7 +49,7 @@ const PlayByPlayFeed = ({ rows, home, away }: Props) => (
               layout
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
+              transition={transitionFor("quick")}
               className="border-border/40 flex items-center gap-2 border-b px-2 py-2 last:border-b-0"
             >
               <span className="text-muted-foreground w-16 shrink-0 text-[0.6875rem] tabular-nums">

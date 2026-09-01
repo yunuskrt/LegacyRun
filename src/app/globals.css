@@ -106,6 +106,28 @@
   );
   --shadow-trophy: 0 24px 60px -24px oklch(0.8 0.15 82 / 45%);
   --shadow-panel: 0 24px 60px -30px oklch(0 0 0 / 80%);
+
+  /* Motion vocabulary — mirrors src/lib/motion.ts. The values must stay
+     numerically identical; that file is the reference for the JS half. */
+  --duration-instant: 120ms;
+  --duration-quick: 180ms;
+  --duration-base: 240ms;
+  --duration-slow: 400ms;
+  --ease-enter: cubic-bezier(0, 0, 0.58, 1);
+  --ease-exit: cubic-bezier(0.42, 0, 1, 1);
+}
+
+/* Covers everything that is not a `motion` component — shadcn's primitives and
+   every `transition-colors` — which MotionConfig cannot reach. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Dark Trophy Room — see context/theme.md */

@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import { ROUND_LABELS } from "@/lib/bracket";
+import { transitionFor } from "@/lib/motion";
 import { faceOffSubLabel } from "@/lib/series-flow";
 import { SQUAD_SHORT_CODE, hasSquadName } from "@/lib/tournament-view";
 import type { BracketOpponent } from "@/types/bracket";
@@ -33,7 +34,7 @@ const SeriesFaceOff = ({ round, squad, squadName, opponent }: Props) => {
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.35, ease: "easeOut" }}
+      transition={transitionFor("base")}
       className="flex min-h-[60vh] flex-col items-center justify-center gap-8 px-4 text-center"
     >
       <p className="text-primary text-[0.6875rem] font-bold tracking-[0.22em]">

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
+import { transitionFor } from "@/lib/motion";
 import { periodBreakLabel } from "@/lib/replay";
 import type { PeriodSummary } from "@/lib/replay";
 import type { SeriesSideView } from "@/lib/tournament-view";
@@ -17,7 +18,7 @@ const PeriodBreakCard = ({ summary, home, away }: Props) => (
     initial={{ opacity: 0, scale: 0.96 }}
     animate={{ opacity: 1, scale: 1 }}
     exit={{ opacity: 0, scale: 0.96 }}
-    transition={{ duration: 0.2, ease: "easeOut" }}
+    transition={transitionFor("quick")}
     className="border-primary bg-card shadow-trophy w-full max-w-sm rounded-2xl border px-6 py-6 text-center"
     role="status"
   >
