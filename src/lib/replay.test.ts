@@ -7,6 +7,7 @@ import {
   MAX_EVENT_DELAY_MS,
   MIN_EVENT_DELAY_MS,
   PRE_TIP_CURSOR,
+  REGULATION_SECONDS,
   RUN_BADGE_FLOOR,
   SPEED_FACTORS,
   clockToSeconds,
@@ -19,6 +20,7 @@ import {
   isLeadChange,
   leadersSoFar,
   lineScoreThrough,
+  momentumAxisEnd,
   momentumSeries,
   nextTick,
   periodBoundaries,
@@ -425,6 +427,152 @@ describe("momentumSeries", () => {
     for (let index = 1; index < series.length; index += 1) {
       expect(series[index].x).toBeGreaterThanOrEqual(series[index - 1].x);
     }
+  });
+});
+
+// The strip's x-axis is the one thing on the replay that has to know how long
+// the game will be, which is exactly what the frame is not allowed to know. An
+// overtime game is the only case where the two can differ, so every assertion
+// here is driven off one — `OT_SEED` reaches a 5th period, `DOUBLE_OT_SEED` a
+// 6th, both at even strength.
+const OT_SEED = "ot-51";
+const DOUBLE_OT_SEED = "ot-221";
+
+const overtimeGame = (seed: string): GameResult => realGame(seed, 2, 2);
+
+describe("momentumAxisEnd", () => {
+  it("is regulation length for every cursor of a regulation game", () => {
+    const game = realGame("axis-regulation");
+
+    expect(REGULATION_SECONDS).toBe(2880);
+    expect(game.events[game.events.length - 1].period).toBe(4);
+
+    for (let cursor = -1; cursor < game.events.length; cursor += 1) {
+      expect(momentumAxisEnd(game.events, cursor)).toBe(REGULATION_SECONDS);
+    }
+  });
+
+  it("stays at regulation through regulation even when the game goes to double overtime", () => {
+    const game = overtimeGame(DOUBLE_OT_SEED);
+    const { events } = game;
+
+    expect(events[events.length - 1].period).toBe(6);
+
+    const regulation = events
+      .map((event, index) => ({ event, index }))
+      .filter(({ event }) => event.period <= 4);
+
+    expect(regulation.length).toBeGreaterThan(50);
+
+    for (const { index } of regulation) {
+      expect(momentumAxisEnd(events, index)).toBe(REGULATION_SECONDS);
+    }
+  });
+
+  it("extends on the first event of an overtime, not before it", () => {
+    const { events } = overtimeGame(OT_SEED);
+    const firstOvertime = events.findIndex((event) => event.period === 5);
+
+    expect(firstOvertime).toBeGreaterThan(0);
+    expect(momentumAxisEnd(events, firstOvertime - 1)).toBe(REGULATION_SECONDS);
+    expect(momentumAxisEnd(events, firstOvertime)).toBe(
+      REGULATION_SECONDS + 5 * 60
+    );
+  });
+
+  it("extends once more for a second overtime", () => {
+    const { events } = overtimeGame(DOUBLE_OT_SEED);
+    const secondOvertime = events.findIndex((event) => event.period === 6);
+
+    expect(secondOvertime).toBeGreaterThan(0);
+    expect(momentumAxisEnd(events, secondOvertime - 1)).toBe(
+      REGULATION_SECONDS + 5 * 60
+    );
+    expect(momentumAxisEnd(events, secondOvertime)).toBe(
+      REGULATION_SECONDS + 10 * 60
+    );
+  });
+
+  // The same shape as the spoiler invariant: if deleting the rest of the log
+  // cannot change the axis, the axis cannot have been derived from it.
+  it("is unchanged by deleting every event after the cursor", () => {
+    const { events } = overtimeGame(DOUBLE_OT_SEED);
+
+    for (let cursor = -1; cursor < events.length; cursor += 1) {
+      expect(momentumAxisEnd(events, cursor)).toBe(
+        momentumAxisEnd(events.slice(0, cursor + 1), cursor)
+      );
+    }
+  });
+
+  // The strip plots against regulation and scales the whole curve by
+  // REGULATION_SECONDS / axis, so an axis that could fall below regulation would
+  // scale the curve *up* and push it past the viewBox edge. It cannot.
+  it("never falls below regulation, so the curve can only compress inward", () => {
+    const { events } = overtimeGame(DOUBLE_OT_SEED);
+
+    for (let cursor = -1; cursor < events.length; cursor += 1) {
+      expect(momentumAxisEnd(events, cursor)).toBeGreaterThanOrEqual(
+        REGULATION_SECONDS
+      );
+    }
+  });
+
+  it("carries onto the frame", () => {
+    const game = overtimeGame(OT_SEED);
+    const firstOvertime = game.events.findIndex((event) => event.period === 5);
+
+    expect(replayFrame(game, firstOvertime - 1).momentumAxis).toBe(
+      REGULATION_SECONDS
+    );
+    expect(replayFrame(game, firstOvertime).momentumAxis).toBe(
+      REGULATION_SECONDS + 5 * 60
+    );
+  });
+});
+
+describe("the frame's lead-change flag", () => {
+  it("marks the flips and nothing else", () => {
+    const flags = HAND_LOG.map(
+      (_, cursor) => replayFrame({ events: HAND_LOG }, cursor).leadChange
+    );
+
+    expect(flags).toEqual([false, true, true, false, false]);
+  });
+
+  // The whole reason the flag is threaded down rather than re-derived: the
+  // scoreboard flash and the feed badge must be the same decision.
+  it("agrees with the feed's badge at every cursor", () => {
+    const game = realGame("lead-flag");
+
+    for (let cursor = 0; cursor < game.events.length; cursor += 1) {
+      const frame = replayFrame(game, cursor);
+
+      expect(frame.leadChange).toBe(
+        frame.feed[0].badges.includes("LEAD_CHANGE")
+      );
+    }
+  });
+
+  // Why the scoreboard is handed the cursor a flip landed on rather than the
+  // flag itself: back-to-back flips are ordinary, and a boolean would hold true
+  // across both and flash once.
+  it("flags consecutive cursors when the lead flips straight back", () => {
+    const game = realGame("lc-1", 2, 2);
+    const flags = game.events.map(
+      (_, cursor) => replayFrame(game, cursor).leadChange
+    );
+    const backToBack = flags.findIndex(
+      (flag, index) => index > 0 && flag && flags[index - 1]
+    );
+
+    expect(backToBack).toBeGreaterThan(0);
+  });
+
+  it("is false before the tip", () => {
+    expect(
+      replayFrame(realGame("lead-pre-tip"), PRE_TIP_CURSOR).leadChange
+    ).toBe(false);
   });
 });
 

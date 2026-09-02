@@ -97,6 +97,7 @@ const GameReplay = ({
             period={frame.period}
             clock={frame.clock}
             status={status}
+            leadChangeAt={frame.leadChange ? cursor : null}
           />
           <LineScoreTable
             cells={frame.lineScore}
@@ -107,6 +108,7 @@ const GameReplay = ({
           />
           <MomentumStrip
             points={frame.momentum}
+            axisEnd={frame.momentumAxis}
             margin={frame.margin}
             home={home}
             away={away}

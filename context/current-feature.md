@@ -1005,3 +1005,156 @@ Still open: run state is not persisted (settled as a deliberate no in Phase 19).
 `bracketSlot` remains unrendered by design. No touch-drag support. Parts 04
 (match replay) and 05 (result screen) remain — **part 05 inherits this part's
 components in `readOnly` mode**, where `roundMotionFor` already returns `NONE`.
+
+### Phase 20 (part 4) — Match Replay Motion
+
+**Phase 20 stays 🟡** — fourth of five slices. The replay stage of
+`/play/tournament` gets items 13–18 of `context/docs/motion-animation.md`: the
+lead-change flash, the momentum line extending, scoring leaders reordering, the
+series dot at the buzzer, the control bar's sliding indicator, and the series
+result card's entrance. Ships `momentumAxisEnd` + `REGULATION_SECONDS` in
+`src/lib/replay.ts`, two new `ReplayFrame` fields, seven touched components, and
+11 Vitest tests (521 → 532). No schema change, no migration, **no new
+dependency**, no database read or write — every figure comes from a log Phase 15
+had already computed.
+
+**Both inherited constraints held by construction.** Nothing gates on an
+animation, because the log exists before the first frame; measured **33.00s
+motion-on against 33.05s reduced** at the same width and speed, which is the
+whole of hard constraint 10 in one number. And the two new frame fields went
+through `replayFrame`, so **Phase 17's spoiler test covers them with no new test
+code** — the invariant enforces itself exactly as the spec predicted.
+
+Gotchas:
+
+- **Item 14 needed the x-axis replaced, and where the replacement lives decided
+  whether it was testable at all.** The strip normalized x to `lastX`, so the
+  whole curve rescaled every event — it stretched rather than grew, and there was
+  no fixed axis to extend along. `momentumAxisEnd` is regulation length until an
+  overtime is *actually entered*, and it sits in `replay.ts` reached through
+  `ReplayFrame.momentumAxis`. In `MomentumStrip` nothing would have pinned it.
+- **The leak and the correct code are indistinguishable on a regulation game.**
+  Deriving the axis from `periodScores.length` or the last event's period only
+  differs on a game that will *later* run long. The load-bearing test therefore
+  asserts the axis is exactly regulation at **every cursor in periods 1–4 of a
+  double-overtime game**; that mutation kills 5 tests. `ot-51` (5 periods) and
+  `ot-221` (6) were found by probing seeds at even strength.
+- **The curve is plotted against regulation and the whole group scaled by
+  `REGULATION_SECONDS / axis`.** An overtime compresses it in one transition
+  rather than every point jumping at once. The tip dot and the curve stay glued
+  through that rescale **by construction, not by tuning**: `left` is linear in
+  `scaleX` and both tween the same duration and easing.
+- **A test replaces an argument I could not verify on screen.** Because the
+  scale factor is `REGULATION_SECONDS / axis`, an axis below regulation would
+  scale the curve *up* and past the viewBox edge. `momentumAxisEnd` never falls
+  below regulation at any cursor — asserted, so the anti-clipping property is
+  pinned rather than reasoned.
+- **The tip dot is HTML, not an SVG circle.** `preserveAspectRatio="none"` would
+  render a circle as a badly stretched ellipse. Measured: **no ancestor between
+  the dot and `<body>` has non-visible overflow**, and its maximum overhang is
+  exactly 3px — its own radius, at the end of regulation, inside the card's 16px
+  padding.
+- **Item 13's flag is threaded, not re-derived, and that is the point.**
+  `ReplayScoreboard` derived `leader` locally; `isLeadChange` already drove the
+  feed badge. The strongest test is the agreement one: at every cursor of a real
+  game, `frame.leadChange` equals whether `frame.feed[0]` carries a
+  `LEAD_CHANGE` badge. Flash and badge are now one decision in the module, not
+  two in two components.
+- **`leadChangeAt` is a cursor, not a boolean, and real data says it has to be.**
+  A boolean stays true across two consecutive flips and would flash once.
+  Probing found back-to-back lead changes in **5 of the first 7 seeds** — it is
+  ordinary, not theoretical — and a test pins that the case exists.
+- **`ReplayScoreboard` holds the app's only imperative animation.** Everything
+  else is declarative. "A new flash replaces the running one rather than being
+  enqueued behind it" is precisely what starting an animation on an element
+  does, and no declarative form expresses it; a re-key would remount
+  `TweenNumber` and restart the score tween.
+- **`entranceFrom(true, reduced, …)` passes a literal `true`** at three call
+  sites. It reads oddly, but part 03 made that helper the single home of
+  "reduced means no entrance", and duplicating the ternary into components is
+  the worse trade.
+- **`SeriesBanner`'s dot needed an explicit `reduced` guard, found by
+  measuring.** It scales in, and part 02's finding is that `MotionConfig` *snaps*
+  a transform target rather than omitting it. The other new opacity fades
+  deliberately keep playing under reduced motion, per part 01's rule.
+- **`AnimatePresence initial={false}` is what makes item 16 fire at the buzzer
+  and nowhere else.** `GameReplay` is keyed by `game.seed`, so the banner
+  remounts each game; without it, every existing dot would replay on mount.
+
+**One defect found in review by measuring what I had not measured, and it was
+mine.** `ScoringLeaders` bounced the column 44px on every leader change:
+`AnimatePresence`'s default mode keeps a departing row **in flow** while its
+replacement enters, so a three-row list briefly had four — **159 frames at 4
+children, height 124px → 168px**, ~13 times in one game, shoving the momentum
+strip and everything below it. The `start` pass measured that rows *slide* (836
+transform frames) and read that as the item working; measuring what moves never
+asks whether the container grew. Fixed with `mode="popLayout"` and `relative` on
+the `<ul>`; re-measured at **never more than 3 in flow, both columns capped at
+124px, and `moves: 681`** so the slide survived. Also restored a guard dropped
+during the rewrite — `MomentumStrip` read `points[points.length - 1].x` where
+the old normalization had `?.`.
+
+**Eight mutations, all dead**, `replay.ts` byte-identical after each: the axis
+derived from the whole log (5 tests — the leak the spec named), the axis never
+extending (3), the axis losing its regulation floor (2, and 3 for the stronger
+form), the frame reading the finished log for `leadChange` (3) or for
+`momentumAxis` (1), and a go-ahead from a tie counting as a lead change (4).
+
+**Nothing was extracted this phase, and that is the finding.** Every earlier
+slice moved a rule out of a component to make it pinnable — Phase 11's `mode`
+dispatch, 13's `rerollRequest`, 17's `nextTick`, 18's `gameAdvance`, 19's
+`eliminationHeadline`, part 02's `draft-preview.ts`, part 03's `roundMotionFor`.
+Here the two rules that mattered were already in `replay.ts` **because the spec
+put them there**. The other six items are transitions with no decisions in them.
+
+Verified: `npm test` (532), `tsc --noEmit`, `lint`, `format:check`, `build` —
+both `/play` routes still prerender static, all four API routes still dynamic.
+Scope held by diff, not assertion: `git diff --name-only` shows no
+`src/lib/match.ts`, no `src/types/match.ts`, no API route, no `src/hooks/`, no
+`src/lib/series-flow.ts`.
+
+Browser-driven against live Neon with **zero console errors and zero warnings**,
+at true CSS widths of **391, 768, 1024, 1280 and 1440 with no horizontal
+overflow, no scoreboard collision and no line-score clipping at any**. These run
+135–470ms, shorter than a screenshot round-trip, so everything below is a
+per-`requestAnimationFrame` measurement off computed style:
+
+- **The flash is one-for-one with the feed.** A full game produced exactly 2
+  flashes against exactly 2 `LEAD_CHANGE` badges, on the sides the badge scores
+  name (`87-88` → AWAY, `89-88` → HOME), ramping 0.30 → 1.00 over ~8 frames.
+- The momentum tip advances **0px → 340px → 607px** through a game, so the line
+  genuinely extends rather than stretching; line-score columns stayed Q1–Q4 and
+  `scaleX` stayed 1 across ~18 games.
+- Leaders: 681 frames of genuine slide, **2167 frames in 32s — 60fps sustained
+  at Fast**, which was the spec's stated risk.
+- The series dot: count 3 → 4 at the buzzer, with the new dot alone running
+  0.60 → overshoot 1.017 → 1.000 while the three existing ones read `1.00 /
+  none` every frame.
+- The control bar: speed pill slides 131 → 225 while the mode pill holds at
+  1046, then the mode pill slides 1046 → 1140 while speed holds — two
+  `layoutId`s confirmed from both directions. All six controls exactly 44px.
+- The result card ramps opacity and `y: 7.72 → 0` over ~240ms with lines
+  stepping ~32ms apart (`STAGGER_STEP`), settling to `transform: none`. The
+  hand-off measured **`maxConcurrent: 1` on every frame** — outgoing fades to 0,
+  then incoming fades in. **One transition, not two.**
+- Reduced motion is a clean A/B on the same width and speed: **31 flash frames
+  and 836 leader slides with motion on, zero and zero with it off**, and the
+  game still takes the same wall-clock time.
+
+Not verified: **no overtime game came up in ~18 played games across two runs**,
+so the axis rescale was never seen widening on screen. What was verified is the
+negative — it never widened when it should not have, in any of them — and the
+positive case is covered by four unit tests including the anti-leak one. The
+reduced-motion pass used Playwright's media emulation rather than a real OS
+setting (unchanged since part 01). The seven touched components have no tests,
+per `coding-standards.md`.
+
+**A performance note carried rather than acted on:** the tip dot animates
+`left`/`top`, which triggers layout, where a transform would not. Measured 60fps
+sustained at Fast with 681 concurrent layout animations beside it, so it costs
+nothing today.
+
+Still open: run state is not persisted (settled as a deliberate no in Phase 19).
+The champion path still cannot be reached by playing. No touch-drag support.
+`bracketSlot` remains unrendered by design. **Part 05 (result screen) is the
+last slice**, and inherits part 03's bracket components in `readOnly` mode.

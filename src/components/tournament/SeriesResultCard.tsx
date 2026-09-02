@@ -1,5 +1,14 @@
+"use client";
+
 import React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Trophy } from "lucide-react";
+import {
+  FADE_RISE,
+  entranceFrom,
+  staggeredTransition,
+  transitionFor,
+} from "@/lib/motion";
 import { ROUND_LABELS } from "@/lib/bracket";
 import { squadGameLines } from "@/lib/series-flow";
 import {
@@ -41,12 +50,21 @@ const SeriesResultCard = ({
   ctaLabel,
   onContinue,
 }: Props) => {
+  const reduced = useReducedMotion() ?? false;
   const squadWon = series.winner === squadSideOf(matchup);
   const { squadWins, opponentWins } = squadSeriesScore(matchup, series);
   const lines = squadGameLines(matchup, series.games);
 
   return (
-    <div className="mx-auto w-full max-w-xl">
+    // No exit: this card sits inside `TournamentStage`'s `mode="wait"`
+    // crossfade, which already covers the return to the bracket. A second one
+    // plays two transitions back to back.
+    <motion.div
+      className="mx-auto w-full max-w-xl"
+      initial={entranceFrom(true, reduced, FADE_RISE.initial)}
+      animate={FADE_RISE.animate}
+      transition={transitionFor("base", reduced)}
+    >
       <div
         className={`bg-card rounded-2xl border px-5 py-6 sm:px-6 ${
           squadWon ? "border-primary shadow-trophy" : "border-destructive/70"
@@ -89,9 +107,12 @@ const SeriesResultCard = ({
           GAME BY GAME
         </p>
         <ul className="mt-2 flex flex-col gap-1.5">
-          {lines.map((line) => (
-            <li
+          {lines.map((line, index) => (
+            <motion.li
               key={line.key}
+              initial={entranceFrom(true, reduced, FADE_RISE.initial)}
+              animate={FADE_RISE.animate}
+              transition={staggeredTransition("base", index, { reduced })}
               className="bg-court flex items-center justify-between gap-3 rounded-lg px-3 py-2"
             >
               <span className="text-muted-foreground text-[0.625rem] font-bold tracking-[0.14em]">
@@ -109,7 +130,7 @@ const SeriesResultCard = ({
                   </span>
                 )}
               </span>
-            </li>
+            </motion.li>
           ))}
         </ul>
 
@@ -125,7 +146,7 @@ const SeriesResultCard = ({
           {ctaLabel}
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

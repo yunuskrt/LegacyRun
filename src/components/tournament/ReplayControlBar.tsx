@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { motion } from "motion/react";
+import { transitionFor } from "@/lib/motion";
 import { REPLAY_MODES, REPLAY_SPEEDS } from "@/lib/series-flow";
 import type { ReplayMode } from "@/lib/series-flow";
 import type { ReplaySpeed } from "@/lib/replay";
@@ -15,9 +17,30 @@ type Props = {
 };
 
 // 44px minimum on every control — the bar is pinned to the bottom on mobile,
-// where these are the only touch targets on screen.
+// where these are the only touch targets on screen. The indicator sits behind
+// the label and must not eat into that.
 const SEGMENT =
-  "flex min-h-11 items-center rounded-md px-4 text-[0.6875rem] font-bold tracking-[0.14em]";
+  "relative flex min-h-11 items-center rounded-md px-4 text-[0.6875rem] font-bold tracking-[0.14em]";
+
+// Two groups, two ids — a shared one would make the pill jump between the speed
+// row and the mode row.
+const SPEED_INDICATOR = "replay-speed-indicator";
+const MODE_INDICATOR = "replay-mode-indicator";
+
+const Indicator = ({
+  layoutId,
+  className,
+}: {
+  layoutId: string;
+  className: string;
+}) => (
+  <motion.span
+    layoutId={layoutId}
+    transition={transitionFor("base")}
+    className={`absolute inset-0 rounded-md ${className}`}
+    aria-hidden="true"
+  />
+);
 
 const ReplayControlBar = ({
   speed,
@@ -41,11 +64,14 @@ const ReplayControlBar = ({
           onClick={() => onSpeedChange(entry)}
           className={`${SEGMENT} ${
             entry === speed
-              ? "bg-primary text-primary-foreground"
+              ? "text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >
-          {entry}
+          {entry === speed && (
+            <Indicator layoutId={SPEED_INDICATOR} className="bg-primary" />
+          )}
+          <span className="relative">{entry}</span>
         </button>
       ))}
     </div>
@@ -64,11 +90,14 @@ const ReplayControlBar = ({
             onClick={() => onModeChange(entry)}
             className={`${SEGMENT} ${
               entry === mode
-                ? "bg-secondary text-foreground"
+                ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {entry}
+            {entry === mode && (
+              <Indicator layoutId={MODE_INDICATOR} className="bg-secondary" />
+            )}
+            <span className="relative">{entry}</span>
           </button>
         ))}
       </div>
