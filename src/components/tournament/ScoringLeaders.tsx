@@ -1,4 +1,8 @@
+"use client";
+
 import React from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { transitionFor } from "@/lib/motion";
 import type { SeriesSideView } from "@/lib/tournament-view";
 import type { ScoringLine } from "@/types/match";
 
@@ -23,27 +27,39 @@ const SideColumn = ({
     >
       {side.name}
     </h4>
-    <ul className="mt-2 flex flex-col gap-2">
+    <ul className="relative mt-2 flex flex-col gap-2">
       {lines.length === 0 && (
         <li className="text-muted-foreground text-xs">No points yet</li>
       )}
-      {lines.map((line) => (
-        <li
-          key={line.playerSeasonId}
-          className="bg-court flex items-center justify-between gap-2 rounded-lg px-3 py-2"
-        >
-          <span className="text-foreground min-w-0 truncate text-sm">
-            {line.playerName}
-          </span>
-          <span
-            className={`shrink-0 text-sm font-bold tabular-nums ${
-              side.isSquad ? "text-primary" : "text-foreground"
-            }`}
+      {/* Entering and leaving the top three fades; moving within it slides.
+          `layout` is disabled outright under reduced motion by MotionConfig.
+          `popLayout` is load-bearing: a departing leader and its replacement
+          overlap, and in the default mode both sit in flow, growing a
+          three-row list to four and bouncing the column 44px. */}
+      <AnimatePresence initial={false} mode="popLayout">
+        {lines.map((line) => (
+          <motion.li
+            key={line.playerSeasonId}
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={transitionFor("quick")}
+            className="bg-court flex items-center justify-between gap-2 rounded-lg px-3 py-2"
           >
-            {line.points}
-          </span>
-        </li>
-      ))}
+            <span className="text-foreground min-w-0 truncate text-sm">
+              {line.playerName}
+            </span>
+            <span
+              className={`shrink-0 text-sm font-bold tabular-nums ${
+                side.isSquad ? "text-primary" : "text-foreground"
+              }`}
+            >
+              {line.points}
+            </span>
+          </motion.li>
+        ))}
+      </AnimatePresence>
     </ul>
   </div>
 );

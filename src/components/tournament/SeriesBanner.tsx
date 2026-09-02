@@ -1,4 +1,8 @@
+"use client";
+
 import React from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { entranceFrom, transitionFor } from "@/lib/motion";
 import type { SeriesSideView } from "@/lib/tournament-view";
 
 type Props = {
@@ -9,20 +13,36 @@ type Props = {
   wins: { home: number; away: number };
 };
 
+const DOT_ENTRANCE = { opacity: 0, scale: 0.6 };
+
 // One dot per game already played, filled for the home side's wins. The count
 // is the series so far, never the length of a finished series.
-const Dots = ({ won, lost }: { won: number; lost: number }) => (
-  <span className="flex items-center gap-1" aria-hidden="true">
-    {Array.from({ length: won + lost }, (_, index) => (
-      <span
-        key={index}
-        className={`size-1.5 rounded-full ${
-          index < won ? "bg-primary" : "bg-muted-foreground/50"
-        }`}
-      />
-    ))}
-  </span>
-);
+const Dots = ({ won, lost }: { won: number; lost: number }) => {
+  // The dot scales in, and a transform target has to be refused explicitly —
+  // `MotionConfig` snaps one rather than omitting it.
+  const reduced = useReducedMotion() ?? false;
+
+  return (
+    <span className="flex items-center gap-1" aria-hidden="true">
+      {/* `initial={false}` is what makes this fire at the buzzer and nowhere else:
+        the games already played are on screen from the first frame, so only the
+        dot the final score adds animates in. */}
+      <AnimatePresence initial={false}>
+        {Array.from({ length: won + lost }, (_, index) => (
+          <motion.span
+            key={index}
+            initial={entranceFrom(true, reduced, DOT_ENTRANCE)}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={transitionFor("spring", reduced)}
+            className={`size-1.5 rounded-full ${
+              index < won ? "bg-primary" : "bg-muted-foreground/50"
+            }`}
+          />
+        ))}
+      </AnimatePresence>
+    </span>
+  );
+};
 
 const SideLabel = ({ side }: { side: SeriesSideView }) => (
   <span

@@ -44,6 +44,8 @@ export const PRE_TIP_CURSOR = -1;
 const periodMinutes = (period: number): number =>
   period <= REGULATION_PERIODS ? PERIOD_MINUTES : OVERTIME_MINUTES;
 
+export const REGULATION_SECONDS = REGULATION_PERIODS * PERIOD_MINUTES * 60;
+
 const periodStartSeconds = (period: number): number =>
   period <= REGULATION_PERIODS
     ? (period - 1) * PERIOD_MINUTES * 60
@@ -225,6 +227,22 @@ export type MomentumPoint = {
   margin: number;
 };
 
+// The strip's x-axis, in game seconds. Regulation length until an overtime is
+// actually entered — reading `periodScores.length` or the last event's period
+// would widen the axis before the overtime is played, which is the same leak the
+// line score avoids by building its columns from the periods actually reached.
+export const momentumAxisEnd = (
+  events: readonly MatchEvent[],
+  cursor: number
+): number => {
+  const period = currentPeriod(events, cursor);
+
+  return Math.max(
+    REGULATION_SECONDS,
+    periodStartSeconds(period) + periodMinutes(period) * 60
+  );
+};
+
 export const momentumSeries = (
   events: readonly MatchEvent[],
   cursor: number
@@ -373,6 +391,10 @@ export type ReplayFrame = {
   leaders: { home: ScoringLine[]; away: ScoringLine[] };
   feed: FeedRow[];
   momentum: MomentumPoint[];
+  momentumAxis: number;
+  // The scoreboard flash and the feed's LEAD_CHANGE badge read the same flag, so
+  // they cannot disagree about what counts as a lead change.
+  leadChange: boolean;
 };
 
 export const replayFrame = (
@@ -396,6 +418,8 @@ export const replayFrame = (
     },
     feed: feedThrough(events, bounded),
     momentum: momentumSeries(events, bounded),
+    momentumAxis: momentumAxisEnd(events, bounded),
+    leadChange: isLeadChange(events, bounded),
   };
 };
 
