@@ -668,3 +668,185 @@ Ran after the fact against live Neon, once Playwright was available. **No code c
 Still not verified: the reduced-motion pass used Playwright's media emulation rather than a real OS setting, and `Start a new run` was exercised through the `No squad in play` fallback link rather than by finishing a run — the same `key={usePathname()}` remount either way, but not the literal Phase 19 button.
 
 Still open: run state is not persisted, settled as a deliberate no in Phase 19. The champion path still cannot be reached by playing. No touch-drag support. `bracketSlot` remains unrendered by design.
+
+### Phase 20 (part 2) — Draft Screen Motion
+
+**Phase 20 stays 🟡** — second of five slices. `/play/draft` gets the seven motion
+items from `context/docs/motion-animation.md`, written against the part 01
+vocabulary. Ships `src/lib/draft-preview.ts`, `slotAcceptsPlayer` in
+`src/lib/draft.ts`, `BREATHE`/`DENY_SHAKE` in `src/lib/motion.ts`, three small UI
+additions the doc's motion needed, and 31 Vitest tests (476 → 507). No schema
+change, no migration, **no new dependency**, no database write — the draft reads
+the same endpoints it did in Phase 13.
+
+**Every value comes from `motion.ts`.** The two new constants are loop and
+keyframe values with no CSS half, so they are deliberately not `--duration-*`
+tokens and do not join the part 01 mirror test.
+
+Gotchas:
+
+- **`dragleave` fires when the pointer crosses into a child, and that one carries
+  the same position** — so the spec's "track the target position, not a boolean"
+  is not sufficient on its own. The valid-slot state was being cleared as fast as
+  it was set, and the lift and bright glow never appeared at all. The fix is a
+  `currentTarget.contains(relatedTarget)` guard; the lift then measured −6.9px and
+  **held** across further movement inside the slot. Found by driving, not reading.
+- **A card that unmounts under the pointer never fires `pointerleave`**, so
+  drafting by click left the drafted player previewed — and since he is now a
+  duplicate, **no slot invited anything for the rest of the run**, across whole
+  new teams. Measured four dark slots where four glows belonged. `previewPlayer`
+  is now gated on the candidate still being on the offered roster, which closes
+  every staleness path structurally instead of adding cleanup calls to forget.
+  **The `start` browser pass saw this and misread it** as the pointer resting on
+  a blocked card; only reading the diff in review turned it up.
+- **`MotionConfig reducedMotion="user"` snaps transform targets rather than
+  omitting them.** The card hover still jumped 2px and the drag lift still
+  applied under emulated reduced motion. Both transient pointer gestures are now
+  gated on `reduced`; the selection scale and the glow stay, because they mark a
+  state rather than react to the pointer. Verified: `transform: none` on hover,
+  no lift on a valid drag — but the glow still steps to BRIGHT, so the slot still
+  says it accepts, and drag-to-draft still completes. **Parts 03–05 should assume
+  a transform gesture needs an explicit `reduced` guard**, extending part 01's
+  rule that only delays did.
+- **`motion.button` reserves `onDragStart`/`onDragEnd` for its own drag gesture**,
+  which shadows the native HTML5 handlers the `text/plain` payload depends on
+  (Phase 6). The `whileHover`/`whileTap` gesture therefore sits on a wrapper.
+  That wrapper then becomes the grid item, and the button stopped stretching — a
+  row measured `J. Sikma=93` beside `R. Pierce=117` once a slot was selected and
+  only one card carried a blocked-reason line. `flex h-full` on the wrapper
+  restores it; four mixed rows now measure 117/117.
+- **The breathing glow is the app's only permitted looping animation, and
+  `MotionConfig` cannot stop a loop** — `isSlotBreathing` checks
+  `useReducedMotion()` explicitly. It is also the one easing outside `EASE`:
+  a one-way curve reads wrong on a loop, so `BREATHE.ease` is easeInOut, written
+  out for the same reason `EASE` is.
+- **Every gold glow on an empty slot comes from one overlay**, not from three
+  className branches. The first cut left the selected slot's static shadow as a
+  class and the drag's bright shadow on the overlay, which double-glowed a valid
+  drag. One overlay, three shadow values, one `isSlotBreathing` decision.
+- **Transforms on the court are percentages of the slot, never px** (Phase 5's
+  `cqw` rule). That makes the specced "~4px lift" and "≤6px shake" width-relative
+  rather than absolute: the lift measures 6.9px at 1440 and ~2.9px at 390, the
+  shake peaks 6.5px at 1440 and ~2.7px at 390. **A px cap and a percentage
+  amplitude cannot both hold at every width**; the percentage is the one that
+  matches the court, and the numbers are recorded rather than tuned to satisfy a
+  cap at one width only.
+- **The `DraftCourt` stagger fix could not use a ref.** `react-hooks/refs`
+  rejects reading `ref.current` during render, and `set-state-in-effect` blocks
+  the state version (Phase 17 hit that one). The data already distinguishes the
+  cases: five empty slots only ever arrive together on mount, and a drafted card
+  always lands alone — so the delay keys on `member ? 0 : index`. No hook needed.
+- **The 5/5 pulse keyframes are hoisted to a module constant.** An inline array
+  is a new target every render, which motion replays as a fresh pulse. Measured
+  peak 1.0598 over 24 frames, settling to exactly 1 and staying — non-repeating.
+- **The progress bar overflowed the page at 390** (scrollWidth 412 vs 391): an
+  intrinsically-sized bar widened the header's `shrink-0` column. Segments are
+  now `flex-1` in a `w-full` row, so the bar can never be wider than the column
+  already is. **Phase 12's pre-existing 320px overflow is untouched.**
+- **The reroll dots cost ~46px the row did not have**, wrapping the label at both
+  1024 and 390. Tightened gaps recovered 390, 768 and 1280; 1024 needed the type
+  step moved `sm:` → `xl:`, because **the board column is at its narrowest between
+  lg and xl, not at 390** — below `lg` the grid is single-column and full width.
+- **Item 7 keeps Radix's CSS enter/exit rather than replacing it with motion.**
+  A motion exit needs `forceMount` on Portal, Overlay *and* Content, which
+  shadcn's `DialogContent` does not expose, and rebuilding the primitive risks
+  Phase 12's height-gated scroll structure — precisely what the item warns
+  against. The stagger and the `layoutId` indicator are motion; the open/close is
+  Radix. **This is the one item not implemented as specced.**
+- **The confirm button's disabled styling was verified by diff, not by sighting.**
+  Conference and name persist across close/reopen (Phase 12 behaviour, verified
+  there), so the dialog could not be returned to its disabled state without a
+  fresh draft. No transition was added to that button.
+- **`previewPlayer` carries no `source` field**, against the spec's shape.
+  `dragPlayer ?? hoverPlayer` makes "DRAG outranks HOVER" structural rather than
+  a rule that can be got wrong, and once the drag target is tracked per slot,
+  `source` had no consumer.
+- **The progress bar fills by count, not by slot**, resolving a spec that
+  contradicts itself ("the segments are indexed by slot" versus "the count is
+  just `filledSlots`, so nothing needs reordering"). Slot-indexing would leave
+  gaps — draft a C first and only the fifth segment lights — which reads wrong
+  under a "SLOTS FILLED 5/5" caption and duplicates what the court already shows.
+- `slotAcceptsPlayer` takes `(state, slots, player, position)` rather than the
+  spec's `(player, position, state)`, matching the argument order every other
+  function in `draft.ts` already uses.
+
+**Three rules were extracted into `src/lib/draft-preview.ts` during
+`/feature test`** — the invitation rule, the drag response, and the loop guards,
+all of which the browser pass had confirmed by observation only. Components are
+not tested under `coding-standards.md`, so this is the same move as Phase 11's
+`mode` dispatch, Phase 13's `rerollRequest`, Phase 17's `nextTick`, Phase 18's
+`gameAdvance`, Phase 19's `eliminationHeadline`. `SlotDragState` moved there too;
+it was being exported from a component.
+
+**The two strongest tests are agreement tests, not shape assertions:**
+`isInviting` must equal `slotAcceptsPlayer` for every fixture player × every
+slot, and `dragState === "VALID"` must hold **exactly** when the reducer would
+take the drop. That second one is the phase's whole point — a preview that
+disagrees with the rejection that follows is the failure `slotAcceptsPlayer`
+exists to prevent. `slotAcceptsPlayer` itself is tested against the **reducer**
+rather than against `validateDraft`, which would be tautological given it
+delegates. The motion constants are tested for the properties that fail silently
+— a loop whose last keyframe differs from its first jumps on repeat, a shake that
+does not end at `0%` leaves the slot permanently offset — never for their values.
+
+**Fourteen mutations, all dead**, every file byte-identical afterwards: the slot
+substitution dropped from `slotAcceptsPlayer`, the identity check reordered past
+slot occupancy, the predicate widened to any open slot, invitation ignoring
+selection / a filled slot / the no-preview fallback, drag VALID↔INVALID swapped
+(3 tests), every slot responding to the drag, breathing ignoring reduced motion /
+selection / the drag, the breathe loop not returning to its start, the shake
+leaving a permanent offset, and the shake amplitude in pixels (3 tests).
+
+Verified: `npm test` (507), `tsc --noEmit`, `lint`, `format:check`, `build` —
+`/play/draft` still prerenders static, all four API routes still dynamic.
+
+Browser-driven against live Neon at true CSS widths of **1440, 1280, 1024, 768
+and 391 with no horizontal overflow at any** and **zero console errors**.
+Animations here are 180–400ms, shorter than a screenshot round-trip, so
+everything below is a per-`requestAnimationFrame` measurement off computed style
+and `document.getAnimations()` rather than a sighting — the same instrumentation
+part 01's verification pass established:
+
+- Five slots breathing at rest (one running animation each, opacity mid-cycle
+  inside the 0.7–1.0 band); hovering LeBron narrows it to SF alone, Lonzo Ball to
+  PG alone, a slot-filled SF card to **none**, and moving off restores all five.
+- Selection settles at exactly scale 1.02 with its glow held (`anim0`, opacity
+  1.00) while the other four keep breathing, and **no slot is ever left scaled or
+  held** once the selection moves — checked across SF, PG and C in turn.
+- The deny shake peaks 6.46px over 12 frames (~200ms) then reads **flat zero for
+  two further seconds** while the pointer sits on the slot. Fires once, never
+  repeats.
+- An invalid drop still routes through `validateDraft` to the Phase 6 toast
+  (`That slot already has a player.` on a filled slot, `Attempt to place in wrong
+  position.` on a wrong-position one) with the board unchanged. Escape cancels a
+  drag and clears the preview — no slot left lifted or glowing.
+- Segments fill one per draft, the count ticks 0→5, and the bar pulses once at
+  5/5. **A 0→1 tween is not visually distinguishable**, so `TweenNumber` here
+  rests on part 01's frame-by-frame confirmation rather than this phase's.
+- Three rerolls extinguish the **rightmost** dot each time (opacity 1→0, scale
+  1→0.6) and the buttons fade to 0.5 at zero. A forced `fetch` rejection toasted
+  and held the dots at 3/3 — Phase 13's rule intact.
+- Dialog rows stagger ~33ms apart (`STAGGER_STEP`) and settle at ~380ms, well
+  inside the 300ms cap plus one duration. The conference indicator slides across
+  23 distinct x positions from EAST to WEST while both buttons stay put. Escape
+  and Cancel both play `open → closed → unmounted`; **confirm goes `open →
+  unmounted` with no `closed` state**, so Radix's exit never starts and the route
+  entrance ramps once — part 01's hand-off, confirmed from the other side.
+- Reduced motion emulated: the glow is static (`anim0`) but still marks the
+  accepting slots, no hover lift, no drag lift, no stagger, and the draft
+  completes normally.
+
+Not verified: the reduced-motion pass used Playwright's media emulation rather
+than a real OS setting (unchanged from part 01). The **cross-season duplicate is
+covered by test only** — the offered team is server-random, so the same player
+cannot be forced onto a second board from the UI, the same gap Phase 13 recorded.
+The eleven touched components have no tests, per `coding-standards.md`.
+
+**Found but not fixed:** at exactly **1024**, `SHARED REROLL POOL` wraps to two
+lines. Nothing clips and nothing overflows; the row is 16px taller. That column
+is the narrowest point in the whole layout, and Phase 16 recorded 1024 as "tight"
+for the bracket for the same reason.
+
+Still open: no touch-drag support, unchanged since Phase 6 and explicitly out of
+scope here. Run state is still not persisted (settled as a deliberate no in
+Phase 19). Phase 12's 320px horizontal overflow on this page is untouched.

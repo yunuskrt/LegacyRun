@@ -19,6 +19,7 @@ import {
   isDraftComplete,
   openPositions,
   playerAvailability,
+  slotAcceptsPlayer,
   TOTAL_REROLLS,
   validateDraft,
   type DraftRejection,
@@ -59,7 +60,29 @@ const DraftExperience = ({ slots }: Props) => {
   const [isFetchingTeam, setIsFetchingTeam] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const [isHandingOff, setIsHandingOff] = React.useState(false);
+  const [hoverPlayer, setHoverPlayer] = React.useState<DraftablePlayer | null>(
+    null
+  );
+  const [dragPlayer, setDragPlayer] = React.useState<DraftablePlayer | null>(
+    null
+  );
   const inFlight = React.useRef<AbortController | null>(null);
+
+  // A drag outranks a hover by construction: mid-drag the pointer is over the
+  // court, not the card, so a stale hover must never win.
+  //
+  // Both are then checked against the roster on the board, because a card that
+  // unmounts under the pointer never fires `pointerleave` — drafting by click
+  // otherwise leaves the drafted player previewed, and since he is now a
+  // duplicate no slot would invite anything for the rest of the run.
+  const candidate = dragPlayer ?? hoverPlayer;
+  const previewPlayer =
+    candidate &&
+    state.offeredTeam?.players.some(
+      (player) => player.playerSeasonId === candidate.playerSeasonId
+    )
+      ? candidate
+      : null;
 
   const open = openPositions(state, slots);
   const isComplete = isDraftComplete(state, slots);
@@ -122,6 +145,8 @@ const DraftExperience = ({ slots }: Props) => {
   };
 
   const handleDropPlayer = (playerSeasonId: string, position: Position) => {
+    // `dragend` also clears this, but the two can arrive in either order.
+    setDragPlayer(null);
     const player = state.offeredTeam?.players.find(
       (candidate) => candidate.playerSeasonId === playerSeasonId
     );
@@ -144,6 +169,10 @@ const DraftExperience = ({ slots }: Props) => {
             members={state.members}
             hasActiveTeam={Boolean(state.offeredTeam)}
             selectedPosition={state.selectedPosition}
+            previewPlayer={previewPlayer}
+            acceptsPlayer={(player, position) =>
+              slotAcceptsPlayer(state, slots, player, position)
+            }
             onSelectSlot={(position) =>
               dispatch({ type: "SELECT_SLOT", position })
             }
@@ -169,6 +198,8 @@ const DraftExperience = ({ slots }: Props) => {
             onGetRandomTeam={handleGetRandomTeam}
             onReroll={handleReroll}
             onDraftPlayer={handleDraftPlayer}
+            onHoverPlayer={setHoverPlayer}
+            onDragPlayer={setDragPlayer}
           />
 
           <div className="mt-6">

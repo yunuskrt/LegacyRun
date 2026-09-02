@@ -11,6 +11,7 @@ import {
   isDraftComplete,
   openPositions,
   playerAvailability,
+  slotAcceptsPlayer,
   TOTAL_REROLLS,
   validateDraft,
   type DraftState,
@@ -206,6 +207,96 @@ describe("drafting a player", () => {
     expect(isDraftComplete(complete, slots)).toBe(true);
     expect(canReroll(complete, slots)).toBe(false);
     expect(canOfferTeam(complete, slots)).toBe(false);
+  });
+});
+
+describe("slotAcceptsPlayer", () => {
+  // A clean board with SF selected, and a mid-draft board where LeBron is
+  // already on the roster and his other season is on the offered team.
+  const fresh = select(offer(INITIAL_DRAFT_STATE, "celtics-2008"), "SF");
+  const withLebron = draft(
+    select(offer(INITIAL_DRAFT_STATE, "heat-2013"), "SF"),
+    "lebron-james",
+    "SF"
+  );
+  const midDraft = select(offer(withLebron, "cavaliers-2016"), "PG");
+
+  // The predicate exists to light up slots before one is chosen, so what
+  // matters is that it never invites a drop the reducer then refuses.
+  it("matches what the reducer does, for every fixture player and slot", () => {
+    [fresh, midDraft].forEach((state) => {
+      const team = state.offeredTeam;
+      if (!team) throw new Error("no team offered");
+
+      slots.forEach((position) => {
+        const ready = select(state, position);
+
+        team.players.forEach((player) => {
+          const accepted = slotAcceptsPlayer(state, slots, player, position);
+          const next = reduce(ready, {
+            type: "DRAFT_PLAYER",
+            player,
+            position,
+          });
+
+          expect(next !== ready).toBe(accepted);
+        });
+      });
+    });
+  });
+
+  it("accepts a player who fits an open slot", () => {
+    const pierce = playerOf(teamOf("celtics-2008"), "paul-pierce");
+    expect(slotAcceptsPlayer(fresh, slots, pierce, "SF")).toBe(true);
+  });
+
+  it("refuses a slot that is already filled", () => {
+    const cavsLebron = playerOf(teamOf("cavaliers-2016"), "lebron-james");
+    expect(openPositions(midDraft, slots)).not.toContain("SF");
+    expect(slotAcceptsPlayer(midDraft, slots, cavsLebron, "SF")).toBe(false);
+  });
+
+  it("refuses a player whose position is not the slot", () => {
+    const rondo = playerOf(teamOf("celtics-2008"), "rajon-rondo");
+    expect(rondo.position).not.toBe("C");
+    expect(slotAcceptsPlayer(fresh, slots, rondo, "C")).toBe(false);
+  });
+
+  // Phase 9 put the identity check ahead of the position rules; the predicate
+  // inherits that ordering rather than restating it.
+  it("refuses a person already drafted in another season, as a duplicate", () => {
+    const cavsLebron = playerOf(teamOf("cavaliers-2016"), "lebron-james");
+    expect(cavsLebron.playerSeasonId).not.toBe(
+      withLebron.members[0].playerSeasonId
+    );
+    expect(
+      validateDraft(
+        { ...midDraft, selectedPosition: "SF" },
+        slots,
+        cavsLebron,
+        "SF"
+      )
+    ).toEqual({ ok: false, reason: "ALREADY_DRAFTED" });
+    slots.forEach((position) => {
+      expect(slotAcceptsPlayer(midDraft, slots, cavsLebron, position)).toBe(
+        false
+      );
+    });
+  });
+
+  it("ignores which slot happens to be selected", () => {
+    const pierce = playerOf(teamOf("celtics-2008"), "paul-pierce");
+    const otherSlot = select(offer(INITIAL_DRAFT_STATE, "celtics-2008"), "PG");
+
+    expect(otherSlot.selectedPosition).toBe("PG");
+    expect(slotAcceptsPlayer(otherSlot, slots, pierce, "SF")).toBe(true);
+  });
+
+  it("refuses everything before a team is offered", () => {
+    const pierce = playerOf(teamOf("celtics-2008"), "paul-pierce");
+    expect(slotAcceptsPlayer(INITIAL_DRAFT_STATE, slots, pierce, "SF")).toBe(
+      false
+    );
   });
 });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { abbreviatePlayerName, formatSeason } from "@/lib/format";
 import { POSITION_BG, POSITION_TEXT } from "@/lib/position-style";
+import { FADE_RISE, staggeredTransition, transitionFor } from "@/lib/motion";
 import { MAX_SQUAD_NAME_LENGTH, orderMembersBySlots } from "@/lib/run";
 import { cn } from "@/lib/utils";
 import type { Conference, Position, SquadMember } from "@/types/game";
@@ -36,6 +38,7 @@ const SquadConfirmDialog = ({
 }: Props) => {
   const [name, setName] = React.useState("");
   const [conference, setConference] = React.useState<Conference | null>(null);
+  const reduced = useReducedMotion() ?? false;
   const ordered = orderMembersBySlots(members, slots);
 
   return (
@@ -61,9 +64,12 @@ const SquadConfirmDialog = ({
 
         {/* Only the roster scrolls, so the controls survive a short viewport. */}
         <ul className="flex min-h-0 shrink flex-col gap-2 overflow-y-auto [@media(min-height:40rem)]:min-h-24">
-          {ordered.map((member) => (
-            <li
+          {ordered.map((member, index) => (
+            <motion.li
               key={member.playerSeasonId}
+              initial={FADE_RISE.initial}
+              animate={FADE_RISE.animate}
+              transition={staggeredTransition("base", index, { reduced })}
               className="border-border/70 bg-secondary/45 relative flex items-center gap-4 overflow-hidden rounded-xl border py-3 pr-4 pl-5"
             >
               <span
@@ -93,7 +99,7 @@ const SquadConfirmDialog = ({
               <span className="bg-primary text-primary-foreground rounded-md px-2 py-0.5 text-sm font-bold">
                 {member.rating}
               </span>
-            </li>
+            </motion.li>
           ))}
         </ul>
 
@@ -111,13 +117,23 @@ const SquadConfirmDialog = ({
                 aria-pressed={conference === option}
                 onClick={() => setConference(option)}
                 className={cn(
-                  "h-12 font-bold tracking-[0.16em] uppercase",
+                  "relative h-12 font-bold tracking-[0.16em] uppercase",
                   conference === option
-                    ? "border-primary text-primary bg-primary/10 border"
+                    ? "text-primary"
                     : "text-muted-foreground"
                 )}
               >
-                {option}
+                {/* The indicator slides between the two buttons; the buttons
+                    themselves never move. */}
+                {conference === option && (
+                  <motion.span
+                    layoutId="squad-conference-indicator"
+                    aria-hidden="true"
+                    className="border-primary bg-primary/10 absolute inset-0 rounded-md border"
+                    transition={transitionFor("spring", reduced)}
+                  />
+                )}
+                <span className="relative">{option}</span>
               </Button>
             ))}
           </div>
