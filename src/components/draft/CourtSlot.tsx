@@ -1,6 +1,11 @@
+"use client";
+
 import React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Check } from "lucide-react";
+import { isSlotBreathing, type SlotDragState } from "@/lib/draft-preview";
 import { abbreviatePlayerName, formatSeasonShort } from "@/lib/format";
+import { BREATHE, DENY_SHAKE, transitionFor } from "@/lib/motion";
 import {
   POSITION_BORDER,
   POSITION_GLOW,
@@ -14,6 +19,8 @@ type Props = {
   member?: SquadMember;
   isOpen: boolean;
   isSelected: boolean;
+  isInviting: boolean;
+  dragState: SlotDragState;
   onSelect: () => void;
 };
 
@@ -28,11 +35,68 @@ const CourtSlot = ({
   member,
   isOpen,
   isSelected,
+  isInviting,
+  dragState,
   onSelect,
 }: Props) => {
+  const reduced = useReducedMotion() ?? false;
+
+  // Transforms are percentages of the slot itself, never px — the court is a
+  // container-sized box, so a px lift would drift at 390 (Phase 5). Reduced
+  // motion drops the two transient drag responses but keeps the selection
+  // settle, which marks a state rather than reacting to the pointer; motion
+  // would otherwise snap them into place rather than omit them.
+  const gesture = {
+    scale: isSelected ? 1.02 : 1,
+    y: !reduced && dragState === "VALID" ? "-4%" : "0%",
+    x: !reduced && dragState === "INVALID" ? DENY_SHAKE.x : "0%",
+  };
+
+  const gestureTransition = {
+    scale: transitionFor("spring", reduced),
+    y: transitionFor("spring", reduced),
+    x: { duration: reduced ? 0 : DENY_SHAKE.duration },
+  };
+
+  // Every gold glow on an empty slot comes from this one overlay; whether it
+  // breathes or is held steady is decided in `draft-preview`.
+  const isHeld = !isSlotBreathing({
+    isInviting,
+    isSelected,
+    dragState,
+    reduced,
+  });
+
+  const glow = (isInviting || isSelected) && (
+    <motion.span
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute inset-0 rounded-[1.6cqw]",
+        dragState === "VALID"
+          ? "shadow-[0_0_1.4rem_-0.5rem_var(--primary)]"
+          : isSelected
+            ? "shadow-[0_0_1.1rem_-0.55rem_var(--primary)]"
+            : "shadow-[0_0_0.9rem_-0.7rem_var(--primary)]"
+      )}
+      initial={false}
+      animate={{ opacity: isHeld ? 1 : BREATHE.opacity }}
+      transition={
+        isHeld
+          ? transitionFor("quick", reduced)
+          : {
+              duration: BREATHE.duration,
+              ease: BREATHE.ease,
+              repeat: Infinity,
+            }
+      }
+    />
+  );
+
   if (member) {
     return (
-      <div
+      <motion.div
+        animate={gesture}
+        transition={gestureTransition}
         className={cn(
           SLOT_SHELL,
           "bg-card relative border-2",
@@ -55,25 +119,32 @@ const CourtSlot = ({
             {member.rating}
           </span>
         </p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <button
+    <motion.button
       type="button"
       disabled={!isOpen}
       onClick={onSelect}
+      animate={gesture}
+      transition={gestureTransition}
       className={cn(
         SLOT_SHELL,
-        "focus-visible:ring-ring/60 border-2 border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none",
+        "focus-visible:ring-ring/60 relative border-2 border-dashed transition-colors focus-visible:ring-2 focus-visible:outline-none",
         isSelected
-          ? "border-primary bg-primary/25 shadow-[0_0_1.1rem_-0.55rem_var(--primary)] cursor-pointer border-solid"
-          : isOpen
-            ? "border-primary bg-primary/12 hover:bg-primary/20 cursor-pointer shadow-[0_0_0.9rem_-0.7rem_var(--primary)]"
-            : "border-muted-foreground/25 bg-foreground/[0.02] cursor-not-allowed"
+          ? "border-primary bg-primary/25 cursor-pointer border-solid"
+          : dragState === "VALID"
+            ? "border-primary bg-primary/25 cursor-pointer"
+            : dragState === "INVALID"
+              ? "border-muted-foreground/35 bg-foreground/[0.02]"
+              : isOpen
+                ? "border-primary bg-primary/12 hover:bg-primary/20 cursor-pointer"
+                : "border-muted-foreground/25 bg-foreground/[0.02] cursor-not-allowed"
       )}
     >
+      {glow}
       <span
         className={cn(
           JERSEY,
@@ -96,7 +167,7 @@ const CourtSlot = ({
       >
         {isSelected ? "SELECTED" : isOpen ? "OPEN" : "EMPTY"}
       </p>
-    </button>
+    </motion.button>
   );
 };
 

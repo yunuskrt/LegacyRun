@@ -111,6 +111,23 @@ export const validateDraft = (
   return { ok: true };
 };
 
+// Would this slot take this player, if it were the selected one? Asked by the
+// court to decide which slots invite a hovered or dragged card. Derived from
+// `validateDraft` rather than restating its rules — a second copy that drifts
+// would light up a slot the reducer then rejects.
+export const slotAcceptsPlayer = (
+  state: DraftState,
+  slots: readonly Position[],
+  player: DraftablePlayer,
+  position: Position
+): boolean =>
+  validateDraft(
+    { ...state, selectedPosition: position },
+    slots,
+    player,
+    position
+  ).ok;
+
 export const playerAvailability = (
   state: DraftState,
   slots: readonly Position[],

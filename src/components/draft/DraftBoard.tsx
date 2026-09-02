@@ -29,6 +29,8 @@ type Props = {
   onGetRandomTeam: () => void;
   onReroll: (kind: RerollKind) => void;
   onDraftPlayer: (player: DraftablePlayer, position: Position) => void;
+  onHoverPlayer: (player: DraftablePlayer | null) => void;
+  onDragPlayer: (player: DraftablePlayer | null) => void;
 };
 
 const PLACEHOLDER_ICON =
@@ -48,6 +50,8 @@ const DraftBoard = ({
   onGetRandomTeam,
   onReroll,
   onDraftPlayer,
+  onHoverPlayer,
+  onDragPlayer,
 }: Props) => {
   const reduced = useReducedMotion() ?? false;
   const stateKey = isComplete
@@ -136,6 +140,11 @@ const DraftBoard = ({
                     transition={staggeredTransition("base", index, {
                       reduced,
                     })}
+                    // On the wrapper, not the card: a disabled <button> does not
+                    // dispatch pointer events, and hovering a blocked player
+                    // must still tell the court to stop inviting.
+                    onPointerEnter={() => onHoverPlayer(player)}
+                    onPointerLeave={() => onHoverPlayer(null)}
                   >
                     <RosterPlayerCard
                       player={player}
@@ -146,6 +155,9 @@ const DraftBoard = ({
                           player,
                           selectedPosition ?? player.position
                         )
+                      }
+                      onDragChange={(dragging) =>
+                        onDragPlayer(dragging ? player : null)
                       }
                     />
                   </motion.div>

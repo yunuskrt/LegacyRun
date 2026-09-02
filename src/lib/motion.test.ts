@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  BREATHE,
+  DENY_SHAKE,
   DURATION,
   EASE,
   MAX_STAGGER_DELAY,
@@ -118,6 +120,64 @@ describe("staggeredTransition", () => {
       duration: 0,
       delay: 0,
     });
+  });
+});
+
+describe("BREATHE — the one sanctioned loop", () => {
+  it("returns to where it started, so a repeat does not jump", () => {
+    expect(BREATHE.opacity[0]).toBe(BREATHE.opacity.at(-1));
+  });
+
+  it("stays a dimming, never a fade to nothing or a flash", () => {
+    expect(Math.min(...BREATHE.opacity)).toBeGreaterThanOrEqual(0.7);
+    expect(Math.max(...BREATHE.opacity)).toBe(1);
+  });
+
+  // Slow enough to read as breathing rather than blinking, which is what
+  // makes one looping animation tolerable on the page at all.
+  it("runs an order of magnitude slower than any transition", () => {
+    expect(BREATHE.duration).toBeGreaterThanOrEqual(2.5);
+    expect(BREATHE.duration).toBeLessThanOrEqual(3);
+    expect(BREATHE.duration).toBeGreaterThan(DURATION.slow * 5);
+  });
+});
+
+describe("DENY_SHAKE", () => {
+  // A keyframe run that does not end where it began leaves the slot
+  // permanently offset — silent, and only visible by measuring.
+  it("starts and ends at rest", () => {
+    expect(DENY_SHAKE.x[0]).toBe("0%");
+    expect(DENY_SHAKE.x.at(-1)).toBe("0%");
+  });
+
+  it("shakes two full cycles", () => {
+    const offsets = DENY_SHAKE.x
+      .slice(1, -1)
+      .map((value) => Number.parseFloat(value));
+
+    expect(offsets).toHaveLength(4);
+    offsets.forEach((offset, index) => {
+      expect(Math.sign(offset)).toBe(index % 2 === 0 ? -1 : 1);
+    });
+  });
+
+  it("is symmetric and stays under the house amplitude", () => {
+    const magnitudes = DENY_SHAKE.x.map((value) =>
+      Math.abs(Number.parseFloat(value))
+    );
+
+    expect(new Set(magnitudes.filter(Boolean)).size).toBe(1);
+    expect(Math.max(...magnitudes)).toBeLessThanOrEqual(4);
+  });
+
+  // Percentages of the shaken element, so the court's container-relative
+  // sizing carries it down to 390 instead of drifting.
+  it("is expressed in percentages, never pixels", () => {
+    DENY_SHAKE.x.forEach((value) => expect(value).toMatch(/%$/));
+  });
+
+  it("is a single beat, well inside the slowest transition", () => {
+    expect(DENY_SHAKE.duration).toBeLessThanOrEqual(DURATION.slow);
   });
 });
 

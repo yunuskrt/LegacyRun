@@ -40,6 +40,25 @@ export const STAGGER_STEP = 0.03;
 // of a second.
 export const MAX_STAGGER_DELAY = 0.3;
 
+// The one looping animation the app permits — the draft court's open-slot
+// invitation. Long and shallow so it reads as breathing rather than blinking.
+// Loop values have no CSS half, so they are not `--duration-*` tokens.
+// A one-way curve reads wrong on a loop, so this is the only easing outside
+// EASE — easeInOut, written out for the same reason EASE is.
+export const BREATHE: { opacity: number[]; duration: number; ease: Bezier } = {
+  opacity: [0.7, 1, 0.7],
+  duration: 2.8,
+  ease: [0.42, 0, 0.58, 1],
+};
+
+// A single deny beat on an invalid drop target — two cycles, once, never a
+// repeat. Amplitude is a percentage of the shaken element so it scales with the
+// court's container-relative sizing instead of drifting at 390px.
+export const DENY_SHAKE: { x: string[]; duration: number } = {
+  x: ["0%", "-2.5%", "2.5%", "-2.5%", "2.5%", "0%"],
+  duration: 0.2,
+};
+
 export type TransitionKind = "quick" | "base" | "slow" | "exit" | "spring";
 
 const TRANSITIONS: Record<TransitionKind, Transition> = {

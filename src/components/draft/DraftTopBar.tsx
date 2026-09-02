@@ -1,12 +1,24 @@
+"use client";
+
 import React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Trophy } from "lucide-react";
+import TweenNumber from "@/components/tournament/TweenNumber";
+import { DURATION, EASE, transitionFor } from "@/lib/motion";
 
 type Props = {
   filledSlots: number;
   totalSlots: number;
 };
 
+// Hoisted so the reference is stable — an inline array is a new target on every
+// render, which motion would replay as a fresh pulse.
+const COMPLETE_PULSE = [1, 1.06, 1];
+
 const DraftTopBar = ({ filledSlots, totalSlots }: Props) => {
+  const reduced = useReducedMotion() ?? false;
+  const isComplete = filledSlots >= totalSlots;
+
   return (
     <header className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-4">
@@ -31,8 +43,33 @@ const DraftTopBar = ({ filledSlots, totalSlots }: Props) => {
           Slots Filled
         </p>
         <p className="text-primary text-xl font-bold sm:text-2xl">
-          {filledSlots}/{totalSlots}
+          <TweenNumber value={filledSlots} />/{totalSlots}
         </p>
+        {/* One segment per slot, indexed by slot order, so the bar fills PG→C
+            like the court rather than in draft order. */}
+        <motion.div
+          // Segments flex to whatever the column already is, so the bar can
+          // never widen the header — at 390 an intrinsically-sized one pushed
+          // the page into a horizontal scroll.
+          className="mt-1.5 flex w-full items-center justify-end gap-1"
+          aria-hidden="true"
+          animate={{ scale: isComplete && !reduced ? COMPLETE_PULSE : 1 }}
+          transition={{ duration: DURATION.slow, ease: EASE.enter }}
+        >
+          {Array.from({ length: totalSlots }, (_, index) => (
+            <span
+              key={index}
+              className="bg-muted-foreground/25 block h-1.5 max-w-7 min-w-0 flex-1 overflow-hidden rounded-full"
+            >
+              <motion.span
+                className="bg-gold block h-full w-full origin-left rounded-full"
+                initial={false}
+                animate={{ scaleX: index < filledSlots ? 1 : 0 }}
+                transition={transitionFor("base", reduced)}
+              />
+            </span>
+          ))}
+        </motion.div>
       </div>
     </header>
   );
