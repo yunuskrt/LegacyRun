@@ -12,11 +12,13 @@ import {
   difficultyBand,
   finalsOpponent,
   hasSquadName,
+  isChampionUnlocking,
   isFinalsOpponentRevealed,
   matchupCardState,
   nextSquadMatchup,
   opponentOf,
   revealedThroughFor,
+  roundMotionFor,
   roundsUntilFinals,
   runOutcome,
   SQUAD_SHORT_CODE,
@@ -30,7 +32,12 @@ import {
   visibleSeriesFor,
 } from "@/lib/tournament-view";
 import type { PlayoffTeamRow } from "@/lib/bracket";
-import type { Bracket, BracketMatchup } from "@/types/bracket";
+import type {
+  Bracket,
+  BracketMatchup,
+  BracketOpponent,
+  BracketRoundId,
+} from "@/types/bracket";
 import type { Squad } from "@/types/game";
 import type { SeriesState } from "@/types/match";
 
@@ -690,5 +697,163 @@ describe("bracketSlot never renders", () => {
 
     expect(source).not.toContain("teamRating");
     expect(source).not.toContain("pedigree}");
+  });
+});
+
+// The bracket remounts between stages, so every entrance is a mount animation
+// and this is what a freshly-mounted card is told to play.
+describe("roundMotionFor", () => {
+  const ROUNDS: BracketRoundId[] = [
+    "FIRST_ROUND",
+    "CONFERENCE_SEMIS",
+    "CONFERENCE_FINALS",
+    "NBA_FINALS",
+  ];
+
+  const motions = (through: BracketRoundId | null, readOnly = false) =>
+    ROUNDS.map((round) => roundMotionFor(round, through, readOnly));
+
+  it("reveals only the first round before anything has been played", () => {
+    expect(motions(null)).toEqual(["REVEALING", "NONE", "NONE", "NONE"]);
+  });
+
+  it("resolves the completed round and reveals the next one", () => {
+    expect(motions("FIRST_ROUND")).toEqual([
+      "RESOLVING",
+      "REVEALING",
+      "NONE",
+      "NONE",
+    ]);
+    expect(motions("CONFERENCE_SEMIS")).toEqual([
+      "NONE",
+      "RESOLVING",
+      "REVEALING",
+      "NONE",
+    ]);
+  });
+
+  // Winning the title reveals nothing — there is no round after the Finals.
+  it("resolves the Finals with nothing left to reveal", () => {
+    expect(motions("NBA_FINALS")).toEqual([
+      "NONE",
+      "NONE",
+      "NONE",
+      "RESOLVING",
+    ]);
+  });
+
+  it("plays nothing at all in the archive", () => {
+    [null, ...ROUNDS].forEach((through) => {
+      expect(motions(through, true)).toEqual(["NONE", "NONE", "NONE", "NONE"]);
+    });
+  });
+
+  // Two different rules on two different rounds: the scores land on the round
+  // just completed, the slots on the one after it. Conflating them replays
+  // every score on every return to the bracket.
+  it("never puts both treatments on the same round", () => {
+    [null, ...ROUNDS].forEach((through) => {
+      const played = motions(through);
+
+      expect(
+        played.filter((m) => m === "RESOLVING").length
+      ).toBeLessThanOrEqual(1);
+      expect(
+        played.filter((m) => m === "REVEALING").length
+      ).toBeLessThanOrEqual(1);
+      expect(new Set(played.filter((m) => m !== "NONE")).size).toBe(
+        played.filter((m) => m !== "NONE").length
+      );
+    });
+  });
+
+  // The hazard this phase exists to avoid: an animation that fires because a
+  // far-half series resolved tells the player what the masking withholds.
+  it("is unmoved by a far-half result", () => {
+    const unresolved = buildBracket();
+    const resolved = buildResolvedBracket();
+
+    // Resolving the far half decides real matchups...
+    expect(
+      resolved.rounds.flatMap((r) => r.matchups).filter((m) => m.winner).length
+    ).toBeGreaterThan(
+      unresolved.rounds.flatMap((r) => r.matchups).filter((m) => m.winner)
+        .length
+    );
+
+    // ...and moves neither the reveal nor the resolve.
+    expect(revealedThroughFor(resolved)).toBe(revealedThroughFor(unresolved));
+    expect(motions(revealedThroughFor(resolved))).toEqual(
+      motions(revealedThroughFor(unresolved))
+    );
+    expect(motions(revealedThroughFor(resolved))).toEqual([
+      "REVEALING",
+      "NONE",
+      "NONE",
+      "NONE",
+    ]);
+  });
+
+  it("advances exactly one round when the squad wins one", () => {
+    const before = buildResolvedBracket();
+    const after = winSquadMatchup(before);
+
+    expect(motions(revealedThroughFor(before))).toEqual([
+      "REVEALING",
+      "NONE",
+      "NONE",
+      "NONE",
+    ]);
+    expect(motions(revealedThroughFor(after))).toEqual([
+      "RESOLVING",
+      "REVEALING",
+      "NONE",
+      "NONE",
+    ]);
+  });
+});
+
+describe("isChampionUnlocking", () => {
+  const opponent = {
+    teamSlug: "LAL",
+    teamName: "Los Angeles Lakers",
+    teamLogo: "/logos/LAL.png",
+    seasonYear: 1988,
+    seed: 1,
+    wins: 15,
+    losses: 9,
+    pedigree: 96,
+    bracketSlot: null,
+  } as unknown as BracketOpponent;
+
+  it("unlocks on the beat the Conference Finals are revealed", () => {
+    expect(isChampionUnlocking("CONFERENCE_SEMIS", opponent)).toBe(true);
+  });
+
+  it("stays shut at every other point in the run", () => {
+    [null, "FIRST_ROUND", "CONFERENCE_FINALS", "NBA_FINALS"].forEach(
+      (through) => {
+        expect(
+          isChampionUnlocking(through as BracketRoundId | null, opponent)
+        ).toBe(false);
+      }
+    );
+  });
+
+  // A null opponent is the lock. Phase 16 shipped the 1985 Lakers into Round 1
+  // by reading the drawn champion instead of the guarded value, and the type
+  // cannot prevent it — both branches are `BracketOpponent | null`.
+  it("never unlocks without a guarded opponent", () => {
+    [null, "FIRST_ROUND", "CONFERENCE_SEMIS", "NBA_FINALS"].forEach(
+      (through) => {
+        expect(
+          isChampionUnlocking(through as BracketRoundId | null, null)
+        ).toBe(false);
+      }
+    );
+  });
+
+  it("never unlocks in the archive", () => {
+    expect(isChampionUnlocking("CONFERENCE_SEMIS", opponent, true)).toBe(false);
   });
 });

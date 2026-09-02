@@ -76,6 +76,16 @@ export const transitionFor = (
   reduced = false
 ): Transition => (reduced ? INSTANT : TRANSITIONS[kind]);
 
+// A zero-duration entrance still paints its initial frame, so reduced motion
+// means declaring no entrance at all rather than an instant one. `false` is
+// motion's own "start where you are" — the same value an element that is not
+// entering uses.
+export const entranceFrom = <T>(
+  active: boolean,
+  reduced: boolean,
+  from: T
+): T | false => (active && !reduced ? from : false);
+
 type StaggerOptions = {
   step?: number;
   reduced?: boolean;

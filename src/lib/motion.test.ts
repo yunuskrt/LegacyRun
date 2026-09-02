@@ -6,6 +6,8 @@ import {
   DENY_SHAKE,
   DURATION,
   EASE,
+  FADE_RISE,
+  entranceFrom,
   MAX_STAGGER_DELAY,
   STAGGER_STEP,
   staggerDelay,
@@ -88,6 +90,29 @@ describe("transitionFor", () => {
 
   it("defaults to full motion when reduced is not given", () => {
     expect(transitionFor("base")).not.toEqual({ duration: 0 });
+  });
+});
+
+// A zero-duration entrance still paints its initial frame — measured, not
+// assumed. Reduced motion therefore means no declared entrance at all.
+describe("entranceFrom", () => {
+  it("declares the entrance only when the element is actually entering", () => {
+    expect(entranceFrom(true, false, FADE_RISE.initial)).toBe(
+      FADE_RISE.initial
+    );
+    expect(entranceFrom(false, false, FADE_RISE.initial)).toBe(false);
+  });
+
+  it("declares nothing under reduced motion, entering or not", () => {
+    expect(entranceFrom(true, true, FADE_RISE.initial)).toBe(false);
+    expect(entranceFrom(false, true, FADE_RISE.initial)).toBe(false);
+  });
+
+  // `false` is motion's own "start where you are", so the two non-entering
+  // cases are indistinguishable to the element — which is the point.
+  it("returns motion's start-where-you-are rather than an empty target", () => {
+    expect(entranceFrom(false, false, { opacity: 0 })).not.toEqual({});
+    expect(entranceFrom(false, false, { opacity: 0 })).toBe(false);
   });
 });
 

@@ -234,6 +234,44 @@ export const visibleRounds = (
   });
 };
 
+// `TournamentStage` keys on the stage, so BRACKET → SERIES → BRACKET remounts
+// the whole bracket. Nothing here survives to see a prop change, which means
+// every bracket entrance is a mount animation and a freshly-mounted card has to
+// be told which of the two it is playing.
+export type RoundMotion = "NONE" | "RESOLVING" | "REVEALING";
+
+// Both entrances are anchored on `revealedThroughFor`, which refuses to count a
+// far-half result — so a far-half series can never animate anything. The round
+// the squad just completed resolves its scores; the one after it reveals its
+// slots. The archive plays neither: a finished run reveals nothing.
+export const roundMotionFor = (
+  round: BracketRoundId,
+  revealedThrough: BracketRoundId | null,
+  readOnly = false
+): RoundMotion => {
+  if (readOnly) return "NONE";
+  if (revealedThrough === round) return "RESOLVING";
+
+  const revealing =
+    ROUND_ORDER[
+      (revealedThrough === null ? -1 : roundIndexOf(revealedThrough)) + 1
+    ] ?? null;
+
+  return revealing === round ? "REVEALING" : "NONE";
+};
+
+// The stub unlocks on the same beat the Conference Finals reveal, and only once
+// the caller has resolved `isFinalsOpponentRevealed` — a null opponent is the
+// lock, and nothing here may reach past it.
+export const isChampionUnlocking = (
+  revealedThrough: BracketRoundId | null,
+  opponent: BracketOpponent | null,
+  readOnly = false
+): boolean =>
+  opponent !== null &&
+  roundMotionFor("CONFERENCE_FINALS", revealedThrough, readOnly) ===
+    "REVEALING";
+
 export const seriesFor = (
   series: readonly SeriesState[],
   matchupId: string

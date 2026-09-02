@@ -70,7 +70,7 @@ const SquadRail = ({ squad, conference }: Props) => {
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 text-left md:hidden"
+        className="flex min-h-11 w-full items-center gap-3 text-left md:hidden"
       >
         <span className="border-primary bg-primary/15 text-primary flex size-9 shrink-0 items-center justify-center rounded-full border text-[0.625rem] font-bold">
           {SQUAD_SHORT_CODE}

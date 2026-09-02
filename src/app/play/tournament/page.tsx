@@ -161,7 +161,8 @@ const TournamentPage = ({}: Props) => {
   }
 
   const nextMatchup = nextSquadMatchup(bracket);
-  const rounds = visibleRounds(bracket, revealedThroughFor(bracket));
+  const revealedThrough = revealedThroughFor(bracket);
+  const rounds = visibleRounds(bracket, revealedThrough);
   const outcome = runOutcome(bracket, series);
   const farConference = oppositeConference(conference);
   const champion = isFinalsOpponentRevealed(bracket)
@@ -285,6 +286,7 @@ const TournamentPage = ({}: Props) => {
           farConference={farConference}
           finalsOpponent={bracketChampion}
           roundsUntilFinals={roundsUntilFinals(bracket)}
+          revealedThrough={revealedThrough}
           readOnly={isArchive}
         />
       </div>
@@ -298,6 +300,7 @@ const TournamentPage = ({}: Props) => {
           farConference={farConference}
           finalsOpponent={bracketChampion}
           roundsUntilFinals={roundsUntilFinals(bracket)}
+          revealedThrough={revealedThrough}
           readOnly={isArchive}
         />
       </div>
