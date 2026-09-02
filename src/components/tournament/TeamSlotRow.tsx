@@ -1,7 +1,11 @@
+"use client";
+
 import React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
 import DifficultyMeter from "@/components/tournament/DifficultyMeter";
 import { squadRatingOf } from "@/lib/bracket-client";
+import { FADE_RISE, entranceFrom, transitionFor } from "@/lib/motion";
 import {
   SQUAD_SHORT_CODE,
   difficultyBand,
@@ -17,7 +21,14 @@ type Props = {
   scoreLabel: string | null;
   eliminated: boolean;
   compact?: boolean;
+  resolving?: boolean;
 };
+
+// The strike itself is not animated — a rule that genuinely grows needs a
+// pseudo-element or an overlay, which is more machinery than it earns. The
+// colour crossfades and the strike appears with it. CSS, so the global
+// reduced-motion block already flattens it.
+const NAME_TRANSITION = "transition-colors duration-[var(--duration-base)]";
 
 const TeamSlotRow = ({
   slot,
@@ -25,11 +36,21 @@ const TeamSlotRow = ({
   scoreLabel,
   eliminated,
   compact = false,
+  resolving = false,
 }: Props) => {
+  const reduced = useReducedMotion() ?? false;
+
+  // The bracket remounts between stages, so this plays only when the round it
+  // belongs to is the one whose result just became visible.
   const score = scoreLabel && (
-    <span className="text-primary shrink-0 text-sm font-bold">
+    <motion.span
+      initial={entranceFrom(resolving, reduced, FADE_RISE.initial)}
+      animate={FADE_RISE.animate}
+      transition={transitionFor("base", reduced)}
+      className="text-primary shrink-0 text-sm font-bold"
+    >
       {scoreLabel}
-    </span>
+    </motion.span>
   );
 
   if (slot.side === "SQUAD") {
@@ -40,7 +61,7 @@ const TeamSlotRow = ({
         </span>
         <div className="min-w-0 flex-1">
           <p
-            className={`text-sm font-bold tracking-wide break-words uppercase ${
+            className={`text-sm font-bold tracking-wide break-words uppercase ${NAME_TRANSITION} ${
               eliminated ? "text-muted-foreground line-through" : "text-primary"
             }`}
           >
@@ -73,7 +94,7 @@ const TeamSlotRow = ({
       />
       <div className="min-w-0 flex-1">
         <p
-          className={`text-sm font-semibold break-words ${
+          className={`text-sm font-semibold break-words ${NAME_TRANSITION} ${
             eliminated
               ? "text-muted-foreground line-through"
               : "text-foreground"

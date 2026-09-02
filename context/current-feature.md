@@ -850,3 +850,158 @@ for the bracket for the same reason.
 Still open: no touch-drag support, unchanged since Phase 6 and explicitly out of
 scope here. Run state is still not persisted (settled as a deliberate no in
 Phase 19). Phase 12's 320px horizontal overflow on this page is untouched.
+
+### Phase 20 (part 3) — Tournament Bracket Motion
+
+**Phase 20 stays 🟡** — third of five slices. The bracket stage of
+`/play/tournament` gets items 8–12 of `context/docs/motion-animation.md`: the
+round reveal, the winner resolve, the champion stub unlock, the difficulty meter
+fill, and the mobile spine expand. Ships `roundMotionFor` + `isChampionUnlocking`
+in `src/lib/tournament-view.ts`, `entranceFrom` in `src/lib/motion.ts`, the 44px
+touch-target sweep Phases 16 and 18 left, and 14 Vitest tests (507 → 521). No
+schema change, no migration, **no new dependency**, no database read or write —
+every figure comes from state Phase 15 had already computed.
+
+**The spec's central premise was wrong, and finding that is most of the phase.**
+Items 8–10 are all specced as transitions on a surviving element: an
+`AnimatePresence` key change for the reveal, a crossfade between the stub's two
+branches. None of it can fire. **`TournamentStage` keys on the stage, so
+BRACKET → SERIES → BRACKET remounts the entire bracket subtree** — nothing there
+lives long enough to see a prop change, and the stub's locked and revealed
+branches never coexist. Every bracket entrance is necessarily a *mount*
+animation.
+
+Gotchas:
+
+- **My first implementation and my first verification were wrong in the same
+  direction, which is what nearly hid it.** I built the specced key change, then
+  measured a wrapper ramping `0.00/8.0 → 1.00/0.0` over 240ms and read it as the
+  reveal working. It was `TournamentStage`'s own crossfade — the selector matched
+  the stage wrapper, which contains every card. The stub is what broke the tie:
+  it measured **already settled on the first frame it existed**, which no
+  crossfade can do. A measurement that confirms the thing you expected is worth
+  less than one that contradicts it.
+- **`roundMotionFor` takes `revealedThrough`, not the bracket.** The page already
+  computes `revealedThroughFor(bracket)` for `visibleRounds`, so passing the
+  value keeps the whole page diff to five lines and makes the rule testable
+  against a bare round id with no bracket fixture at all.
+- **Two rounds, two different treatments, and conflating them is the bug to
+  avoid.** The round the squad just completed is `RESOLVING` (its scores rise
+  in); the one after is `REVEALING` (its slots fade in). One rule returns both,
+  and a test pins that no round is ever given both — collapsing them replays
+  every score on every return to the bracket.
+- **The spoiler invariant is inherited, not re-derived.** Both entrances anchor
+  on `revealedThroughFor`, which a Phase 16 test already pins as refusing to
+  count a far-half result. Mutating it to count any resolved matchup kills 6
+  tests, two of them new. The far-half test is not a shape assertion: it builds
+  the same bracket with and without the far half resolved, asserts the far half
+  genuinely decided more matchups, then asserts the motion is identical.
+- **Item 10's guard is the one the type system cannot help with.**
+  `finalsOpponent(bracket)` returns the drawn champion at all times; `opponent
+  === null` is the lock, and both branches are `BracketOpponent | null`. Phase 16
+  shipped the 1985 Lakers into Round 1 by reading past it. `isChampionUnlocking`
+  takes the already-guarded value, and a test spells out that it never unlocks
+  without one.
+- **A zero-duration entrance still paints its initial frame.** Under reduced
+  motion the reveal held `0.00/8.0` for ~27ms before snapping — measured, not
+  predicted. `entranceFrom(active, reduced, from)` returns `false` (motion's own
+  "start where you are") instead of an instant entrance. **This extends part 02's
+  finding**: part 01 said only delays need an explicit `reduced` guard, part 02
+  added transform gestures, and this adds declared initials.
+- **Item 10 ships as an entrance, not the specced crossfade** — forced by the
+  remount, not chosen. A real crossfade needs the stage machine restructured,
+  which is out of scope.
+- **Item 9's strike is CSS `transition-colors`, not motion**, which the spec
+  explicitly permits ("simple beats clever"). A rule that genuinely grows needs a
+  pseudo-element or an overlay; the colour crossfades and the strike appears with
+  it. The global reduced-motion block already flattens it.
+- **The ladder animates opacity and transform only.** The connector ticks sit at
+  each column's `top-1/2`, so an animated height would move them — Phase 16's
+  grid rationale, still load-bearing. Item 12's spine height is the one
+  deliberate exception.
+- `AnimatePresence initial={false}` on the spine's height panel is what stops the
+  `readOnly` archive reading as collapsed-then-expanded: its first painted frame
+  is already at full height.
+- **The 44px debt is closed.** `Show full bracket` (41px) and the squad-rail
+  toggle (36px) both measure exactly 44 now — found by Phase 16, left by Phase 18
+  when it set the rule for the control bar.
+
+**Two defects found in review by reading the diff, not the running app** — both
+visual, both invisible to the type checker and to every test:
+
+- **Dimmed difficulty dots changed colour.** Splitting the dot into a track plus
+  an absolute fill is harmless for `bg-primary` (opaque) but not for the dimmed
+  `bg-primary/40`, which began compositing over a `bg-muted-foreground/25` track
+  that was never underneath it. The track now paints only where no fill covers
+  it; verified that every filled dot reads `hasTrack: false` and every unfilled
+  one `hasTrack: true`.
+- **The expanded spine had 24px gaps where it had 12px** — the height wrapper
+  became a flex child of a `gap-3` parent *and* carried `pt-3`. Re-measured at
+  `[12, 12, 12]`.
+
+**Eight mutations, all dead on the first run**, both source files byte-identical
+afterwards: `roundMotionFor` ignoring `readOnly` (2 tests), off by one so it
+reveals the completed round (5), collapsing `RESOLVING` into `REVEALING` (5);
+`revealedThroughFor` counting any resolved matchup — the far-half leak (6);
+`isChampionUnlocking` dropping the opponent guard (1) and dropping `readOnly`
+(1); `entranceFrom` ignoring `reduced` (1) and always declaring an entrance (3).
+
+Verified: `npm test` (521), `tsc --noEmit`, `lint`, `format:check`, `build` —
+`/play/tournament` still prerenders static, all four API routes still dynamic.
+Phase 16's grep tests stay green; no component was added, so the grep list is
+unchanged.
+
+Browser-driven against live Neon with **zero console errors**, at true CSS widths
+of **1440, 1024 and 391 with no horizontal overflow at any**. Everything below is
+a per-`requestAnimationFrame` measurement off computed style — these run
+180–260ms, far shorter than a screenshot round-trip:
+
+- Both semifinal cards ramp `0.00/8.0 → 1.00/0.0` over ~240ms with ~30ms between
+  them (`STAGGER_STEP`), while the other three columns hold flat at `1.00/0.0`
+  for every sampled frame.
+- Score badges resolve on the completed round **only** — Round 1 does not replay
+  when the semis resolve.
+- The stub unlocks on the same 240ms beat at the Conference Finals, and read
+  `3 ROUNDS AWAY` then `2 ROUNDS AWAY` before it.
+- Dots step at ~40ms offsets (`0.00:0.60 → 1.00:1.00`); dimmed ones flat from
+  frame one.
+- The spine expands `0 → 519px` and collapses back over ~260ms as one transition,
+  no per-item cascade; the archive's first painted frame is already full height.
+- The archive plays nothing: every card `1.00` from the first frame, no `NEXT UP`.
+- At 1024 — the tight width Phase 16 only checked at one bracket state —
+  `scrollWidth` stays exactly 1024 through **every frame** of the reveal, so the
+  transform never causes a transient overflow.
+- Reduced motion, on a live reveal: 27 sampled frames, the only card value
+  `1.00/0.0`, zero partial dots, and the reveal still happens (`AWAITING WINNER`
+  4 → 2). Nothing is hidden or shown differently.
+- Masking confirmed on screen: with the semifinals revealed, the far-half
+  semifinal showed both teams and **no score**.
+- A squad loss strikes the squad's own row (`YOUR SQUAD`, muted, after a 4-0
+  semifinal defeat) — Phase 16's fix survives into the `SQUAD` branch.
+
+**The champion path is still unreachable by playing — fifth phase of evidence.**
+Two natural runs went out in Round 1 and the Semifinals. The Conference Finals
+and Finals checks used the temporary `?dev=champion` shortcut that reseeds
+`playMatchup` until the squad wins, so games and logs stayed real; it produced a
+full **NBA CHAMPIONS** run and was **deleted before commit** — `grep` for
+`dev=champion`, `DEV SHORTCUT`, `devWin` returns nothing, and the committed page
+diff is only the `revealedThrough` wiring. Phases 16 and 19 used the same device.
+
+Not verified: the seven touched components have no tests, per
+`coding-standards.md`. The reduced-motion pass used Playwright's media emulation
+rather than a real OS setting (unchanged since part 01). The `entranceFrom`
+extraction and the two review fixes landed after the main browser pass — the
+fixes were re-measured, but the five `entranceFrom` call sites rest on the type
+checker and the unit tests rather than a second full drive. 768 was not
+re-checked separately; it is the spine, which was driven at 391.
+
+**A note on the dev environment, not the code:** the Neon branch was cold and
+returned `P1001` / `QUERY_FAILED` for ~40 seconds on first contact before waking.
+Nothing in `src/` was involved. Also, the stale `dragStateFor is not defined`
+traces in `.next/dev/logs` are from part 02's HMR window and no longer exist in
+`src/`.
+
+Still open: run state is not persisted (settled as a deliberate no in Phase 19).
+`bracketSlot` remains unrendered by design. No touch-drag support. Parts 04
+(match replay) and 05 (result screen) remain — **part 05 inherits this part's
+components in `readOnly` mode**, where `roundMotionFor` already returns `NONE`.

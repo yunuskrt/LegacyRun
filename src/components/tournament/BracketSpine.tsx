@@ -1,11 +1,21 @@
 "use client";
 
 import React from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import MatchupCard from "@/components/tournament/MatchupCard";
 import FinalsChampionStub from "@/components/tournament/FinalsChampionStub";
-import { matchupCardState } from "@/lib/tournament-view";
+import { FADE_RISE, entranceFrom, transitionFor } from "@/lib/motion";
+import {
+  isChampionUnlocking,
+  matchupCardState,
+  roundMotionFor,
+} from "@/lib/tournament-view";
 import { isSquadMatchup } from "@/lib/match";
-import type { BracketOpponent, BracketRound } from "@/types/bracket";
+import type {
+  BracketOpponent,
+  BracketRound,
+  BracketRoundId,
+} from "@/types/bracket";
 import type { Conference, Squad } from "@/types/game";
 import type { SeriesState } from "@/types/match";
 
@@ -17,6 +27,7 @@ type Props = {
   farConference: Conference;
   finalsOpponent: BracketOpponent | null;
   roundsUntilFinals: number;
+  revealedThrough: BracketRoundId | null;
   // The archive: the run is over, so no matchup is "next" and the whole
   // bracket opens expanded — there is nothing left to spoil.
   readOnly?: boolean;
@@ -30,10 +41,12 @@ const BracketSpine = ({
   farConference,
   finalsOpponent,
   roundsUntilFinals,
+  revealedThrough,
   readOnly = false,
 }: Props) => {
   const [showFull, setShowFull] = React.useState(readOnly);
   const activeMatchupId = readOnly ? null : nextMatchupId;
+  const reduced = useReducedMotion() ?? false;
 
   return (
     <div className="flex flex-col gap-6">
@@ -44,6 +57,11 @@ const BracketSpine = ({
           const others = showFull
             ? round.matchups.filter((matchup) => !isSquadMatchup(matchup))
             : [];
+          const motionKind = roundMotionFor(
+            round.id,
+            revealedThrough,
+            readOnly
+          );
 
           return (
             <li key={round.id} className="relative">
@@ -65,35 +83,74 @@ const BracketSpine = ({
 
               <div className="flex flex-col gap-3">
                 {squadMatchup ? (
-                  <MatchupCard
-                    matchup={squadMatchup}
-                    state={matchupCardState(squadMatchup, activeMatchupId)}
-                    squad={squad}
-                    series={series}
-                    compact
-                  />
+                  // The reveal is the spine row, not a desktop column, but it
+                  // reads the same rule.
+                  <motion.div
+                    initial={entranceFrom(
+                      motionKind === "REVEALING",
+                      reduced,
+                      FADE_RISE.initial
+                    )}
+                    animate={FADE_RISE.animate}
+                    transition={transitionFor("base", reduced)}
+                  >
+                    <MatchupCard
+                      matchup={squadMatchup}
+                      state={matchupCardState(squadMatchup, activeMatchupId)}
+                      squad={squad}
+                      series={series}
+                      compact
+                      resolving={motionKind === "RESOLVING"}
+                    />
+                  </motion.div>
                 ) : (
                   <div className="border-border/60 text-muted-foreground flex min-h-24 items-center justify-center rounded-xl border border-dashed px-4 py-5 text-[0.6875rem] font-semibold tracking-[0.18em]">
                     AWAITING WINNER
                   </div>
                 )}
 
-                {others.map((matchup) => (
-                  <MatchupCard
-                    key={matchup.id}
-                    matchup={matchup}
-                    state={matchupCardState(matchup, activeMatchupId)}
-                    squad={squad}
-                    series={series}
-                    compact
-                  />
-                ))}
+                {/* One height transition for the whole round's siblings — a
+                    per-item stagger turns a four-round expand into a cascade. */}
+                <AnimatePresence initial={false}>
+                  {others.length > 0 && (
+                    <motion.div
+                      key="others"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={transitionFor("base", reduced)}
+                      className="overflow-hidden"
+                    >
+                      {/* The parent's gap already separates this wrapper from
+                          the squad card, so the inner spacing is between the
+                          siblings only. */}
+                      <div className="flex flex-col gap-3">
+                        {others.map((matchup) => (
+                          <MatchupCard
+                            key={matchup.id}
+                            matchup={matchup}
+                            state={matchupCardState(matchup, activeMatchupId)}
+                            squad={squad}
+                            series={series}
+                            compact
+                            resolving={motionKind === "RESOLVING"}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {round.id === "NBA_FINALS" && (
                   <FinalsChampionStub
                     conference={farConference}
                     opponent={finalsOpponent}
                     roundsAway={roundsUntilFinals}
+                    unlocking={isChampionUnlocking(
+                      revealedThrough,
+                      finalsOpponent,
+                      readOnly
+                    )}
                   />
                 )}
               </div>
@@ -105,7 +162,7 @@ const BracketSpine = ({
       <button
         type="button"
         onClick={() => setShowFull((current) => !current)}
-        className="border-border text-muted-foreground rounded-lg border px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase"
+        className="border-border text-muted-foreground min-h-11 rounded-lg border px-4 py-3 text-xs font-semibold tracking-[0.14em] uppercase"
       >
         {showFull ? "Hide full bracket" : "Show full bracket"}
       </button>

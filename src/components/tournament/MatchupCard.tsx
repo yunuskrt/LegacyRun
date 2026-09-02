@@ -12,6 +12,9 @@ type Props = {
   squad: Squad;
   series: readonly SeriesState[];
   compact?: boolean;
+  // This round's result has just become visible, so the score badges play in
+  // rather than mounting already there.
+  resolving?: boolean;
 };
 
 const MatchupCard = ({
@@ -20,6 +23,7 @@ const MatchupCard = ({
   squad,
   series,
   compact = false,
+  resolving = false,
 }: Props) => {
   const { home, away } = matchup;
 
@@ -60,6 +64,7 @@ const MatchupCard = ({
         scoreLabel={homeScore}
         eliminated={played !== null && homeScore === null}
         compact={compact}
+        resolving={resolving}
       />
 
       <div className="my-3 flex items-center gap-3">
@@ -76,6 +81,7 @@ const MatchupCard = ({
         scoreLabel={awayScore}
         eliminated={played !== null && awayScore === null}
         compact={compact}
+        resolving={resolving}
       />
     </div>
   );
