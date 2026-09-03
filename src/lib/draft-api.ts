@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { splitIds } from "@/lib/query";
 import { teamLogoPath } from "@/lib/team-logo";
 import type { DraftTeam, Position } from "@/types/game";
 
@@ -9,8 +10,6 @@ export const DRAFT_TEAM_MODES = [
 ] as const;
 
 export type DraftTeamMode = (typeof DRAFT_TEAM_MODES)[number];
-
-export type Rng = () => number;
 
 export type DraftTeamQuery =
   | { mode: "random"; excludeSeasons: string[] }
@@ -36,15 +35,7 @@ export type TeamSeasonRosterRow = {
 
 const teamSeasonId = z.string().trim().min(1).max(64);
 
-const idList = z
-  .string()
-  .transform((value) =>
-    value
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0)
-  )
-  .pipe(z.array(teamSeasonId));
+const idList = z.string().transform(splitIds).pipe(z.array(teamSeasonId));
 
 const draftTeamQuerySchema = z
   .object({
@@ -144,10 +135,6 @@ export const fetchDraftTeam = (
       return fetchers.random(query.excludeSeasons);
   }
 };
-
-// Modulo guards the `rng() === 1` case, which would otherwise index past the end.
-export const drawIndex = (total: number, rng: Rng): number =>
-  total <= 0 ? 0 : Math.floor(rng() * total) % total;
 
 export const toDraftTeam = (row: TeamSeasonRosterRow): DraftTeam => ({
   teamSeasonId: row.id,

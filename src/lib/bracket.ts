@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { splitIds } from "@/lib/query";
 import { drawIndex, seededRng } from "@/lib/rng";
 import { teamLogoPath } from "@/lib/team-logo";
 import type { Rng } from "@/lib/rng";
@@ -307,12 +308,7 @@ const teamSeasonId = z.string().trim().min(1).max(64);
 
 const idList = z
   .string()
-  .transform((value) =>
-    value
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0)
-  )
+  .transform(splitIds)
   .pipe(z.array(teamSeasonId).max(8));
 
 const bracketQuerySchema = z.object({

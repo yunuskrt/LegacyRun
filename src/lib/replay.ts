@@ -2,6 +2,7 @@ import {
   OVERTIME_MINUTES,
   PERIOD_MINUTES,
   REGULATION_PERIODS,
+  byPointsDesc,
 } from "@/lib/match";
 import type {
   GameResult,
@@ -276,11 +277,7 @@ export const leadersSoFar = (
       });
   }
 
-  return [...totals.values()]
-    .sort(
-      (a, b) => b.points - a.points || a.playerName.localeCompare(b.playerName)
-    )
-    .slice(0, LEADER_COUNT);
+  return [...totals.values()].sort(byPointsDesc).slice(0, LEADER_COUNT);
 };
 
 export type LineScoreCell = {
@@ -465,12 +462,7 @@ export const periodSummary = (
     period,
     home: pointsFor("HOME"),
     away: pointsFor("AWAY"),
-    leaders: [...totals.values()]
-      .sort(
-        (a, b) =>
-          b.points - a.points || a.playerName.localeCompare(b.playerName)
-      )
-      .slice(0, LEADER_COUNT),
+    leaders: [...totals.values()].sort(byPointsDesc).slice(0, LEADER_COUNT),
   };
 };
 

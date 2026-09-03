@@ -13,7 +13,6 @@ import {
   isSeriesEnd,
   seriesEndStage,
   seriesStageOf,
-  squadAverageRating,
   squadGameLines,
   stageAdvance,
 } from "@/lib/series-flow";
@@ -327,18 +326,6 @@ describe("squadGameLines", () => {
     const lines = squadGameLines(matchupWithSquadOn("HOME"), games);
 
     expect(lines.map((line) => line.gameNumber)).toEqual([1, 2, 3]);
-  });
-});
-
-describe("squadAverageRating", () => {
-  it("means the five ratings and rounds half up", () => {
-    expect(squadAverageRating(squadOf([90, 91, 92, 93, 94]))).toBe(92);
-    expect(squadAverageRating(squadOf([90, 91, 91, 91, 91]))).toBe(91);
-    expect(squadAverageRating(squadOf([90, 91, 92, 92, 92]))).toBe(91);
-  });
-
-  it("returns zero rather than NaN for an empty squad", () => {
-    expect(squadAverageRating(squadOf([]))).toBe(0);
   });
 });
 

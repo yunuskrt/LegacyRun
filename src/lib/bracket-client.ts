@@ -1,5 +1,7 @@
+import { requestJson } from "@/lib/api-client";
+import { squadRatingOf } from "@/lib/run";
+import type { ApiFetchFailure, FetchLike } from "@/lib/api-client";
 import type { Bracket } from "@/types/bracket";
-import type { ApiError, ApiResponse } from "@/types/api";
 import type { Conference, Squad } from "@/types/game";
 
 export const BRACKET_ENDPOINT = "/api/tournament/bracket";
@@ -11,15 +13,10 @@ export type BracketRequest = {
   runSeed?: string;
 };
 
-export type BracketFetchFailure = ApiError | "UNREACHABLE";
+export type BracketFetchFailure = ApiFetchFailure;
 
 export type BracketFetchResult =
   { ok: true; bracket: Bracket } | { ok: false; error: BracketFetchFailure };
-
-export type FetchLike = (
-  input: string,
-  init?: RequestInit
-) => Promise<Response>;
 
 export const BRACKET_FETCH_MESSAGE: Record<BracketFetchFailure, string> = {
   INVALID_REQUEST: "That bracket request wasn't valid.",
@@ -27,14 +24,6 @@ export const BRACKET_FETCH_MESSAGE: Record<BracketFetchFailure, string> = {
   QUERY_FAILED: "Couldn't reach the playoff archive. Try again.",
   UNREACHABLE: "Couldn't reach the playoff archive. Try again.",
 };
-
-export const squadRatingOf = (squad: Squad): number =>
-  squad.players.length === 0
-    ? 0
-    : Math.round(
-        squad.players.reduce((total, player) => total + player.rating, 0) /
-          squad.players.length
-      );
 
 // The team-seasons the squad drafted from — a run never plays the roster it
 // picked its own players off.
@@ -72,29 +61,16 @@ export const bracketUrl = (request: BracketRequest): string => {
   return `${BRACKET_ENDPOINT}?${params.toString()}`;
 };
 
-const isApiError = (value: unknown): value is ApiError =>
-  value === "INVALID_REQUEST" ||
-  value === "NO_ELIGIBLE_TEAM" ||
-  value === "QUERY_FAILED";
-
 export const requestBracket = async (
   request: BracketRequest,
   fetchImpl: FetchLike,
   signal?: AbortSignal
 ): Promise<BracketFetchResult> => {
-  let body: ApiResponse<Bracket>;
+  const result = await requestJson<Bracket>(
+    bracketUrl(request),
+    fetchImpl,
+    signal
+  );
 
-  try {
-    const response = await fetchImpl(bracketUrl(request), { signal });
-    body = (await response.json()) as ApiResponse<Bracket>;
-  } catch {
-    return { ok: false, error: "UNREACHABLE" };
-  }
-
-  if (body?.success) return { ok: true, bracket: body.data };
-
-  return {
-    ok: false,
-    error: isApiError(body?.error) ? body.error : "UNREACHABLE",
-  };
+  return result.ok ? { ok: true, bracket: result.data } : result;
 };

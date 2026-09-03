@@ -1,4 +1,5 @@
-import { squadSideOf } from "@/lib/tournament-view";
+import { squadRatingOf } from "@/lib/run";
+import { squadGameScore, squadSideOf } from "@/lib/tournament-view";
 import type { ReplaySpeed } from "@/lib/replay";
 import type { BracketMatchup } from "@/types/bracket";
 import type { Squad } from "@/types/game";
@@ -101,8 +102,8 @@ export type SquadGameLine = {
   overtimes: number;
 };
 
-// The game-by-game list reads from the squad's side, never the home slot's —
-// same rule as `squadSeriesScore`. Safe on a finished series only.
+// The game-by-game list reads from the squad's side, never the home slot's.
+// Safe on a finished series only.
 export const squadGameLines = (
   matchup: BracketMatchup,
   games: readonly GameResult[]
@@ -112,25 +113,16 @@ export const squadGameLines = (
   return games.map((game) => ({
     gameNumber: game.gameNumber,
     key: game.seed,
-    squadPoints: squadSide === "HOME" ? game.homeScore : game.awayScore,
-    opponentPoints: squadSide === "HOME" ? game.awayScore : game.homeScore,
+    ...squadGameScore(squadSide, game),
     won: game.winner === squadSide,
     overtimes: Math.max(0, game.periodScores.length - 4),
   }));
 };
-
-export const squadAverageRating = (squad: Squad): number =>
-  squad.players.length === 0
-    ? 0
-    : Math.round(
-        squad.players.reduce((total, player) => total + player.rating, 0) /
-          squad.players.length
-      );
 
 // Named squads print their name and keep the `YOUR SQUAD` tag; an unnamed one
 // already reads `YOUR SQUAD` above, so repeating it in the sub-label would say
 // it twice.
 export const faceOffSubLabel = (squad: Squad, isNamed: boolean): string =>
   isNamed
-    ? `YOUR SQUAD · AVG ${squadAverageRating(squad)}`
-    : `AVG ${squadAverageRating(squad)}`;
+    ? `YOUR SQUAD · AVG ${squadRatingOf(squad)}`
+    : `AVG ${squadRatingOf(squad)}`;

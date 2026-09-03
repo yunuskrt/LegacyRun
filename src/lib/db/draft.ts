@@ -2,14 +2,11 @@ import { prisma } from "@/lib/db";
 import {
   anotherSeasonFilter,
   anotherTeamFilter,
-  drawIndex,
   toDraftTeam,
 } from "@/lib/draft-api";
-import type {
-  Rng,
-  TeamSeasonAnchor,
-  TeamSeasonRosterRow,
-} from "@/lib/draft-api";
+import { drawIndex } from "@/lib/rng";
+import type { TeamSeasonAnchor, TeamSeasonRosterRow } from "@/lib/draft-api";
+import type { Rng } from "@/lib/rng";
 import type { Prisma } from "@/generated/prisma/client";
 import type { DraftTeam } from "@/types/game";
 

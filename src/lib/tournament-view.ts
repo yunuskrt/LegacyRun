@@ -8,7 +8,7 @@ import type {
   BracketSlot,
 } from "@/types/bracket";
 import type { Conference, Squad } from "@/types/game";
-import type { MatchSideId, SeriesState } from "@/types/match";
+import type { GameResult, MatchSideId, SeriesState } from "@/types/match";
 
 export const SQUAD_FALLBACK_NAME = "YOUR SQUAD";
 
@@ -309,6 +309,15 @@ export const squadSeriesScore = (
   squadSideOf(matchup) === "HOME"
     ? { squadWins: series.homeWins, opponentWins: series.awayWins }
     : { squadWins: series.awayWins, opponentWins: series.homeWins };
+
+// The same rule one game down: a squad-facing score never reads the home slot.
+export const squadGameScore = (
+  squadSide: MatchSideId,
+  game: Pick<GameResult, "homeScore" | "awayScore">
+): { squadPoints: number; opponentPoints: number } =>
+  squadSide === "HOME"
+    ? { squadPoints: game.homeScore, opponentPoints: game.awayScore }
+    : { squadPoints: game.awayScore, opponentPoints: game.homeScore };
 
 export type RunOutcome =
   | { kind: "IN_PROGRESS" }

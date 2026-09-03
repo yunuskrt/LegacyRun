@@ -1314,3 +1314,113 @@ page is untouched. `SHARED REROLL POOL` still wraps at exactly 1024 (part 02).
 Also in this commit: **Phase 20 ticked complete in `context/todo.md` (20/23)** —
 the first phase closed since the tournament UI arc, and the last before the home
 screen.
+
+### Refactor — `src/lib` deduplication
+
+**Not a numbered phase.** A `refactor-scanner` audit of `src/lib` found six
+duplications; all six are collapsed here. **No behaviour changed anywhere** —
+that is the whole claim of this entry, and it is proven rather than asserted (see
+below). Ships `src/lib/api-client.ts` and `src/lib/query.ts`, and 19 Vitest tests
+(548 → 567). No schema change, no migration, **no new dependency**, no database
+read or write, and no component changed except two import paths.
+
+Net −225/+188 lines across 20 files. Each deduplicated rule now has exactly one
+definition, verified by grep rather than by reading the diff.
+
+Gotchas:
+
+- **The audit's severity claim was wrong and was corrected rather than repeated.**
+  It called the diverging `drawIndex` a "live correctness risk" and read
+  `match.ts`'s `total <= 0` guard as a hand-rolled workaround for the same bug.
+  Neither holds: every one of the four callers already refuses an empty pool
+  before drawing, and that guard is a **zero-total-weight fallback in a weighted
+  draw**, unrelated. The divergence was real but latent — `drawIndex(0, …)` gave
+  `NaN` through `rng.ts` and `0` through `draft-api.ts`. The surviving copy keeps
+  the guard, and its comment says it is a backstop rather than a fix, so the next
+  reader is not told a caller depends on it.
+- **The three `requestX` functions keep their own result shapes** (`{ bracket }`,
+  `{ team }`, `{ data }`) and their own failure type names. Collapsing those into
+  one generic result would have rippled into every consumer for no gain; only the
+  fetch/parse/normalize body is shared. `requestMatchData` needs no adaptation at
+  all — its shape already **is** `ApiFetchResult<MatchData>` — so it alone is a
+  direct return rather than an `async` adapter. Recorded because the asymmetry
+  looks like an oversight and is not.
+- **`squadRatingOf` was moved to `run.ts`, not imported across from
+  `bracket-client.ts`.** It is a value derived from a `Squad`, and `series-flow`
+  had no business depending on an API-client module for it. The two component
+  consumers moved with it.
+- **`splitIds` needed its own module.** The obvious home, `api-response.ts`,
+  imports `next/server` — and `bracket.ts` and `match.ts` are pure and
+  unit-tested, so that import would have dragged the Next runtime into the test
+  environment. Only the `split/trim/filter` transform is shared; each endpoint's
+  `.pipe()` constraints genuinely differ and stayed put.
+- **`byPointsDesc` was the weakest-covered thing in the change, and `/feature
+  test` is what surfaced it.** Mutating it killed exactly one test — thin for a
+  comparator three call sites now share. The load-bearing test is not "it sorts"
+  but that **a tie orders identically whatever order the input arrives in**: a
+  points-only comparator leaves tied lines in whatever order the caller's `Map`
+  happened to build, which is precisely how the box score, the replay's running
+  leaders and the period summary could disagree about the same two players. That
+  mutation now kills 3.
+- **`squadGameScore`'s real test is an agreement test.** It must resolve the
+  squad to the same slot `squadSeriesScore` does — a bracket row reading `1-4`
+  cannot list its one win on the other side game by game. Because
+  `nextSquadMatchup` returns whichever side the generator seeded the squad into,
+  the test runs against a real matchup **and its slot-swapped mirror**, with a
+  fourth test asserting the two genuinely span `HOME` and `AWAY` so the mirror
+  cannot silently stop covering anything.
+- **`drawIndex`'s two test blocks were consolidated into `rng.test.ts`**, keeping
+  the stronger set. `squadRatingOf`'s two blocks (`bracket-client.test.ts` and
+  `series-flow.test.ts`, testing the same arithmetic under two names) became one
+  in `run.test.ts`.
+- **Deliberately not done: the audit's two readability items** —
+  `generateBracket`'s ~120 lines and `simulateGame`'s ~100 lines with its nested
+  `playPeriod` closure mutating five outer `let`s. Both are heavily
+  mutation-covered, neither is a defect, and restructuring them is real risk for
+  a stylistic gain.
+- **The audit found no dead code.** `DURATION.instant` is unconsumed but is the
+  reserved token Phase 20 part 1 already recorded; the many test-only exports are
+  the project's deliberate pattern of hoisting rules out of components.
+- One nit was found by review and fixed: `squadGameScore` was inserted out of
+  alphabetical order in the `tournament-view.test.ts` import block.
+
+**Equivalence was proven, not argued.** The engine is seeded and deterministic,
+so a throwaway harness hashed a wide slice of its output — 40 full runs across
+both conferences and the whole squad-rating range, every bracket, series, replay
+frame, running-leaders list, period summary, run path, playoff record, signature
+game and game-lines list, plus 12 query-parse cases including the `splitIds`
+blank/whitespace edges. The branch and `main` both produced
+`a965dd6c5a296955019fe7bf0db866b8f9326bfd7eaaecaddd147b46db4ff970`. **Byte-identical**,
+so nothing behavioural moved. The harness was deleted before commit.
+
+**Eleven mutations, all dead**, every source file byte-identical afterwards:
+`splitIds` keeping blanks (2 tests), `drawIndex` losing its empty-pool guard (1),
+`byPointsDesc` dropping the name tie-break (3), sorting points ascending (4) and
+reversing the tie-break (2), `squadGameScore` inverted (10) and always reading
+home (10), `requestJson` passing an unknown error through (5) and rethrowing
+instead of `UNREACHABLE` (8), plus the two earlier `squadGameScore` runs. One
+mutation attempt was **invalid and rerun** — the replacement produced a syntax
+error, so files failed to load and 443 tests "passed" out of 559; a result that
+looks like a survivor because fewer tests ran is not a survivor.
+
+Verified: `npm test` (567), `tsc --noEmit`, `lint`, `format:check`, `build` —
+both `/play` routes still prerender static, all four API routes still dynamic.
+
+Driven against live Neon with **zero console errors and zero warnings**: the four
+endpoints curl'd directly including the `splitIds` blank/trailing-comma paths and
+the `400` error paths; then a full run in the browser — 5/5 drafted off real
+rosters, EAST confirmed, bracket rendered, a Round 1 series played to
+`SERIES LOST 1-4` with game lines squad-first (`GAME 3 109-108`, the one win),
+and a result screen reading `ELIMINATED IN ROUND 1`, `PLAYOFF RECORD 1-4` and
+`SIGNATURE GAME Game 3 · 109-108 over the 2018 Miami Heat`. That screen is what
+the `squadGameScore` extraction most risked breaking: it shows squad-first
+ordering in the path and signature **alongside** opponent-first in
+`2018 Miami Heat won the series 4-1`, both still correct.
+
+Not verified: the fetch layer's abort path was exercised by unit test only — the
+browser run never superseded an in-flight request. The two new modules'
+consumers in `src/components/` have no tests, per `coding-standards.md`.
+
+Still open, and untouched by this refactor: run state is not persisted (settled
+as a deliberate no in Phase 19). The champion path still cannot be reached by
+playing. No touch-drag support. `bracketSlot` remains unrendered by design.

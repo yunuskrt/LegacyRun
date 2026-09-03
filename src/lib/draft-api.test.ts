@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   anotherSeasonFilter,
   anotherTeamFilter,
-  drawIndex,
   fetchDraftTeam,
   parseDraftTeamQuery,
   parseTeamSeasonId,
@@ -293,33 +292,6 @@ describe("fetchDraftTeam", () => {
     await expect(
       fetchDraftTeam({ mode: "random", excludeSeasons: [] }, fetchers)
     ).resolves.toBe(team);
-  });
-});
-
-describe("drawIndex", () => {
-  it("returns the first row when the draw lands at zero", () => {
-    expect(drawIndex(1292, () => 0)).toBe(0);
-  });
-
-  it("returns the last row when the draw lands just short of one", () => {
-    expect(drawIndex(1292, () => 0.9999999)).toBe(1291);
-  });
-
-  it("wraps rather than indexing past the end when the draw returns one", () => {
-    expect(drawIndex(1292, () => 1)).toBe(0);
-  });
-
-  it("stays inside the range across the whole unit interval", () => {
-    for (let step = 0; step <= 1000; step += 1) {
-      const index = drawIndex(7, () => step / 1000);
-
-      expect(index).toBeGreaterThanOrEqual(0);
-      expect(index).toBeLessThan(7);
-    }
-  });
-
-  it("returns zero for an empty pool", () => {
-    expect(drawIndex(0, () => 0.5)).toBe(0);
   });
 });
 

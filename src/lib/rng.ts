@@ -29,6 +29,9 @@ export const mintSeed = (rng: Rng = Math.random): string =>
     () => SEED_ALPHABET[drawIndex(SEED_ALPHABET.length, rng)]
   ).join("");
 
-// `% total` guards an rng that can return exactly 1.
+// `% total` guards an rng that can return exactly 1, which would otherwise
+// index past the end. An empty pool returns 0 rather than `NaN`; every caller
+// already refuses one first, so this only keeps the refusal from being the sole
+// thing standing between a future caller and a silent bad index.
 export const drawIndex = (total: number, rng: Rng): number =>
-  Math.floor(rng() * total) % total;
+  total <= 0 ? 0 : Math.floor(rng() * total) % total;

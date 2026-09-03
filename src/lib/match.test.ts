@@ -18,6 +18,7 @@ import {
   TURNOVER_RATE,
   advanceBracket,
   buildMatchData,
+  byPointsDesc,
   compressSquadNet,
   effectivePpp,
   findMatchup,
@@ -41,7 +42,7 @@ import {
   toMatchPlayer,
 } from "@/lib/match";
 import { seededRng } from "@/lib/rng";
-import type { MatchPlayer, MatchTeam } from "@/types/match";
+import type { MatchPlayer, MatchTeam, ScoringLine } from "@/types/match";
 import type { Bracket, BracketSlot } from "@/types/bracket";
 
 const player = (
@@ -339,6 +340,57 @@ describe("scoring attribution", () => {
     );
 
     expect(new Set(picks)).toEqual(new Set(["a", "b"]));
+  });
+});
+
+describe("byPointsDesc", () => {
+  const line = (playerName: string, points: number): ScoringLine => ({
+    side: "HOME",
+    playerSeasonId: playerName.toLowerCase(),
+    playerName,
+    points,
+  });
+
+  const names = (lines: ScoringLine[]) =>
+    [...lines].sort(byPointsDesc).map((entry) => entry.playerName);
+
+  it("puts the highest scorer first", () => {
+    expect(
+      names([line("Pippen", 22), line("Jordan", 38), line("Kukoc", 14)])
+    ).toEqual(["Jordan", "Pippen", "Kukoc"]);
+  });
+
+  it("breaks a tie on name, ascending", () => {
+    expect(names([line("Rodman", 10), line("Harper", 10)])).toEqual([
+      "Harper",
+      "Rodman",
+    ]);
+  });
+
+  // The tie-break is what makes the order total. Without it a tie keeps whatever
+  // order the caller happened to build its Map in, and the box score, the
+  // replay's running leaders and the period summary can disagree on the same
+  // two players — the reason all three share this comparator.
+  it("orders a tie the same way whatever order it is given in", () => {
+    const tied = [
+      line("Rodman", 10),
+      line("Harper", 10),
+      line("Kerr", 10),
+      line("Longley", 10),
+    ];
+
+    const expected = ["Harper", "Kerr", "Longley", "Rodman"];
+
+    expect(names(tied)).toEqual(expected);
+    expect(names([...tied].reverse())).toEqual(expected);
+    expect(names([tied[2], tied[0], tied[3], tied[1]])).toEqual(expected);
+  });
+
+  it("ranks on points before name", () => {
+    expect(names([line("Armstrong", 4), line("Zidek", 31)])).toEqual([
+      "Zidek",
+      "Armstrong",
+    ]);
   });
 });
 

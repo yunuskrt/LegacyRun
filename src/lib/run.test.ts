@@ -5,8 +5,9 @@ import {
   MAX_SQUAD_NAME_LENGTH,
   normalizeSquadName,
   orderMembersBySlots,
+  squadRatingOf,
 } from "@/lib/run";
-import type { Position, SquadMember } from "@/types/game";
+import type { Position, Squad, SquadMember } from "@/types/game";
 
 const memberOf = (position: Position): SquadMember => ({
   playerSlug: `slug-${position}`,
@@ -27,6 +28,30 @@ const drafted: SquadMember[] = [
   memberOf("SG"),
   memberOf("SF"),
 ];
+
+const squadOf = (ratings: number[]): Squad => ({
+  formation: "TRADITIONAL",
+  players: ratings.map((rating, index) => ({
+    ...memberOf(TRADITIONAL_SLOTS[index]),
+    rating,
+  })),
+});
+
+describe("squadRatingOf", () => {
+  it("means the five ratings and rounds half up", () => {
+    expect(squadRatingOf(squadOf([90, 91, 92, 93, 94]))).toBe(92);
+    expect(squadRatingOf(squadOf([90, 91, 91, 91, 91]))).toBe(91);
+    expect(squadRatingOf(squadOf([90, 91, 92, 92, 92]))).toBe(91);
+  });
+
+  it("averages a mixed squad", () => {
+    expect(squadRatingOf(squadOf([98, 71, 70, 61, 60]))).toBe(72);
+  });
+
+  it("returns zero rather than NaN for an empty squad", () => {
+    expect(squadRatingOf(squadOf([]))).toBe(0);
+  });
+});
 
 describe("normalizeSquadName", () => {
   it("trims surrounding whitespace", () => {

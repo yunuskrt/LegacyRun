@@ -7,7 +7,7 @@ import {
   matchDataUrl,
   requestMatchData,
 } from "@/lib/match-client";
-import type { FetchLike } from "@/lib/bracket-client";
+import type { FetchLike } from "@/lib/api-client";
 import type { Bracket, BracketRoundId, BracketSlot } from "@/types/bracket";
 import type { Position, Squad, SquadMember } from "@/types/game";
 

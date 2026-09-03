@@ -5,8 +5,8 @@ import {
   requestDraftTeam,
   rerollRequest,
   type DraftRequest,
-  type FetchLike,
 } from "@/lib/draft-client";
+import type { FetchLike } from "@/lib/api-client";
 import type { RerollKind } from "@/lib/draft";
 import type { ApiError } from "@/types/api";
 import type { DraftTeam } from "@/types/game";
