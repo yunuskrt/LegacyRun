@@ -1,8 +1,18 @@
+"use client";
+
 import React from "react";
+import { motion, useReducedMotion } from "motion/react";
 import { Crown, ShieldOff } from "lucide-react";
 import RunPathList from "@/components/tournament/RunPathList";
 import RunRecapStats from "@/components/tournament/RunRecapStats";
 import RunSquadGrid from "@/components/tournament/RunSquadGrid";
+import {
+  FADE_RISE,
+  STAGE_STEP,
+  entranceFrom,
+  sequencedTransition,
+  transitionFor,
+} from "@/lib/motion";
 import {
   CHAMPION_OVERLINE,
   defeatSubtitle,
@@ -27,6 +37,18 @@ type Props = {
   onNewRun: () => void;
 };
 
+// The three blocks of the screen, in reading order. Sections are one beat
+// apart; each block staggers internally at its own step.
+const HEADER = 0;
+const SQUAD = 1;
+const RECAP = 2;
+
+// The one permitted overshoot on this screen, and the reason the glyph is the
+// only element with a scale: SPRING settles just past 1, well under the 1.06
+// ceiling. Defeat gets exactly the same entrance — a run that ends in Round 1
+// is the common case, and dramatizing it is how this screen becomes tiresome.
+const GLYPH_ENTRANCE = { opacity: 0, scale: 0.9 };
+
 const RunResultScreen = ({
   bracket,
   series,
@@ -36,75 +58,120 @@ const RunResultScreen = ({
   onReviewBracket,
   onNewRun,
 }: Props) => {
+  const reduced = useReducedMotion() ?? false;
   const path = runPath(bracket, series);
   const eliminated = eliminationRow(path);
+
+  // Glyph, overline, outcome, name — staged rather than staggered as a list.
+  const headerLine = (index: number) => ({
+    initial: entranceFrom(true, reduced, FADE_RISE.initial),
+    animate: FADE_RISE.animate,
+    transition: sequencedTransition("base", HEADER, index, {
+      step: STAGE_STEP,
+      reduced,
+    }),
+  });
+
+  const press = reduced
+    ? {}
+    : { whileHover: { y: -2 }, whileTap: { scale: 0.98 } };
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <header className="flex flex-col items-center gap-1 text-center">
-        {isChampion ? (
-          <Crown className="text-primary size-8" aria-hidden="true" />
-        ) : (
-          <ShieldOff className="text-destructive size-8" aria-hidden="true" />
-        )}
+        <motion.span
+          initial={entranceFrom(true, reduced, GLYPH_ENTRANCE)}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={sequencedTransition("spring", HEADER, 0, {
+            step: STAGE_STEP,
+            reduced,
+          })}
+        >
+          {isChampion ? (
+            <Crown className="text-primary size-8" aria-hidden="true" />
+          ) : (
+            <ShieldOff className="text-destructive size-8" aria-hidden="true" />
+          )}
+        </motion.span>
 
-        <p
+        <motion.p
+          {...headerLine(1)}
           className={`text-[0.6875rem] font-bold tracking-[0.18em] ${
             isChampion ? "text-primary" : "text-destructive"
           }`}
         >
           {isChampion ? CHAMPION_OVERLINE : eliminationHeadline(eliminated)}
-        </p>
+        </motion.p>
 
-        <h1
+        <motion.h1
+          {...headerLine(2)}
           className={`text-4xl font-bold tracking-wide uppercase sm:text-5xl ${
             isChampion ? "text-primary" : "text-destructive"
           }`}
         >
           {isChampion ? "NBA Champions" : "Run ended"}
-        </h1>
+        </motion.h1>
 
         {/* The hero needs a subject, so an unnamed squad still gets a line —
             `squadName` is already the YOUR SQUAD fallback. */}
-        <p className="text-foreground text-2xl font-bold tracking-wide break-words uppercase sm:text-3xl">
+        <motion.p
+          {...headerLine(3)}
+          className="text-foreground text-2xl font-bold tracking-wide break-words uppercase sm:text-3xl"
+        >
           {squadName}
-        </p>
+        </motion.p>
 
         {eliminated && (
-          <p className="text-muted-foreground mt-1 text-sm">
+          <motion.p
+            {...headerLine(4)}
+            className="text-muted-foreground mt-1 text-sm"
+          >
             {defeatSubtitle(eliminated)}
-          </p>
+          </motion.p>
         )}
       </header>
 
-      <RunSquadGrid players={squad.players} />
+      <RunSquadGrid players={squad.players} section={SQUAD} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <RunPathList path={path} />
+        <RunPathList path={path} section={RECAP} />
         <RunRecapStats
           record={playoffRecord(path)}
           leader={runScoringLeader(path)}
           signature={signatureGame(path)}
           isChampion={isChampion}
+          section={RECAP}
         />
       </div>
 
-      <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-        <button
+      <motion.div
+        initial={entranceFrom(true, reduced, FADE_RISE.initial)}
+        animate={FADE_RISE.animate}
+        transition={sequencedTransition("base", RECAP, 0, { reduced })}
+        className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+      >
+        {/* Same press family as the draft's roster card — transform only, and
+            dropped outright under reduced motion, which snaps a transform
+            target rather than omitting it. */}
+        <motion.button
           type="button"
           onClick={onNewRun}
+          {...press}
+          transition={transitionFor("quick", reduced)}
           className="bg-gold text-primary-foreground min-h-11 w-full rounded-xl px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase sm:w-auto"
         >
           Start a new run
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           type="button"
           onClick={onReviewBracket}
+          {...press}
+          transition={transitionFor("quick", reduced)}
           className="border-border bg-secondary text-foreground min-h-11 w-full rounded-xl border px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase sm:w-auto"
         >
           Review bracket
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </div>
   );
 };

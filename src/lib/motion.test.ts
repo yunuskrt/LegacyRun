@@ -9,7 +9,12 @@ import {
   FADE_RISE,
   entranceFrom,
   MAX_STAGGER_DELAY,
+  SECTION_STEP,
+  STAGE_STEP,
   STAGGER_STEP,
+  sectionDelay,
+  sequenceDelay,
+  sequencedTransition,
   staggerDelay,
   staggeredTransition,
   transitionFor,
@@ -145,6 +150,148 @@ describe("staggeredTransition", () => {
       duration: 0,
       delay: 0,
     });
+  });
+});
+
+describe("sectionDelay", () => {
+  it("puts the first section at zero", () => {
+    expect(sectionDelay(0)).toBe(0);
+    expect(sectionDelay(-1)).toBe(0);
+  });
+
+  // The whole point of a constant beat: the delay of a section must not depend
+  // on how much the section before it contained. An implementation that summed
+  // the previous block's length would read identically at three sections of
+  // equal size and blow out the moment one of them grew.
+  it("does not depend on how many items the previous section held", () => {
+    const shortRun = sectionDelay(2);
+    const longRun = sectionDelay(2);
+
+    expect(shortRun).toBe(longRun);
+    expect(sectionDelay(2)).toBe(2 * SECTION_STEP);
+    expect(sectionDelay(2) - sectionDelay(1)).toBeCloseTo(
+      sectionDelay(1) - sectionDelay(0)
+    );
+  });
+
+  it("spaces every section by exactly one beat", () => {
+    for (let section = 1; section < 6; section += 1) {
+      expect(sectionDelay(section) - sectionDelay(section - 1)).toBeCloseTo(
+        SECTION_STEP
+      );
+    }
+  });
+
+  it("collapses to zero under reduced motion", () => {
+    expect(sectionDelay(2, { reduced: true })).toBe(0);
+    expect(sectionDelay(5, { reduced: true })).toBe(0);
+  });
+
+  // Two scales, not one: a section beat has to outlast a list step or the
+  // blocks read as a single long list, and stay inside a transition or the
+  // screen pauses between them. Spelled out rather than compared to
+  // SECTION_STEP, which would assert the constant back to itself.
+  it("beats slower than a list steps and faster than a transition runs", () => {
+    const beat = sectionDelay(1);
+
+    expect(beat).toBeGreaterThan(STAGGER_STEP);
+    expect(beat).toBeGreaterThan(STAGE_STEP);
+    expect(beat).toBeLessThanOrEqual(DURATION.base);
+    expect(beat).toBeCloseTo(0.18);
+  });
+});
+
+describe("sequenceDelay", () => {
+  it("adds the section beat to the position within the section", () => {
+    expect(sequenceDelay(2, 3)).toBeCloseTo(
+      2 * SECTION_STEP + 3 * STAGGER_STEP
+    );
+  });
+
+  it("degenerates to a plain stagger in the first section", () => {
+    expect(sequenceDelay(0, 4)).toBe(staggerDelay(4));
+  });
+
+  it("degenerates to a plain section beat for the first element", () => {
+    expect(sequenceDelay(2, 0)).toBe(sectionDelay(2));
+  });
+
+  // Both halves have to honour it — a mutant that drops `reduced` from only the
+  // section half still passes every stagger test in this file.
+  it("collapses to zero under reduced motion, both halves", () => {
+    expect(sequenceDelay(2, 4, { reduced: true })).toBe(0);
+  });
+
+  it("keeps the within-section cap while sections keep accumulating", () => {
+    expect(sequenceDelay(1, 40)).toBeCloseTo(SECTION_STEP + MAX_STAGGER_DELAY);
+  });
+});
+
+// The staged result screen is the only place three sections run at once, and
+// the budget is the thing a future constant change would silently blow.
+describe("the staged screen budget", () => {
+  const settle = (section: number, index: number, step?: number) =>
+    sequenceDelay(section, index, step ? { step } : {}) + DURATION.base;
+
+  it("stages a five-element header inside the stagger cap", () => {
+    expect(staggerDelay(4, { step: STAGE_STEP })).toBeLessThanOrEqual(
+      MAX_STAGGER_DELAY
+    );
+    expect(staggerDelay(4, { step: STAGE_STEP })).toBeCloseTo(0.24);
+  });
+
+  // Header (5 staged) → the five (5 cards) → path (4 rows) + recap, three
+  // sections one beat apart. Measured in the browser at ~750ms end to end.
+  it("finishes the whole three-section entrance under a second", () => {
+    const last = Math.max(settle(0, 4, STAGE_STEP), settle(1, 4), settle(2, 3));
+
+    expect(last).toBeCloseTo(0.69);
+    expect(last).toBeLessThan(1);
+  });
+
+  it("is instant end to end under reduced motion", () => {
+    const kinds = [
+      sequencedTransition("base", 0, 4, { step: STAGE_STEP, reduced: true }),
+      sequencedTransition("base", 1, 4, { reduced: true }),
+      sequencedTransition("spring", 2, 3, { reduced: true }),
+    ];
+
+    kinds.forEach((transition) =>
+      expect(transition).toEqual({ duration: 0, delay: 0 })
+    );
+  });
+});
+
+describe("sequencedTransition", () => {
+  it("merges the sequence delay onto a timed transition", () => {
+    expect(sequencedTransition("base", 1, 2)).toEqual({
+      duration: DURATION.base,
+      ease: EASE.enter,
+      delay: SECTION_STEP + 2 * STAGGER_STEP,
+    });
+  });
+
+  // The glyph is the only spring on the screen and it sits at index 0, so this
+  // combination never runs with a real delay in the app.
+  it("merges the delay onto the spring, which carries no duration", () => {
+    expect(sequencedTransition("spring", 1, 0)).toEqual({
+      type: "spring",
+      stiffness: 340,
+      damping: 26,
+      delay: SECTION_STEP,
+    });
+  });
+
+  it("agrees with sequenceDelay for every section and index", () => {
+    for (let section = 0; section < 4; section += 1) {
+      for (let index = 0; index < 6; index += 1) {
+        const transition = sequencedTransition("base", section, index) as {
+          delay: number;
+        };
+
+        expect(transition.delay).toBe(sequenceDelay(section, index));
+      }
+    }
   });
 });
 

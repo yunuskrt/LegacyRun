@@ -40,6 +40,17 @@ export const STAGGER_STEP = 0.03;
 // of a second.
 export const MAX_STAGGER_DELAY = 0.3;
 
+// A staged header is a handful of distinct elements, not a list, and
+// STAGGER_STEP is a list rhythm that disappears across four or five of them.
+// Slow enough to read as a sequence, still inside MAX_STAGGER_DELAY at five.
+export const STAGE_STEP = 0.06;
+
+// Blocks of a staged screen arrive one beat apart while the elements inside
+// each block stagger at their own step. The beat is this constant and never the
+// previous block's total length — that is what keeps a sequence of sections
+// from compounding into a stagger of staggers.
+export const SECTION_STEP = DURATION.quick;
+
 // The one looping animation the app permits — the draft court's open-slot
 // invitation. Long and shallow so it reads as breathing rather than blinking.
 // Loop values have no CSS half, so they are not `--duration-*` tokens.
@@ -110,4 +121,25 @@ export const staggeredTransition = (
 ): Transition => ({
   ...transitionFor(kind, options.reduced ?? false),
   delay: staggerDelay(index, options),
+});
+
+export const sectionDelay = (
+  section: number,
+  { reduced = false }: StaggerOptions = {}
+): number => (reduced || section <= 0 ? 0 : section * SECTION_STEP);
+
+export const sequenceDelay = (
+  section: number,
+  index: number,
+  options: StaggerOptions = {}
+): number => sectionDelay(section, options) + staggerDelay(index, options);
+
+export const sequencedTransition = (
+  kind: TransitionKind,
+  section: number,
+  index: number,
+  options: StaggerOptions = {}
+): Transition => ({
+  ...transitionFor(kind, options.reduced ?? false),
+  delay: sequenceDelay(section, index, options),
 });
