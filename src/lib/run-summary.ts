@@ -5,6 +5,7 @@ import {
   opponentOf,
   roundIndexOf,
   seriesFor,
+  squadGameScore,
   squadPath,
   squadSeriesScore,
   squadSideOf,
@@ -146,14 +147,11 @@ export type SignatureGame = {
   scorerPoints: number;
 };
 
-const pointsFor = (row: RunPathRow, game: GameResult): number =>
-  row.squadSide === "HOME" ? game.homeScore : game.awayScore;
+const marginOf = (row: RunPathRow, game: GameResult): number => {
+  const { squadPoints, opponentPoints } = squadGameScore(row.squadSide, game);
 
-const pointsAgainst = (row: RunPathRow, game: GameResult): number =>
-  row.squadSide === "HOME" ? game.awayScore : game.homeScore;
-
-const marginOf = (row: RunPathRow, game: GameResult): number =>
-  pointsFor(row, game) - pointsAgainst(row, game);
+  return squadPoints - opponentPoints;
+};
 
 // The ordering rule, fixed here and pinned by test. Candidates are the squad's
 // **wins** only, because the line reads "... over the 2017 Warriors" — a defeat
@@ -221,8 +219,7 @@ export const signatureGame = (
     gameNumber: bestGame.gameNumber,
     round: bestRow.round,
     label: bestRow.label,
-    squadPoints: pointsFor(bestRow, bestGame),
-    opponentPoints: pointsAgainst(bestRow, bestGame),
+    ...squadGameScore(bestRow.squadSide, bestGame),
     opponent: bestRow.opponent,
     scorerName: top?.playerName ?? "",
     scorerPoints: top?.points ?? 0,

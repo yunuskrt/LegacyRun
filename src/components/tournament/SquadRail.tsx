@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ChevronDown } from "lucide-react";
-import { squadRatingOf } from "@/lib/bracket-client";
+import { squadRatingOf } from "@/lib/run";
 import { formatSeason } from "@/lib/format";
 import { POSITION_SOFT_BG, POSITION_TEXT } from "@/lib/position-style";
 import {

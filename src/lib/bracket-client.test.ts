@@ -5,10 +5,9 @@ import {
   bracketRequestFor,
   bracketUrl,
   requestBracket,
-  squadRatingOf,
   squadTeamSeasonIds,
 } from "@/lib/bracket-client";
-import type { FetchLike } from "@/lib/bracket-client";
+import type { FetchLike } from "@/lib/api-client";
 import type { Position, Squad, SquadMember } from "@/types/game";
 
 const member = (
@@ -41,16 +40,6 @@ const squad: Squad = {
 
 const jsonResponse = (body: unknown): Response =>
   ({ json: async () => body }) as Response;
-
-describe("squadRatingOf", () => {
-  it("averages the five ratings and rounds", () => {
-    expect(squadRatingOf(squad)).toBe(72);
-  });
-
-  it("survives an empty squad", () => {
-    expect(squadRatingOf({ formation: "TRADITIONAL", players: [] })).toBe(0);
-  });
-});
 
 describe("squadTeamSeasonIds", () => {
   it("collects the drafted team-seasons without duplicates", () => {

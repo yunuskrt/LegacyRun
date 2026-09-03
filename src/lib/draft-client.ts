@@ -1,5 +1,6 @@
+import { requestJson } from "@/lib/api-client";
+import type { ApiFetchFailure, FetchLike } from "@/lib/api-client";
 import type { RerollKind } from "@/lib/draft";
-import type { ApiError, ApiResponse } from "@/types/api";
 import type { DraftTeam } from "@/types/game";
 
 export const DRAFT_TEAM_ENDPOINT = "/api/draft/team";
@@ -24,15 +25,10 @@ export const rerollRequest = (
   }
 };
 
-export type DraftFetchFailure = ApiError | "UNREACHABLE";
+export type DraftFetchFailure = ApiFetchFailure;
 
 export type DraftFetchResult =
   { ok: true; team: DraftTeam } | { ok: false; error: DraftFetchFailure };
-
-export type FetchLike = (
-  input: string,
-  init?: RequestInit
-) => Promise<Response>;
 
 export const DRAFT_FETCH_MESSAGE: Record<DraftFetchFailure, string> = {
   INVALID_REQUEST: "That draft request wasn't valid.",
@@ -52,31 +48,16 @@ export const draftTeamUrl = (request: DraftRequest): string => {
   return `${DRAFT_TEAM_ENDPOINT}?${params.toString()}`;
 };
 
-const isApiError = (value: unknown): value is ApiError =>
-  value === "INVALID_REQUEST" ||
-  value === "NO_ELIGIBLE_TEAM" ||
-  value === "QUERY_FAILED";
-
 export const requestDraftTeam = async (
   request: DraftRequest,
   fetchImpl: FetchLike,
   signal?: AbortSignal
 ): Promise<DraftFetchResult> => {
-  let body: ApiResponse<DraftTeam>;
+  const result = await requestJson<DraftTeam>(
+    draftTeamUrl(request),
+    fetchImpl,
+    signal
+  );
 
-  try {
-    const response = await fetchImpl(draftTeamUrl(request), { signal });
-    body = (await response.json()) as ApiResponse<DraftTeam>;
-  } catch {
-    // Covers transport failure and a non-JSON body alike — either way the
-    // caller can only retry.
-    return { ok: false, error: "UNREACHABLE" };
-  }
-
-  if (body?.success) return { ok: true, team: body.data };
-
-  return {
-    ok: false,
-    error: isApiError(body?.error) ? body.error : "UNREACHABLE",
-  };
+  return result.ok ? { ok: true, team: result.data } : result;
 };

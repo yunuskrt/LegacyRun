@@ -1,4 +1,10 @@
-import type { Conference, Position, Run, SquadMember } from "@/types/game";
+import type {
+  Conference,
+  Position,
+  Run,
+  Squad,
+  SquadMember,
+} from "@/types/game";
 
 export const MAX_SQUAD_NAME_LENGTH = 40;
 
@@ -23,6 +29,15 @@ export const orderMembersBySlots = (
 
   return [...ordered, ...remaining];
 };
+
+// The squad's one strength number — it seeds the bracket and labels the face-off.
+export const squadRatingOf = (squad: Squad): number =>
+  squad.players.length === 0
+    ? 0
+    : Math.round(
+        squad.players.reduce((total, player) => total + player.rating, 0) /
+          squad.players.length
+      );
 
 export const buildRun = (
   members: readonly SquadMember[],

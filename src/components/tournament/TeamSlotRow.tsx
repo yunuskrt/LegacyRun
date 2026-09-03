@@ -4,7 +4,7 @@ import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
 import DifficultyMeter from "@/components/tournament/DifficultyMeter";
-import { squadRatingOf } from "@/lib/bracket-client";
+import { squadRatingOf } from "@/lib/run";
 import { FADE_RISE, entranceFrom, transitionFor } from "@/lib/motion";
 import {
   SQUAD_SHORT_CODE,

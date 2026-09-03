@@ -25,6 +25,7 @@ import {
   seriesScoreLabel,
   seriesSides,
   squadDisplayName,
+  squadGameScore,
   squadPath,
   squadSeriesScore,
   squadSideOf,
@@ -569,6 +570,71 @@ describe("round copy and squad-side scores", () => {
       squadWins: 4,
       opponentWins: 2,
     });
+  });
+});
+
+describe("squadGameScore", () => {
+  const game = (homeScore: number, awayScore: number) => ({
+    homeScore,
+    awayScore,
+  });
+
+  // Swapping the slots puts the squad on the other side of a real matchup, so
+  // both orientations are exercised without a second fixture.
+  const mirrored = (matchup: BracketMatchup): BracketMatchup => ({
+    ...matchup,
+    home: matchup.away,
+    away: matchup.home,
+  });
+
+  it("reads a game score from the squad's side, not the home slot's", () => {
+    expect(squadGameScore("HOME", game(109, 108))).toEqual({
+      squadPoints: 109,
+      opponentPoints: 108,
+    });
+    expect(squadGameScore("AWAY", game(109, 108))).toEqual({
+      squadPoints: 108,
+      opponentPoints: 109,
+    });
+  });
+
+  it("mirrors exactly between the two sides", () => {
+    const home = squadGameScore("HOME", game(97, 111));
+    const away = squadGameScore("AWAY", game(97, 111));
+
+    expect(home.squadPoints).toBe(away.opponentPoints);
+    expect(home.opponentPoints).toBe(away.squadPoints);
+  });
+
+  // Game and series scores must resolve the squad to the same slot. A run whose
+  // bracket row reads 1-4 cannot list its one win on the other side game by
+  // game, which is the defect this shares a rule with `squadSeriesScore` to
+  // prevent.
+  it("agrees with squadSeriesScore about which slot is the squad's", () => {
+    const real = nextSquadMatchup(buildBracket()) as BracketMatchup;
+
+    for (const matchup of [real, mirrored(real)]) {
+      for (const squadWins of [true, false]) {
+        const series = seriesRow(matchup, squadWins);
+        const seriesScore = squadSeriesScore(matchup, series);
+        const gameScore = squadGameScore(squadSideOf(matchup), {
+          homeScore: series.homeWins,
+          awayScore: series.awayWins,
+        });
+
+        expect(gameScore.squadPoints).toBe(seriesScore.squadWins);
+        expect(gameScore.opponentPoints).toBe(seriesScore.opponentWins);
+      }
+    }
+  });
+
+  it("covers both squad sides across the two matchups", () => {
+    const real = nextSquadMatchup(buildBracket()) as BracketMatchup;
+
+    expect([squadSideOf(real), squadSideOf(mirrored(real))].sort()).toEqual([
+      "AWAY",
+      "HOME",
+    ]);
   });
 });
 

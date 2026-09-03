@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { splitIds } from "@/lib/query";
 import { drawIndex, seededRng } from "@/lib/rng";
 import { SQUAD_SIZE } from "@/types/game";
 import type { Rng } from "@/lib/rng";
@@ -201,6 +202,11 @@ export const formatClock = (
   return `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
 };
 
+// Points first, then name, so a tie resolves the same way everywhere a scoring
+// list is shown — the finished box score and the replay's running leaders alike.
+export const byPointsDesc = (a: ScoringLine, b: ScoringLine): number =>
+  b.points - a.points || a.playerName.localeCompare(b.playerName);
+
 const tallyScoring = (
   events: readonly MatchEvent[],
   home: MatchTeam,
@@ -226,9 +232,7 @@ const tallyScoring = (
 
   return [...lines.values()]
     .filter((line) => line.points > 0)
-    .sort(
-      (a, b) => b.points - a.points || a.playerName.localeCompare(b.playerName)
-    );
+    .sort(byPointsDesc);
 };
 
 // One game ------------------------------------------------------------------
@@ -560,12 +564,7 @@ export type MatchDataQuery = {
 const idList = (max: number) =>
   z
     .string()
-    .transform((value) =>
-      value
-        .split(",")
-        .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0)
-    )
+    .transform(splitIds)
     .pipe(z.array(z.string().min(1).max(64)).min(1).max(max))
     // A duplicate would silently double-count a player's BPM.
     .refine((ids) => new Set(ids).size === ids.length);

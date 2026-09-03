@@ -1,6 +1,6 @@
+import { requestJson } from "@/lib/api-client";
 import { allMatchups } from "@/lib/match";
-import type { FetchLike } from "@/lib/bracket-client";
-import type { ApiError, ApiResponse } from "@/types/api";
+import type { ApiFetchFailure, FetchLike } from "@/lib/api-client";
 import type { Bracket } from "@/types/bracket";
 import type { MatchData } from "@/types/match";
 import type { Squad } from "@/types/game";
@@ -12,7 +12,7 @@ export type MatchDataRequest = {
   opponents: string[];
 };
 
-export type MatchFetchFailure = ApiError | "UNREACHABLE";
+export type MatchFetchFailure = ApiFetchFailure;
 
 export type MatchDataFetchResult =
   { ok: true; data: MatchData } | { ok: false; error: MatchFetchFailure };
@@ -51,29 +51,9 @@ export const matchDataUrl = (request: MatchDataRequest): string => {
   return `${MATCH_DATA_ENDPOINT}?${params.toString()}`;
 };
 
-const isApiError = (value: unknown): value is ApiError =>
-  value === "INVALID_REQUEST" ||
-  value === "NO_ELIGIBLE_TEAM" ||
-  value === "QUERY_FAILED";
-
-export const requestMatchData = async (
+export const requestMatchData = (
   request: MatchDataRequest,
   fetchImpl: FetchLike,
   signal?: AbortSignal
-): Promise<MatchDataFetchResult> => {
-  let body: ApiResponse<MatchData>;
-
-  try {
-    const response = await fetchImpl(matchDataUrl(request), { signal });
-    body = (await response.json()) as ApiResponse<MatchData>;
-  } catch {
-    return { ok: false, error: "UNREACHABLE" };
-  }
-
-  if (body?.success) return { ok: true, data: body.data };
-
-  return {
-    ok: false,
-    error: isApiError(body?.error) ? body.error : "UNREACHABLE",
-  };
-};
+): Promise<MatchDataFetchResult> =>
+  requestJson<MatchData>(matchDataUrl(request), fetchImpl, signal);
