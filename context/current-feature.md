@@ -1158,3 +1158,159 @@ Still open: run state is not persisted (settled as a deliberate no in Phase 19).
 The champion path still cannot be reached by playing. No touch-drag support.
 `bracketSlot` remains unrendered by design. **Part 05 (result screen) is the
 last slice**, and inherits part 03's bracket components in `readOnly` mode.
+
+### Phase 20 (part 5) — Result Screen Motion
+
+**Phase 20 complete.** The last of five slices, and the one that closes the
+phase: items 19–21 of `context/docs/motion-animation.md` stage the run's ending —
+the champion reveal and the elimination headline, the five revealing in slot
+order, the path arriving row by row. Ships `STAGE_STEP`, `SECTION_STEP`,
+`sectionDelay`, `sequenceDelay` and `sequencedTransition` in `src/lib/motion.ts`,
+four touched components, and 16 Vitest tests (532 → 548). No schema change, no
+migration, **no new dependency**, no database read or write — every figure on
+this screen was already derived from `SeriesState[]` by Phase 19, and
+`src/lib/run-summary.ts` appears in the diff only by import.
+
+**All 24 motion items now exist**: 1–7 draft (part 02), 8–12 bracket (part 03),
+13–18 replay (part 04), 19–21 result (here), 22–24 global (part 01, re-verified
+here). Item 24 holds by grep — six hits across `src/components/` and
+`src/hooks/`, every one a token reference, no literals. Item 23 holds by a single
+reduced-motion pass over the draft, the bracket, a full game, a series and both
+outcomes.
+
+Gotchas:
+
+- **A sequencing rule emerged, exactly where the spec said to put it if one did.**
+  Sections arrive one `SECTION_STEP` apart while each block staggers internally,
+  and the beat is a **constant, never the previous block's length** — that is the
+  whole of what stops the spec's "stagger of staggers". The distinction is
+  invisible until a block grows: three equal sections read identically under both
+  implementations. That is why the load-bearing test is *"does not depend on how
+  many items the previous section held"*, and why mutating to the summing form
+  kills 7 tests.
+- **`STAGE_STEP` exists because `STAGGER_STEP` is a list rhythm.** Four or five
+  distinct header elements at 0.03 apart is a spread of 0.12s — not a sequence,
+  just a soft edge. At 0.06 the eye separates them, and five elements still land
+  inside `MAX_STAGGER_DELAY` at 0.24.
+- **The measured entrance is ~750ms, over the spec's own "about half a second"
+  ceiling — and it is what the spec's other instruction arithmetically produces.**
+  "One section-level delay of `DURATION.quick` between blocks" across three
+  blocks, plus a capped internal stagger and a `DURATION.base` duration, is
+  0.36 + 0.09 + 0.24. The explicit constant was kept over the prose ceiling and
+  the number recorded rather than quietly tuned; the budget test asserts 0.69s so
+  a future constant change fails loudly instead of drifting. This screen is seen
+  once per run and the spec grants it the app's longest sequence.
+- **Defeat gets the identical entrance, by construction rather than by
+  discipline** — one code path, branching only on glyph and colour. Measured:
+  champion header settles 534ms, elimination header settles 534ms. A Round 1 exit
+  is the common case (six phases of evidence now) and dramatizing it every time is
+  the fastest way to make this screen tiresome.
+- **The one-row path needs no guard.** The spec offers "skip the stagger below two
+  rows if it reads as a glitch"; `staggerDelay` already returns 0 at index 0, so a
+  Round 1 elimination is a plain fade by construction, with no row-count branch to
+  get wrong. Confirmed on two separate one-row runs.
+- **The crown is the only scale on the screen and `SPRING` is already under the
+  ceiling** — measured overshoot **1.0032** against the spec's 1.06 limit. Part
+  01's court-slot measurement said the same; nothing needed tuning.
+- **`sequencedTransition("spring", …)` never runs with a real delay in the app**,
+  because the glyph is index 0 of section 0. Covered by test, noted there.
+- `sectionDelay` deliberately has **no cap**, unlike `staggerDelay` — the cap
+  exists for list length, and sections are bounded by the caller. At three
+  sections it tops out at 0.36s. A fourth section would extend it silently.
+
+**Three defects found by measuring, and two of them were mine, in the
+measurement rather than the code:**
+
+- **My first recap probe reported `1.00|none` on every frame** and I nearly
+  recorded "the recap block never animates". The selector had matched the *grid
+  wrapper*, which contains the same text. Re-probed against the block's actual
+  parent: it fades correctly at +400ms.
+- **The glyph's scale was invisible in my transform readout** — I was reading
+  matrix component `f` (translateY), which is 0 for a pure scale. Parsing the
+  matrix properly is what produced the 1.0032.
+- **Playwright's 4/3 viewport scaling goes the opposite way from what I
+  applied.** Phase 16 recorded "request `width × 0.75`"; I divided. The first
+  width sweep was measuring a 2560px viewport and reporting it as 1440. Every
+  width in this entry is from the corrected pass, verified by reading
+  `window.innerWidth` back on each step — which is the check that catches it.
+- **A fourth, in the code:** `STAGE_STEP`'s comment claimed "four distinct
+  elements" and "inside the cap at four". The elimination header has **five**.
+  Caught in review against a measurement I had already taken.
+
+**Under reduced motion the replay reports `MOVED` transforms, and they are
+`matrix(1, 0, 0, 1, 0, 0)`** — the identity. Nothing displaces; only opacity
+animates, which is part 01's documented policy. Worth recording because a naive
+"is the transform `none`?" probe flags it as a defect, and mine did.
+
+**Eight mutations, all dead**, `motion.ts` byte-identical after each: the section
+delay summing the previous block (7 tests), capped like a stagger (4),
+`sequenceDelay` taking the max instead of the sum (4), the section half ignoring
+`reduced` (3), `SECTION_STEP` drifting to `DURATION.base` (2), and `STAGE_STEP`
+collapsing to `STAGGER_STEP` (1).
+
+**One weakness the mutation run exposed in my own tests.** `SECTION_STEP` →
+`DURATION.base` initially killed a single test, because the beat-spacing
+assertions compare `sectionDelay` against `SECTION_STEP` — asserting the constant
+back to itself. Same hole as Phase 12's name cap, Phase 14's non-overlapping
+bands, Phase 19's leader guard. Closed with a property test that spells the value
+out and pins the two-scale design: a beat must outlast a list step and stay inside
+a transition.
+
+Verified: `npm test` (548), `tsc --noEmit`, `lint`, `format:check`, `build` —
+both `/play` routes still prerender static, all four API routes still dynamic.
+
+Browser-driven against live Neon with **zero console errors**, at true CSS widths
+of **1440, 1280, 1024, 768 and 391 with no horizontal overflow at any**. The five
+go 5 → 2 → 1 column; path and recap stack at 768; both CTAs measure 44px at every
+width and are full-width and stacked at 391. Everything below is a
+per-`requestAnimationFrame` measurement off computed style — these run 180–420ms,
+shorter than a screenshot round-trip:
+
+- Header stages at ~60ms offsets and settles at 534ms; the five start at +200ms
+  and settle ~550ms; path, recap and the CTA row all start at +400ms
+  (2 × `DURATION.quick`) — the CTA row measured frame-identical to path row 0,
+  which is what confirms they share a section.
+- **The archive arrives fully resolved**: 55 frames, every card `1.00|none` from
+  the first frame, no `ROUNDS AWAY` stub lock, no `NEXT UP` ring, the Western
+  champion revealed. Part 03's `roundMotionFor` returning `NONE` under `readOnly`
+  holds from the other side.
+- `Back to results` replays the entrance in ~650ms — a stage transition, and it
+  reads as navigation rather than a second congratulation.
+- CTA press: hover `y −2`, tap `scale 0.98`, settling back to `1 / 0` — part 02's
+  roster-card values exactly. Measured without completing the click, since the
+  first attempt navigated away mid-sample.
+- Reduced motion on the result screen: 19 frames, the **only** value across
+  header, the five and the path is `1.00|none`; the glyph scale never
+  interpolates; the CTA reads `transform: none` on hover.
+- Reduced motion elsewhere: the draft reports **zero running animations** (part
+  02's explicit loop guard — `MotionConfig` cannot stop a loop), and the bracket
+  arrival only `1.00|none`.
+- Both outcomes driven at both widths, named and unnamed: `IRONSIDE UNION`
+  verbatim, and `YOUR SQUAD` as the ~40px hero. `ELIMINATED IN ROUND 1` — Phase
+  19's article rule intact, checked because this phase animates that exact line.
+
+**Phase 19's un-photographed 390 champion screen is now closed** — captured, with
+the `YOUR SQUAD` fallback, a 16-7 record and a game-7 Finals signature game.
+
+**The champion path still cannot be reached by playing — a sixth phase of
+evidence.** The natural run this session went 3-4 in Round 1, on a game 7. The
+champion screen used the temporary reseed shortcut Phases 16, 19 and part 03
+used, so games and logs stayed real; it was **deleted before commit** — `grep`
+for `dev=champion`, `DEV SHORTCUT`, `devWin` returns nothing, and
+`src/app/play/tournament/page.tsx` is byte-identical to `main`.
+
+Not verified: the four touched components have no tests, per
+`coding-standards.md` — after the extraction there is nothing left in them a test
+would not assert back to itself. The reduced-motion pass used Playwright's media
+emulation rather than a real OS setting (unchanged since part 01). Motion's own
+stale "Reduced Motion enabled" console notice persists after emulation clears, so
+"zero warnings" is not literally true while it is on — part 01 recorded the same.
+
+Still open, and unchanged: run state is not persisted (settled as a deliberate no
+in Phase 19). No touch-drag support, unchanged since Phase 6. `bracketSlot`
+remains unrendered by design. Phase 12's 320px horizontal overflow on the draft
+page is untouched. `SHARED REROLL POOL` still wraps at exactly 1024 (part 02).
+
+Also in this commit: **Phase 20 ticked complete in `context/todo.md` (20/23)** —
+the first phase closed since the tournament UI arc, and the last before the home
+screen.
