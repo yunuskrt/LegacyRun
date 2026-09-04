@@ -1885,3 +1885,128 @@ Still open, and untouched by this refactor: run state is not persisted (settled
 as a deliberate no in Phase 19). The champion path still cannot be reached by
 playing. No touch-drag support. `bracketSlot` remains unrendered by design.
 Phase 12's 320px horizontal overflow on the draft page is untouched.
+
+### Refactor — `src/app/play` cleanup
+
+**Not a numbered phase.** A `refactor-scanner` audit of `src/app/play` found the
+three small files clean (`layout.tsx`, `draft/layout.tsx`, `draft/page.tsx` — 35
+lines between them) and everything worth acting on in the 354-line tournament
+page: a tested lib function reimplemented inline, and a two-expression decision
+whose halves had already fallen out of agreement. Both are the project's own
+named pattern — a rule sitting in a page where no test can reach it. Ships
+`postSeriesView` in `src/lib/tournament-view.ts`,
+`src/components/tournament/BracketStageView.tsx`, and 7 Vitest tests
+(582 → 589). Net +180/−104 across 5 files. No schema change, no migration, **no
+new dependency**, no database read or write, no API route touched.
+
+**One latent defect fixed, and it is the reason goal 2 existed.** `IN_PROGRESS`
+with a null `nextMatchup` sent the stage to `BRACKET` while the label fell
+through to **"See how the run ended"** — a button claiming the run was over that
+returned to the bracket. Unreachable today because `nextSquadMatchup` is non-null
+in practice, which is exactly the shape of Phase 18's latent `seriesStageOf`
+spoiler: a wrong value that only position keeps off screen.
+
+Gotchas:
+
+- **`finalsSlot` recomputed a value the page already held.** Its six-line nested
+  ternary was `opponentOf` inlined — tested in `tournament-view.ts` and already
+  imported for this purpose by `SeriesReplay.tsx`. It is also always identical to
+  `champion` three lines above it: the Finals matchup is built as `home: null,
+  away: opponentSlot(finals[0], null)` (`src/lib/bracket.ts:289-300`), so the
+  drawn opponent **is** the `away` slot, which is the `bracketSlot === null` slot
+  `finalsOpponent()` searches for. Now one line. **A test was added for the fact
+  the deletion rests on** — `opponentOf(finals)` equals `finalsOpponent(bracket)`
+  — because nothing pinned it.
+- **The load-bearing test is disjointness, not shape:** no label may appear under
+  both stages. Mutation-checked against the pre-refactor two-expression form,
+  which is the one implementation that violates it — 2 tests die, including that
+  one. Asserting "CHAMPION returns RESULT" alone would have passed the old code.
+- **`BracketStageView` cannot read past the spoiler mask, by construction.** It
+  receives `display.rounds` already masked and never gets the `Bracket` at all,
+  so the hazard the spec flagged is now structural for this component rather than
+  a rule to remember. All masking stayed in the page.
+- **The new component was outside Phase 16's structural grep guards, and review
+  caught it.** Those tests assert no bracket component reads `bracketSlot` or
+  `teamRating` — an invariant the type system cannot enforce, which is why the
+  greps exist. A component rendering `BracketOpponent` fields had been added to
+  the bracket surface without joining them. Added to both lists and **proved by
+  injecting `finalsSlot.bracketSlot`**, which fails the new case and passes again
+  on revert.
+- **`display: BracketDisplayProps` is passed as one object and spread into both
+  layouts**, so the nine props are named once instead of twice. Neither layout is
+  `React.memo`'d, so the inline object defeats no memoization — checked, not
+  assumed.
+- **`PostSeriesView.stage` is `"BRACKET" | "RESULT"` written locally, not
+  `StageId` imported from the component.** A lib module importing a type from
+  `src/components/` is the wrong dependency direction; `setStage` still
+  type-checks the subset, so a rename of `StageId` fails the build anyway.
+- **`/feature test` found my own label test asserting a constant back to
+  itself** — ``toBe(`Continue to ${ROUND_PHRASE.NBA_FINALS}`)``, the hole Phase
+  12's name cap and Phase 19's leader guard both fell into. Now spelled out for
+  two rounds, pinning the article rule at this call site. **The claim that the
+  constant was otherwise unpinned was wrong**: mutating it red-lines
+  `run-summary.test.ts:379` as well, so the gap was narrower than described —
+  covered for the constant, not for this composition.
+- **Goal 4 was cosmetic and was raised as the one to strike**; it stayed in
+  because the spec was started unchanged. The page goes 354 → 285 lines and
+  nothing testable moved.
+
+**Four audit findings were declined**, three on the project's own precedent: the
+two near-identical fetch effects (parse and error mapping already live in
+`api-client.ts`; what remains is effect scaffolding with no decision in it), the
+repeated guard-screen Tailwind strings, and `CONFERENCE_NAME[...].toUpperCase()`
+appearing twice. The nine props shared by the two bracket layouts were declined
+because `BracketDisplayProps` is that fix already applied.
+
+**Found and deliberately left, worth carrying:** the archive unmask in
+`page.tsx:214-216` (`isArchive ? bracket.rounds : rounds`, `isArchive ?
+finalsOpponent(bracket) : champion`) is a genuine rule sitting in the page, and
+the one place that reads past the spoiler mask on purpose. Pre-existing,
+untouched by this diff, outside the loaded goals. It has a real property to pin —
+the archive reveals unconditionally, everything else goes through the mask.
+
+Verified: `npm test` (589), `tsc --noEmit`, `lint`, `format:check`, `build` —
+both `/play` routes still prerender static, all four API routes still dynamic.
+Phase 16's grep tests stay green with one component added to their list.
+
+Browser-driven against live Neon with **zero console errors and zero warnings**,
+at true CSS widths of **1440 and 391 with no horizontal overflow at either**;
+at 391 the spine renders, the ladder is hidden, and all three controls measure
+44px. **All four CTA branches were exercised on screen**, which is the whole
+point of goal 2: `ELIMINATED` → "See how the run ended" → `ELIMINATED IN ROUND 1`;
+`IN_PROGRESS` → "Continue to the Conference Semifinals" → back to the **bracket**
+with the heading advanced to Conference Semifinals and the stub stepping
+3 → 2 ROUNDS AWAY; `CHAMPION` → "See the result" → `NBA CHAMPIONS`. The archive
+renders "The run is complete" with "Back to results", no `NEXT UP` ring and the
+champion revealed, and round-trips back.
+
+**Goal 1's strongest check was three-way agreement in the Finals column:** the
+matchup slot, the `WESTERN CONFERENCE CHAMPION` stub and the Crown banner all
+read **1992 Portland Trail Blazers**. That is the substitution confirmed against
+the running app rather than argued from the code.
+
+**The champion path again could not be reached by playing — an eighth phase of
+evidence.** Three natural runs went out in Round 1, so the Conference Finals,
+Finals and champion screens used the temporary reseed shortcut Phases 16, 19 and
+20 (parts 3 and 5) established; games and logs stayed real. It was **deleted
+before commit** — `grep` for `devWin`, `DEV SHORTCUT`, `dev=champion` returns
+nothing — and the final run afterwards **won Round 1 naturally**, reaching the
+`IN_PROGRESS` CTA with no shortcut in the tree.
+
+**A measurement caveat worth carrying:** one probe reported the Crown banner
+missing and it was the probe, not the page — `innerText.split("\n")` does not
+match text that wraps across lines. The banner was correct throughout. Any future
+check of that element must match against `textContent`, not a line.
+
+Not verified: the two touched components have no tests, per
+`coding-standards.md` — the grep guards are the only thing asserting anything
+about their source. The `IN_PROGRESS`-with-null-matchup label is still
+unreachable through the UI and is pinned by test only, which is the reason it was
+worth extracting. The dev server already running on port 3000 was reused rather
+than restarted, so the browser checks ran against HMR-applied edits; the
+production `build` was verified separately.
+
+Still open, and untouched by this refactor: run state is not persisted (settled
+as a deliberate no in Phase 19). No touch-drag support. `bracketSlot` remains
+unrendered by design. Phase 12's 320px horizontal overflow on the draft page is
+untouched.

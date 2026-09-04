@@ -359,3 +359,31 @@ export const runOutcome = (
 
   return { kind: "IN_PROGRESS" };
 };
+
+export type PostSeriesView = {
+  stage: "BRACKET" | "RESULT";
+  ctaLabel: string;
+};
+
+// Where a finished series hands back to, and what its button says. One rule
+// rather than two: a label that claims the run is over must never sit on a
+// button that returns to the bracket.
+export const postSeriesView = (
+  outcome: RunOutcome,
+  nextMatchup: BracketMatchup | null
+): PostSeriesView => {
+  if (outcome.kind === "CHAMPION") {
+    return { stage: "RESULT", ctaLabel: "See the result" };
+  }
+
+  if (outcome.kind === "ELIMINATED") {
+    return { stage: "RESULT", ctaLabel: "See how the run ended" };
+  }
+
+  return {
+    stage: "BRACKET",
+    ctaLabel: nextMatchup
+      ? `Continue to ${ROUND_PHRASE[nextMatchup.round]}`
+      : "Back to the bracket",
+  };
+};
