@@ -1787,3 +1787,101 @@ Still open, and untouched by this refactor: run state is not persisted (settled
 as a deliberate no in Phase 19). The champion path still cannot be reached by
 playing. No touch-drag support. `bracketSlot` remains unrendered by design.
 Phase 12's 320px horizontal overflow on the draft page is untouched.
+
+### Refactor — `src/app/api` cleanup
+
+**Not a numbered phase, and the smallest change any entry here records.** A
+`refactor-scanner` audit of the four route handlers in `src/app/api` found the
+folder essentially clean — no dead code, no unused exports, no unreachable
+branches, no misplaced business logic. What it did find was one `Cache-Control`
+value drifting between the two endpoints that cache forever, plus three silent
+asymmetries on the same route. All four are fixed here. **No behaviour changed:**
+the diff is one header string, one log string and two comments, in one file. Net
++8/−2. No schema change, no migration, **no new dependency**, no database read or
+write, **no test** (582, unchanged), and no second route touched.
+
+Gotchas:
+
+- **`public` was inert, so removing it is a no-op — but the drift it represented
+  was real.** `/api/draft/team/[teamSeasonId]` sent `public, max-age=31536000`
+  where `/api/tournament/match-data` sends `max-age=31536000`, both for the
+  identical reason (frozen history, success only). Nothing authenticates in this
+  app — NextAuth was deliberately skipped in Phase 10 part 2 — so no shared cache
+  was ever treating the two differently. The unification is toward the value
+  Phase 11's own history entry records, which the by-id route had stopped
+  matching.
+- **The `force-dynamic` comment was written twice, and the first version
+  fabricated history.** It read "force-dynamic is left off here … so it stays
+  open to static optimization", asserting a deliberate decision. `git log -p
+  --all` proves the export **never appeared in this file** — it was created whole
+  in Phase 11's `834b77c` — so there was no decision to document. This project
+  deliberately does not retcon its own record (Phases 11 and 13 were left
+  describing behaviour that later changed), and inventing a rationale in a
+  comment is that same fabrication in miniature.
+- **That first version was also wrong on the facts, which is the sharper
+  lesson.** It implied `force-dynamic` and a long `max-age` are in tension.
+  **`match-data` carries both at once.** Per
+  `node_modules/next/dist/docs/…/15-route-handlers.md`, Route Handlers are
+  uncached by default and caching is opted *into* with `force-static` — so
+  `force-dynamic` is inert on all four routes and unrelated to the HTTP header.
+  The shipped comment states only that, which still stops someone "fixing" the
+  asymmetry under a false belief.
+- **An earlier draft of the same comment claimed "this one caches", contradicted
+  by the build output**, which still marks the route `ƒ` (server-rendered on
+  demand). The header is an HTTP-cache instruction, not a Next route-cache one.
+  Caught by reading the build rather than the diff. **Three drafts of a two-line
+  comment, two of them wrong** — on a change whose entire risk surface was
+  comment accuracy.
+- **Nothing was extracted and nothing was tested, and both are deliberate.** The
+  change adds no function, no branch and no input; a test would assert a string
+  literal back to itself — the hole Phase 12's name cap and Phase 19's leader
+  guard both fell into. Nor could a test reach it: no test file imports an
+  `app/api` route, and none can, since the route reaches `@/lib/db` which
+  constructs a `PrismaClient` at module scope and throws without `DATABASE_URL`
+  (Phase 11's constraint). The route's own dependencies are already covered —
+  `parseTeamSeasonId` has 4 cases in `draft-api.test.ts`, and
+  `api-response.test.ts` pins that supplied cache headers land on the response.
+
+**Two audit findings were declined, both on the project's own precedent.** The
+parse → 400 / try-catch → 500 / null → 404 skeleton repeated verbatim across all
+four routes is real duplication, but **mechanism, not a rule** — the four bodies
+genuinely differ (single await vs `Promise.all` vs fetch-plus-pure-call), and
+routes are untestable, so a wrapper buys none of the testability every earlier
+extraction bought. Same bar that declined the shared timer helper in the
+`src/hooks` refactor and the shared Tailwind bases in the component refactors.
+And `NO_ELIGIBLE_TEAM` covering four different "nothing came back" cases is
+already a recorded Phase 14 decision with its tradeoff stated.
+
+**Left open by decision, and worth carrying:** the two frozen-history endpoints
+now agree because the value was *copied*, not because it is shared. That value
+already drifted once, and nothing structural stops it drifting again — a comment
+does not fail a build, which is precisely the argument Phase 20 part 1 used when
+it rejected cross-referencing comments and closed the `motion.ts` / `globals.css`
+risk with a test instead. A shared `FROZEN_HISTORY_CACHE` constant in
+`api-response.ts` (routes-only consumers, so it stays clear of the pure-module
+`next/server` constraint that forced `splitIds` into its own file) would make the
+drift impossible. It touches a second route file, so it was raised rather than
+folded in.
+
+Verified: `npm test` (582 — unchanged, as a no-logic change should leave it),
+`tsc --noEmit`, `lint`, `format:check`, `build` — both `/play` routes still
+prerender static, all four API routes still dynamic.
+
+Driven against the live dev server on Neon rather than trusting the diff, since
+the header is the one thing here that a reader cannot confirm by inspection:
+`CHI-1996` and `BOS-1986` both return **200 with `cache-control:
+max-age=31536000`** and no `public`, carrying real rosters (Jordan first on the
+Bulls). **Both error paths carry no `Cache-Control` header at all** — 404 on an
+unknown id, 400 on a blank one — which is what makes the new comment's "Errors
+are not cached" line true rather than aspirational.
+
+Not verified: **the corrected log tag was never seen firing.** Reaching it means
+breaking the database connection mid-request, which is not worth doing for a
+string; it rests on reading. The dev server already running on port 3000 was
+reused rather than restarted, so the curl checks ran against HMR-applied edits —
+the production `build` was verified separately.
+
+Still open, and untouched by this refactor: run state is not persisted (settled
+as a deliberate no in Phase 19). The champion path still cannot be reached by
+playing. No touch-drag support. `bracketSlot` remains unrendered by design.
+Phase 12's 320px horizontal overflow on the draft page is untouched.
