@@ -75,8 +75,7 @@ const DraftExperience = ({ slots }: Props) => {
 
   React.useEffect(() => () => inFlight.current?.abort(), []);
 
-  // Aborting the previous request is the race guard: a superseded response
-  // rejects before it can overwrite the newer team.
+  // Aborting the previous request is the race guard against a superseded response.
   const loadTeam = async (request: DraftRequest): Promise<DraftTeam | null> => {
     inFlight.current?.abort();
     const controller = new AbortController();
@@ -124,8 +123,7 @@ const DraftExperience = ({ slots }: Props) => {
 
   const handleConfirmSquad = (name: string, conference: Conference) => {
     setRun(buildRun(state.members, slots, name, conference));
-    // Unmounting skips the dialog's close animation, so its exit and the
-    // arriving page's entrance never run over each other.
+    // Unmounting skips the dialog's close animation, so it can't overlap the route entrance.
     setIsHandingOff(true);
     router.push("/play/tournament");
   };

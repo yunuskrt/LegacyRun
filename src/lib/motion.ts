@@ -1,9 +1,6 @@
 import type { Transition } from "motion/react";
 
-// The single motion vocabulary for the whole app. Motion values are JavaScript,
-// so they cannot be Tailwind `@theme` tokens — the CSS half of these values
-// lives in `src/app/globals.css` as `--duration-*` / `--ease-*` and must be
-// kept numerically identical.
+// The app's motion vocabulary; globals.css mirrors it as `--duration-*` / `--ease-*`.
 
 export const DURATION = {
   instant: 0.12,
@@ -12,8 +9,7 @@ export const DURATION = {
   slow: 0.4,
 } as const;
 
-// motion's built-in "easeOut" and "easeIn", written out so the CSS side can
-// mirror them as cubic-bezier().
+// motion's "easeOut"/"easeIn", written out so CSS can mirror them as cubic-bezier().
 type Bezier = [number, number, number, number];
 
 export const EASE: Record<"enter" | "exit", Bezier> = {
@@ -33,42 +29,28 @@ export const FADE_RISE = {
   exit: { opacity: 0, y: -8 },
 } as const;
 
-// A dot scaling in — the series banner's game dots and the difficulty meter's
-// level. Small enough that the scale reads as arrival rather than a pop.
+// Small enough that the scale reads as arrival rather than a pop.
 export const DOT_ENTRANCE = { opacity: 0, scale: 0.6 } as const;
 
 export const STAGGER_STEP = 0.03;
 
-// No stagger sequence may run longer than this end to end, however long the
-// list is. Real rosters run past 20 players; uncapped, revealing one took most
-// of a second.
+// The whole sequence's ceiling, however long the list — a 20-man roster uncapped drags.
 export const MAX_STAGGER_DELAY = 0.3;
 
-// A staged header is a handful of distinct elements, not a list, and
-// STAGGER_STEP is a list rhythm that disappears across four or five of them.
-// Slow enough to read as a sequence, still inside MAX_STAGGER_DELAY at five.
+// A header is a few elements, not a list — STAGGER_STEP's list rhythm vanishes there.
 export const STAGE_STEP = 0.06;
 
-// Blocks of a staged screen arrive one beat apart while the elements inside
-// each block stagger at their own step. The beat is this constant and never the
-// previous block's total length — that is what keeps a sequence of sections
-// from compounding into a stagger of staggers.
+// A constant beat, never the previous block's length — else sections compound.
 export const SECTION_STEP = DURATION.quick;
 
-// The one looping animation the app permits — the draft court's open-slot
-// invitation. Long and shallow so it reads as breathing rather than blinking.
-// Loop values have no CSS half, so they are not `--duration-*` tokens.
-// A one-way curve reads wrong on a loop, so this is the only easing outside
-// EASE — easeInOut, written out for the same reason EASE is.
+// The app's one permitted loop; easeInOut because a one-way curve reads wrong looping.
 export const BREATHE: { opacity: number[]; duration: number; ease: Bezier } = {
   opacity: [0.7, 1, 0.7],
   duration: 2.8,
   ease: [0.42, 0, 0.58, 1],
 };
 
-// A single deny beat on an invalid drop target — two cycles, once, never a
-// repeat. Amplitude is a percentage of the shaken element so it scales with the
-// court's container-relative sizing instead of drifting at 390px.
+// Percentages, not px, so the shake scales with the court instead of drifting at 390.
 export const DENY_SHAKE: { x: string[]; duration: number } = {
   x: ["0%", "-2.5%", "2.5%", "-2.5%", "2.5%", "0%"],
   duration: 0.2,
@@ -91,10 +73,7 @@ export const transitionFor = (
   reduced = false
 ): Transition => (reduced ? INSTANT : TRANSITIONS[kind]);
 
-// A zero-duration entrance still paints its initial frame, so reduced motion
-// means declaring no entrance at all rather than an instant one. `false` is
-// motion's own "start where you are" — the same value an element that is not
-// entering uses.
+// A zero-duration entrance still paints its initial frame, so declare none at all.
 export const entranceFrom = <T>(
   active: boolean,
   reduced: boolean,
@@ -115,9 +94,7 @@ export const staggerDelay = (
   return Math.min(index * step, MAX_STAGGER_DELAY);
 };
 
-// The delay is merged last so it still wins if a kind ever carries one of its
-// own. No kind does today, which is why the order is a convention rather than a
-// rule a test can catch.
+// Delay merged last so it wins if a kind ever carries one; none does today.
 export const staggeredTransition = (
   kind: TransitionKind,
   index: number,

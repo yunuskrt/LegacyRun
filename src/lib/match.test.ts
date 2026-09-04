@@ -58,8 +58,7 @@ const player = (
   playerEfficiencyRating,
 });
 
-// Five equal players whose minutes-weighted mean × 5 is exactly `net`, so a test
-// can dial a side's strength directly.
+// Five equal players whose weighted mean × 5 is exactly `net`, so strength is dialable.
 const teamAt = (id: string, net: number): MatchTeam => ({
   kind: "OPPONENT",
   id,
@@ -99,9 +98,7 @@ describe("opponentNet", () => {
   });
 
   it("does not let an unrated player drag the mean toward zero", () => {
-    // Real data never pairs a null BPM with real minutes (Phase 7: null BPM
-    // means MP = 0), but the column is nullable, so the guard has to hold. Left
-    // in the denominator, this roster would read 15.83 instead of 23.75.
+    // Real data never pairs a null BPM with real minutes, but the column allows it.
     const withUnrated = opponentNet([
       player("a", 6, 3000),
       player("b", 1, 1000),
@@ -112,8 +109,7 @@ describe("opponentNet", () => {
   });
 
   it("is unmoved by a zero-minute row whichever way it is counted", () => {
-    // bpm × 0 in the numerator and 0 in the denominator, so this row cannot
-    // change the result — the minutes half of the guard is belt-and-braces.
+    // bpm × 0 over 0 minutes cannot move the result — this half is belt-and-braces.
     expect(
       opponentNet([
         player("a", 6, 3000),
@@ -367,10 +363,7 @@ describe("byPointsDesc", () => {
     ]);
   });
 
-  // The tie-break is what makes the order total. Without it a tie keeps whatever
-  // order the caller happened to build its Map in, and the box score, the
-  // replay's running leaders and the period summary can disagree on the same
-  // two players — the reason all three share this comparator.
+  // Without the tie-break, the three lists sharing this comparator can disagree.
   it("orders a tie the same way whatever order it is given in", () => {
     const tied = [
       line("Rodman", 10),
@@ -496,8 +489,7 @@ describe("simulateGame", () => {
       const overtimes = game.periodScores.length - REGULATION_PERIODS;
       const total = regulation + overtimes * OVERTIME_POSSESSIONS * 2;
 
-      // The last event lands on or before the final possession, and each side
-      // gets the same count — an off-by-one here would bias one side's scoring.
+      // Each side gets the same count — an off-by-one would bias one side's scoring.
       expect(last.possession).toBeLessThanOrEqual(total);
       expect(
         game.events.filter((event) => event.side === "HOME").length
@@ -584,9 +576,7 @@ describe("calibration", () => {
     expect(stats.combined).toBeGreaterThan(200);
     expect(stats.combined).toBeLessThan(215);
 
-    // Independent possessions overstate margin variance: this lands near 16.9
-    // where the real NBA sits around 13.5. Inside the doc's band, at the top of
-    // it, and the reason upsets here are a little livelier than history's.
+    // Independent possessions overstate variance: ~16.9 against the real NBA's ~13.5.
     expect(stats.marginSd).toBeGreaterThan(13);
     expect(stats.marginSd).toBeLessThan(17.5);
   });
@@ -1153,8 +1143,7 @@ describe("buildMatchData", () => {
 });
 
 describe("the excluded inputs stay excluded", () => {
-  // Comments naming the excluded fields are the point, so strip them and grep
-  // the code that actually runs.
+  // Comments name the excluded fields, so strip them and grep the code that runs.
   const source = (file: string) =>
     readFileSync(path.join(process.cwd(), file), "utf8")
       .split("\n")

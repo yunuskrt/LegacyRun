@@ -122,8 +122,7 @@ const SquadConfirmDialog = ({
                     : "text-muted-foreground"
                 )}
               >
-                {/* The indicator slides between the two buttons; the buttons
-                    themselves never move. */}
+                {/* The indicator slides; the buttons themselves never move. */}
                 {conference === option && (
                   <motion.span
                     layoutId="squad-conference-indicator"

@@ -17,14 +17,12 @@ type RunContextValue = {
   setMatchData: (data: MatchData | null) => void;
   series: SeriesState[];
   setSeries: React.Dispatch<React.SetStateAction<SeriesState[]>>;
-  // Run-level preferences: they outlive a game and a round, and changing one
-  // never touches replay state.
+  // Preferences that outlive a game and never touch replay state.
   speed: ReplaySpeed;
   setSpeed: (speed: ReplaySpeed) => void;
   mode: ReplayMode;
   setMode: (mode: ReplayMode) => void;
-  // Clears everything a run owns. Speed and mode survive on purpose — they are
-  // preferences about how the player watches, not part of any one run.
+  // Speed and mode survive on purpose — they are preferences, not part of a run.
   resetRun: () => void;
 };
 

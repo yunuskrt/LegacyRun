@@ -12,8 +12,7 @@ import type { GameResult, MatchSideId, SeriesState } from "@/types/match";
 
 export const SQUAD_FALLBACK_NAME = "YOUR SQUAD";
 
-// The squad's crest code can't come from its name — the name is optional. Every
-// side with `kind: "SQUAD"` uses this literal.
+// A literal, not derived from the squad's name — the name is optional.
 export const SQUAD_SHORT_CODE = "YOU";
 
 export const hasSquadName = ({ name }: Squad): boolean =>
@@ -34,8 +33,7 @@ export const PLAY_CTA: Record<BracketRoundId, string> = {
   NBA_FINALS: "Play the NBA Finals",
 };
 
-// "Round 1" takes no article where every other label does, so the copy can't
-// just concatenate one.
+// "Round 1" takes no article where the others do, so copy can't concatenate one.
 export const ROUND_PHRASE: Record<BracketRoundId, string> = {
   FIRST_ROUND: "Round 1",
   CONFERENCE_SEMIS: "the Conference Semifinals",
@@ -55,8 +53,7 @@ export const roundIndexOf = (round: BracketRoundId): number =>
 
 export type DifficultyBand = "CONTENDER" | "ELITE" | "LEGENDARY";
 
-// Split against the generator's draw bands (R1 30-56, semis 50-72, conf finals
-// 64-88, finals 80-100) so all three are reachable in one run.
+// Split against the generator's draw bands so all three are reachable in one run.
 export const ELITE_FLOOR = 64;
 export const LEGENDARY_FLOOR = 84;
 
@@ -113,16 +110,14 @@ export const roundsUntilFinals = (bracket: Bracket): number => {
   return round === null ? finals : finals - roundIndexOf(round);
 };
 
-// The squad reaching the Conference Finals is what unlocks the other
-// conference's champion. Before that the Finals slot stays a locked stub.
+// The squad reaching the Conference Finals unlocks the champion stub.
 export const isFinalsOpponentRevealed = (bracket: Bracket): boolean =>
   bracket.rounds.some(
     (round) =>
       round.id === "CONFERENCE_FINALS" && round.matchups.some(isSquadMatchup)
   );
 
-// The drawn other-conference champion. `bracketSlot === null` is what marks a
-// slot as sitting outside the 8-slot bracket — never the round id.
+// `bracketSlot === null` marks a slot outside the 8-slot bracket, never the round id.
 export const finalsOpponent = (bracket: Bracket): BracketOpponent | null => {
   const drawn = allMatchups(bracket)
     .flatMap((matchup) => [matchup.home, matchup.away])
@@ -131,8 +126,7 @@ export const finalsOpponent = (bracket: Bracket): BracketOpponent | null => {
   return drawn?.side === "OPPONENT" ? drawn.opponent : null;
 };
 
-// A squad matchup has exactly one historical side; the far half has two, and
-// this returns the first of them, which no squad-facing screen ever asks for.
+// Returns the first historical side, which only the far half ever has two of.
 export const opponentOf = (matchup: BracketMatchup): BracketOpponent | null => {
   for (const slot of [matchup.home, matchup.away]) {
     if (slot?.side === "OPPONENT") return slot.opponent;
@@ -170,8 +164,7 @@ const sideView = (
         teamLogo: slot.opponent.teamLogo,
       };
 
-// The replay labels its two sides by matchup slot, not by "squad" and
-// "opponent" — the far half has neither.
+// Sides are labelled by matchup slot, not squad/opponent — the far half has neither.
 export const seriesSides = (
   matchup: BracketMatchup,
   squad: Squad
@@ -180,9 +173,7 @@ export const seriesSides = (
   away: sideView("AWAY", matchup.away, squad),
 });
 
-// One bracket, two layouts: `BracketLadder` above md and `BracketSpine` below
-// it, rendered side by side from the same values. The shape is shared so the
-// two contracts cannot drift apart a field at a time.
+// Shared by BracketLadder (above md) and BracketSpine (below) so the two cannot drift.
 export type BracketDisplayProps = {
   rounds: BracketRound[];
   squad: Squad;
@@ -192,8 +183,7 @@ export type BracketDisplayProps = {
   finalsOpponent: BracketOpponent | null;
   roundsUntilFinals: number;
   revealedThrough: BracketRoundId | null;
-  // The archive: the run is over, so no matchup is "next", nothing here is an
-  // affordance, and nothing is being revealed.
+  // The archive: nothing is next, nothing is an affordance, nothing is revealing.
   readOnly?: boolean;
 };
 
@@ -213,8 +203,7 @@ export const revealedThroughFor = (bracket: Bracket): BracketRoundId | null => {
   return completed.length > 0 ? completed[completed.length - 1].round : null;
 };
 
-// The far half is simulated eagerly so the bracket knows who is coming, but a
-// result only becomes visible once the squad has completed the same round.
+// Far-half results stay hidden until the squad completes the same round.
 export const visibleRounds = (
   bracket: Bracket,
   revealedThrough: BracketRoundId | null
@@ -251,16 +240,10 @@ export const visibleRounds = (
   });
 };
 
-// `TournamentStage` keys on the stage, so BRACKET → SERIES → BRACKET remounts
-// the whole bracket. Nothing here survives to see a prop change, which means
-// every bracket entrance is a mount animation and a freshly-mounted card has to
-// be told which of the two it is playing.
+// TournamentStage remounts the bracket, so every entrance is a mount animation.
 export type RoundMotion = "NONE" | "RESOLVING" | "REVEALING";
 
-// Both entrances are anchored on `revealedThroughFor`, which refuses to count a
-// far-half result — so a far-half series can never animate anything. The round
-// the squad just completed resolves its scores; the one after it reveals its
-// slots. The archive plays neither: a finished run reveals nothing.
+// Anchored on `revealedThroughFor`, so a far-half result can never animate anything.
 export const roundMotionFor = (
   round: BracketRoundId,
   revealedThrough: BracketRoundId | null,
@@ -277,9 +260,7 @@ export const roundMotionFor = (
   return revealing === round ? "REVEALING" : "NONE";
 };
 
-// The stub unlocks on the same beat the Conference Finals reveal, and only once
-// the caller has resolved `isFinalsOpponentRevealed` — a null opponent is the
-// lock, and nothing here may reach past it.
+// A null opponent is the lock — the caller resolves it, nothing here reaches past it.
 export const isChampionUnlocking = (
   revealedThrough: BracketRoundId | null,
   opponent: BracketOpponent | null,
@@ -295,8 +276,7 @@ export const seriesFor = (
 ): SeriesState | null =>
   series.find((entry) => entry.matchupId === matchupId) ?? null;
 
-// The series log holds every far-half result from the moment it is simulated,
-// so a card must read its score through the masked matchup, never the log.
+// Scores must read through the masked matchup, never the unmasked log.
 export const visibleSeriesFor = (
   matchup: BracketMatchup,
   series: readonly SeriesState[]
@@ -365,9 +345,7 @@ export type PostSeriesView = {
   ctaLabel: string;
 };
 
-// Where a finished series hands back to, and what its button says. One rule
-// rather than two: a label that claims the run is over must never sit on a
-// button that returns to the bracket.
+// One rule, not two — the label and the stage it hands back to must never disagree.
 export const postSeriesView = (
   outcome: RunOutcome,
   nextMatchup: BracketMatchup | null

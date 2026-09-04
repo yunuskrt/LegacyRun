@@ -26,9 +26,7 @@ export const requestJson = async <T>(
     const response = await fetchImpl(url, { signal });
     body = (await response.json()) as ApiResponse<T>;
   } catch {
-    // Covers transport failure and a non-JSON body alike — either way the
-    // caller can only retry. An aborted request settles here rather than
-    // throwing, which is what lets a superseded caller drop its own response.
+    // An abort settles here rather than throwing, so a superseded caller can drop it.
     return { ok: false, error: "UNREACHABLE" };
   }
 

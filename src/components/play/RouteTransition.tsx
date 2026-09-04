@@ -9,9 +9,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Enter-only: the App Router unmounts the outgoing page before the incoming one
-// renders, so a real exit animation would need the page tree keyed under an
-// AnimatePresence and could strand a run mid-navigation.
+// Enter-only — the App Router unmounts the outgoing page before the incoming one renders.
 const RouteTransition = ({ children }: Props) => {
   const pathname = usePathname();
 

@@ -83,8 +83,7 @@ export const BANDS = {
   NBA_FINALS: { min: 80, max: 100 },
 } as const satisfies Record<BracketRoundId, PedigreeBand>;
 
-// The Finals opponent must be a team that actually reached the Finals. The band
-// alone doesn't guarantee it — a conference finalist can score 82.
+// The band alone doesn't guarantee a finalist — a conference finalist can score 82.
 export const FINALS_ROUNDS: readonly PlayoffRound[] = [
   "NBA_FINALS",
   "CHAMPION",
@@ -97,9 +96,7 @@ export const ROUND_LABELS: Record<BracketRoundId, string> = {
   NBA_FINALS: "NBA Finals",
 };
 
-// A bracket slot is a structural position, not a strength seed: strength-ordered
-// seeding would put the best opponent in round 2, which the escalating-difficulty
-// constraint forbids. An opponent's real seed lives on `BracketOpponent.seed`.
+// A structural position, not a seed — the real one is on `BracketOpponent.seed`.
 const SQUAD_SLOT_FLOORS: readonly (readonly [number, number])[] = [
   [88, 1],
   [82, 2],
@@ -211,8 +208,7 @@ export const generateBracket = (
     rng,
   };
 
-  // Each group must clear the previous group's highest pedigree, so every path
-  // through the bracket escalates no matter who wins.
+  // Each group clears the previous group's highest, so every path escalates.
   const firstRound = drawGroup(home, BANDS.FIRST_ROUND, -1, 1);
   if (!firstRound) return null;
 

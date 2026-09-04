@@ -16,14 +16,11 @@ type Props = {
   onSkip: () => void;
 };
 
-// 44px minimum on every control — the bar is pinned to the bottom on mobile,
-// where these are the only touch targets on screen. The indicator sits behind
-// the label and must not eat into that.
+// 44px minimum — pinned to the bottom on mobile, these are the only touch targets.
 const SEGMENT =
   "relative flex min-h-11 items-center rounded-md px-4 text-[0.6875rem] font-bold tracking-[0.14em]";
 
-// Two groups, two ids — a shared one would make the pill jump between the speed
-// row and the mode row.
+// Two ids — a shared one would make the pill jump between the speed and mode rows.
 const SPEED_INDICATOR = "replay-speed-indicator";
 const MODE_INDICATOR = "replay-mode-indicator";
 

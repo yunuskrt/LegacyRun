@@ -20,9 +20,7 @@ export type Replay = {
   jumpToEnd: () => void;
 };
 
-// A timeout chain rather than an interval: the delay between two events is a
-// function of the game clock between them, so it changes every tick. Every
-// decision about what comes next lives in `nextTick`; this is only the timer.
+// A timeout chain, not an interval — the delay changes every tick. Rules live in `nextTick`.
 export const useReplay = (game: GameResult, speed: ReplaySpeed): Replay => {
   const { events } = game;
   const [cursor, setCursor] = React.useState(PRE_TIP_CURSOR);
@@ -30,8 +28,7 @@ export const useReplay = (game: GameResult, speed: ReplaySpeed): Replay => {
   const [seed, setSeed] = React.useState(game.seed);
   const boundaries = React.useMemo(() => periodBoundaries(events), [events]);
 
-  // Resetting during render rather than in an effect — the replay restarts on
-  // the render that first sees a new game, with no discarded frame in between.
+  // Reset during render, not in an effect, so no stale frame is ever painted.
   if (seed !== game.seed) {
     setSeed(game.seed);
     setCursor(PRE_TIP_CURSOR);

@@ -47,9 +47,7 @@ const SeriesReplay = ({
   onModeChange,
   onContinue,
 }: Props) => {
-  // The face-off plays once per series: this component is mounted when a
-  // series starts and unmounted when it hands back to the bracket, so game 1
-  // is the only game that ever sees `false` here.
+  // This component's lifetime is the series, so only game 1 ever sees `false`.
   const [tipped, setTipped] = React.useState(false);
   const [gameIndex, setGameIndex] = React.useState(0);
 
@@ -81,8 +79,7 @@ const SeriesReplay = ({
     );
   }
 
-  // Reading `games.length` here would be a leak if it reached the screen; it
-  // only ever decides whether this replay hands over to the series card.
+  // `games.length` decides the hand-off only; it must never reach the screen.
   if (!game) {
     return (
       <SeriesResultCard

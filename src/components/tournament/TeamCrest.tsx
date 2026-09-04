@@ -10,8 +10,6 @@ type Props = {
 };
 
 // One literal per size — Tailwind cannot see a class name built at runtime.
-// Five entries because the five call sites genuinely render five sizes; folding
-// any two together would silently resize a screen this refactor does not own.
 const BOX: Record<CrestSize, string> = {
   xs: "size-9 text-[0.625rem]",
   sm: "size-10 text-xs",

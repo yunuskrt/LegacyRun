@@ -75,8 +75,7 @@ const realGame = (seed: string, homeNet = 4, awayNet = 1): GameResult =>
     seed
   );
 
-// A hand-built log, so run and lead-change detection is asserted against
-// scores a reader can check by eye rather than against engine output.
+// A hand-built log, so detection is asserted against scores a reader can check by eye.
 const event = (
   index: number,
   period: number,
@@ -185,20 +184,17 @@ describe("pacing budget", () => {
     expect(mean).toBeLessThan(30);
   });
 
-  // Wall-clock adds ~1.5s per quarter break on top of each of these; the
-  // budget is the run of play only.
+  // The budget is the run of play only; breaks add ~1.5s each on top.
   it("lands Slow and Fast on their own documented budgets", () => {
     expect(meanSeconds("SLOW")).toBeGreaterThan(40);
     expect(meanSeconds("SLOW")).toBeLessThan(50);
 
-    // The upper bound is deliberately under the ~12s the old 120ms floor gave,
-    // so raising the floor back fails here rather than passing quietly.
+    // Deliberately under the old 120ms floor's ~12s, so restoring it fails here.
     expect(meanSeconds("FAST")).toBeGreaterThan(9);
     expect(meanSeconds("FAST")).toBeLessThan(11.5);
   });
 
-  // Fast is floor-bound, not factor-bound: halving the factor would not move
-  // it, and only the floor decides whether it reads as a game or as a skip.
+  // Fast is floor-bound, not factor-bound — halving the factor would not move it.
   it("clamps almost every Fast event to the floor", () => {
     const game = realGame("budget-floor");
     const floored = game.events.filter(
@@ -431,11 +427,7 @@ describe("momentumSeries", () => {
   });
 });
 
-// The strip's x-axis is the one thing on the replay that has to know how long
-// the game will be, which is exactly what the frame is not allowed to know. An
-// overtime game is the only case where the two can differ, so every assertion
-// here is driven off one — `OT_SEED` reaches a 5th period, `DOUBLE_OT_SEED` a
-// 6th, both at even strength.
+// Only an overtime game can expose the axis leak, so every assertion here uses one.
 const OT_SEED = "ot-51";
 const DOUBLE_OT_SEED = "ot-221";
 
@@ -494,8 +486,7 @@ describe("momentumAxisEnd", () => {
     );
   });
 
-  // The same shape as the spoiler invariant: if deleting the rest of the log
-  // cannot change the axis, the axis cannot have been derived from it.
+  // If deleting the rest of the log cannot change the axis, it was not derived from it.
   it("is unchanged by deleting every event after the cursor", () => {
     const { events } = overtimeGame(DOUBLE_OT_SEED);
 
@@ -506,9 +497,7 @@ describe("momentumAxisEnd", () => {
     }
   });
 
-  // The strip plots against regulation and scales the whole curve by
-  // REGULATION_SECONDS / axis, so an axis that could fall below regulation would
-  // scale the curve *up* and push it past the viewBox edge. It cannot.
+  // An axis below regulation would scale the curve up and past the viewBox edge.
   it("never falls below regulation, so the curve can only compress inward", () => {
     const { events } = overtimeGame(DOUBLE_OT_SEED);
 
@@ -541,8 +530,7 @@ describe("the frame's lead-change flag", () => {
     expect(flags).toEqual([false, true, true, false, false]);
   });
 
-  // The whole reason the flag is threaded down rather than re-derived: the
-  // scoreboard flash and the feed badge must be the same decision.
+  // Why the flag is threaded, not re-derived: flash and badge are one decision.
   it("agrees with the feed's badge at every cursor", () => {
     const game = realGame("lead-flag");
 
@@ -555,9 +543,7 @@ describe("the frame's lead-change flag", () => {
     }
   });
 
-  // Why the scoreboard is handed the cursor a flip landed on rather than the
-  // flag itself: back-to-back flips are ordinary, and a boolean would hold true
-  // across both and flash once.
+  // Back-to-back flips are ordinary, and a boolean would hold true across both.
   it("flags consecutive cursors when the lead flips straight back", () => {
     const game = realGame("lc-1", 2, 2);
     const flags = game.events.map(
@@ -604,8 +590,7 @@ describe("periodSummary", () => {
     }
   });
 
-  // The card shows both sides' scorers together, so a leader board that only
-  // ever held one side would still pass a same-side assertion.
+  // Both sides share the card, so a one-side board would pass a same-side assertion.
   it("ranks both sides together", () => {
     const summary = periodSummary(
       [
@@ -636,8 +621,7 @@ describe("replayStatus", () => {
     expect(replayStatus(4, 5, false)).toBe("FINAL");
   });
 
-  // A pause can never outrank the final buzzer, or the last quarter break of
-  // the game would hold the board forever.
+  // If a pause outranked FINAL, the last quarter break would hold the board forever.
   it("lets FINAL win over a pause", () => {
     expect(replayStatus(2, 5, true)).toBe("PERIOD_BREAK");
     expect(replayStatus(4, 5, true)).toBe("FINAL");
@@ -703,8 +687,7 @@ describe("nextTick", () => {
     expect(periodBreakMs("SLOW")).toBeGreaterThan(periodBreakMs("FAST"));
   });
 
-  // Driving the chain end to end is what proves the two functions compose into
-  // a replay that reaches the final buzzer and stops.
+  // Driving the chain proves the two compose into a replay that ends and stops.
   it("walks a real game to its last event and then stops", () => {
     const game = realGame("tick-drive");
     const marks = periodBoundaries(game.events);
@@ -753,8 +736,7 @@ describe("winsAtBuzzer", () => {
   const before = { home: 1, away: 2 };
 
   it("leaves the count alone until the final buzzer", () => {
-    // The finished score is already on the log; a game still playing must not
-    // borrow it. This is the spoiler rule the dots depend on.
+    // The finished score is on the log; a game still playing must not borrow it.
     expect(winsAtBuzzer(before, false, 118, 90)).toEqual(before);
     expect(winsAtBuzzer(before, false, 0, 0)).toEqual(before);
   });
@@ -770,15 +752,12 @@ describe("winsAtBuzzer", () => {
     expect(after.home + after.away).toBe(before.home + before.away + 1);
   });
 
-  // Overtime means a level score at FINAL is unreachable, so this pins the
-  // refusal rather than a case: credit nobody rather than invent a winner.
+  // A level score at FINAL is unreachable, so this pins the refusal, not a case.
   it("credits neither side on a level score", () => {
     expect(winsAtBuzzer(before, true, 100, 100)).toEqual(before);
   });
 
-  // The rule this exists for: the live increment has to land exactly where
-  // `seriesWinsThrough` puts the same game once it is in the past. Disagreement
-  // makes the banner's dot count jump or double-count at every game boundary.
+  // The live increment must land where `seriesWinsThrough` puts the same game later.
   it("agrees with seriesWinsThrough across a whole series", () => {
     const games = [
       decided("HOME", 110, 104),
@@ -813,9 +792,7 @@ describe("period labels", () => {
 // The spoiler invariant ------------------------------------------------------
 
 describe("the spoiler invariant", () => {
-  // The strongest form available: if the frame at a cursor is identical when
-  // every later event is deleted and every finished-game field is blanked, then
-  // nothing in the frame can have come from the rest of the log.
+  // If truncating the log cannot change the frame, nothing in it came from the rest.
   it("derives every frame from the event prefix alone", () => {
     for (const seed of ["spoil-a", "spoil-b", "spoil-c"]) {
       const game = realGame(seed);

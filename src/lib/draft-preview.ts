@@ -1,20 +1,11 @@
 import type { DraftState } from "@/lib/draft";
 import type { DraftablePlayer, Position } from "@/types/game";
 
-// How a court slot responds to the player currently under the pointer or on the
-// end of a drag. The rules live here rather than in `DraftCourt`/`CourtSlot`
-// because components are not tested, and an inverted branch here would invite a
-// drop the reducer then rejects.
+// Here rather than in the court because components are not tested.
 
 export type SlotDragState = "NONE" | "VALID" | "INVALID";
 
-// A drag outranks a hover by construction: mid-drag the pointer is over the
-// court, not the card, so a stale hover must never win.
-//
-// The winner is then checked against the roster on the board, because a card
-// that unmounts under the pointer never fires `pointerleave` — drafting by
-// click otherwise leaves the drafted player previewed, and since he is now a
-// duplicate no slot would invite anything for the rest of the run.
+// Drag outranks hover; both are board-checked, since a stale preview blocks every slot.
 export const resolvePreviewPlayer = (
   state: DraftState,
   dragPlayer: DraftablePlayer | null,
@@ -57,8 +48,7 @@ export const slotMotionState = ({
   const wouldAccept = previewPlayer ? accepts(previewPlayer, position) : isOpen;
 
   return {
-    // With a player in hand, only the slots that would take him. With none, a
-    // board with a team on it should still read as inviting.
+    // With a player in hand, only the slots that would take him; with none, all open ones.
     isInviting: wouldAccept && !isSelected && !isFilled,
     dragState:
       dragOver !== position || !previewPlayer
@@ -69,9 +59,7 @@ export const slotMotionState = ({
   };
 };
 
-// The app's only looping animation, so its guards are a constraint rather than
-// a preference: selection and a drag are stronger states that hold the glow
-// steady, and reduced motion stops the loop outright — MotionConfig cannot.
+// Reduced motion must stop this loop explicitly — MotionConfig cannot stop a loop.
 export const isSlotBreathing = ({
   isInviting,
   isSelected,

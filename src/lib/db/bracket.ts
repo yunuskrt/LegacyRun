@@ -3,8 +3,7 @@ import { oppositeConference } from "@/lib/bracket";
 import type { PlayoffTeamRow } from "@/lib/bracket";
 import type { Conference } from "@/types/game";
 
-// The whole eligible pool is at most ~408 rows, so selection happens in the
-// pure module rather than in the query — see context/docs/bracket-generation.md.
+// The pool is ~408 rows at most, so selection happens in the pure module, not here.
 export const getPlayoffCandidates = async (
   conference: Conference
 ): Promise<PlayoffTeamRow[]> =>

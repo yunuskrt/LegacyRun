@@ -13,18 +13,14 @@ type Props = {
   wins: { home: number; away: number };
 };
 
-// One dot per game already played, filled for the home side's wins. The count
-// is the series so far, never the length of a finished series.
+// The series so far, never the length of a finished one.
 const Dots = ({ won, lost }: { won: number; lost: number }) => {
-  // The dot scales in, and a transform target has to be refused explicitly —
-  // `MotionConfig` snaps one rather than omitting it.
+  // A transform must be refused explicitly — `MotionConfig` snaps rather than omits.
   const reduced = useReducedMotion() ?? false;
 
   return (
     <span className="flex items-center gap-1" aria-hidden="true">
-      {/* `initial={false}` is what makes this fire at the buzzer and nowhere else:
-        the games already played are on screen from the first frame, so only the
-        dot the final score adds animates in. */}
+      {/* `initial={false}` is what fires this at the buzzer and nowhere else. */}
       <AnimatePresence initial={false}>
         {Array.from({ length: won + lost }, (_, index) => (
           <motion.span

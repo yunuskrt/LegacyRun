@@ -67,16 +67,12 @@ describe("resolvePreviewPlayer", () => {
     expect(resolvePreviewPlayer(offered, null, null)).toBeNull();
   });
 
-  // Mid-drag the pointer is over the court, not the card, so a hover left
-  // behind by the drag must never outrank the player actually in hand.
+  // Mid-drag the pointer is over the court, so a stale hover must never outrank it.
   it("lets a drag outrank a stale hover", () => {
     expect(resolvePreviewPlayer(offered, rondo, pierce)).toBe(rondo);
   });
 
-  // The bug this function exists for: a card that unmounts under the pointer
-  // never fires `pointerleave`, so drafting by click leaves a stale hover
-  // behind. Drafting also clears the board, and a player off the board must
-  // not keep the court reacting to him for the rest of the run.
+  // The bug this exists for: a card unmounting under the pointer fires no `pointerleave`.
   it("drops a hover left behind by the draft that cleared the board", () => {
     const drafted = reduce(
       reduce(offered, { type: "SELECT_SLOT", position: "SF" }),
@@ -94,8 +90,7 @@ describe("resolvePreviewPlayer", () => {
     expect(resolvePreviewPlayer(rerolled, null, jordan)).toBe(jordan);
   });
 
-  // The staleness check has to cover the stronger of the two states as well —
-  // a drag is not exempt from it just because it wins the ranking.
+  // A drag is not exempt from the staleness check just because it wins the ranking.
   it("checks a drag against the board too, not just a hover", () => {
     const rerolled = reduce(offered, { type: "REROLL", team: otherTeam });
 
@@ -106,10 +101,7 @@ describe("resolvePreviewPlayer", () => {
     expect(resolvePreviewPlayer(INITIAL_DRAFT_STATE, pierce, rondo)).toBeNull();
   });
 
-  // The invariant the court depends on: `slotMotionState` runs the preview
-  // through `validateDraft`, which would happily rule on a player who is not
-  // on the board at all. Whatever comes back is always a player the board is
-  // currently offering.
+  // The court's invariant: whatever comes back is a player the board is offering.
   it("only ever previews a player the board is currently offering", () => {
     const boards = [team, otherTeam];
 
@@ -135,18 +127,14 @@ describe("resolvePreviewPlayer", () => {
   });
 });
 
-// The two halves of the pointer pipeline, checked together: separately they
-// each pass while the court still misreads a stale pointer.
+// Both halves together — separately they pass while the court misreads a stale pointer.
 describe("resolvePreviewPlayer + slotMotionState", () => {
   const otherTeam = MOCK_DRAFT_TEAMS.find(
     (t) => t.teamSeasonId === "bulls-1996"
   );
   if (!otherTeam) throw new Error("missing fixture team bulls-1996");
 
-  // The shipped bug, end to end: draft by click, so the card unmounts under
-  // the pointer without firing `pointerleave`. The drafted player is now a
-  // duplicate, so leaving him previewed makes every slot refuse him and the
-  // court stops inviting anything for the rest of the run.
+  // The shipped bug end to end: a stale preview makes every slot refuse for the rest of the run.
   it("keeps every open slot inviting under a hover the draft left behind", () => {
     const drafted = reduce(
       reduce(offered, { type: "SELECT_SLOT", position: "SF" }),
@@ -173,8 +161,7 @@ describe("resolvePreviewPlayer + slotMotionState", () => {
 
     expect(invitedWith(resolvePreviewPlayer(next, null, pierce))).toEqual(open);
 
-    // Without the staleness check the preview survives as `pierce`, and this
-    // is what the court then reads — so the assertion above is not vacuous.
+    // What the court reads without the staleness check, so the assertion above isn't vacuous.
     expect(invitedWith(pierce)).toEqual([]);
   });
 });
@@ -220,8 +207,7 @@ describe("slotMotionState — invitation", () => {
     ).toBe(false);
   });
 
-  // Selection is a stronger state with its own treatment; two competing
-  // signals on one slot is the "overwhelming" this phase avoids.
+  // Selection is a stronger state — two competing signals on one slot overwhelm.
   it("never invites the selected slot", () => {
     expect(slotAt("SF", { isSelected: true }).isInviting).toBe(false);
     expect(
@@ -289,8 +275,7 @@ describe("isSlotBreathing", () => {
     expect(isSlotBreathing({ ...base, isInviting: false })).toBe(false);
   });
 
-  // Hard rule: the app's only loop must never share a slot with the
-  // selection treatment.
+  // The app's only loop must never share a slot with the selection treatment.
   it("does not run on the selected slot", () => {
     expect(isSlotBreathing({ ...base, isSelected: true })).toBe(false);
   });
@@ -300,9 +285,7 @@ describe("isSlotBreathing", () => {
     expect(isSlotBreathing({ ...base, dragState: "INVALID" })).toBe(false);
   });
 
-  // MotionConfig disables transforms but cannot stop a loop, so this is the
-  // only thing keeping the app's one looping animation off a reduced-motion
-  // screen.
+  // MotionConfig cannot stop a loop, so this guard is the only thing that does.
   it("never runs under reduced motion, whatever else is true", () => {
     [true, false].forEach((isSelected) => {
       (["NONE", "VALID", "INVALID"] as SlotDragState[]).forEach((dragState) => {

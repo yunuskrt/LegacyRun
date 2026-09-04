@@ -7,9 +7,7 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Every `motion` component degrades on its own, so none of them has to opt in.
-// This does not cover CSS transitions or looping animations — see the
-// prefers-reduced-motion block in globals.css and useReducedMotion() callers.
+// Covers `motion` components only — CSS transitions and loops are guarded elsewhere.
 const MotionProvider = ({ children }: Props) => (
   <MotionConfig reducedMotion="user">{children}</MotionConfig>
 );

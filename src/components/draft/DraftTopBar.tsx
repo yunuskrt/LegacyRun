@@ -11,8 +11,7 @@ type Props = {
   totalSlots: number;
 };
 
-// Hoisted so the reference is stable — an inline array is a new target on every
-// render, which motion would replay as a fresh pulse.
+// Hoisted for a stable reference — an inline array replays as a fresh pulse.
 const COMPLETE_PULSE = [1, 1.06, 1];
 
 const DraftTopBar = ({ filledSlots, totalSlots }: Props) => {
@@ -45,13 +44,9 @@ const DraftTopBar = ({ filledSlots, totalSlots }: Props) => {
         <p className="text-primary text-xl font-bold sm:text-2xl">
           <TweenNumber value={filledSlots} />/{totalSlots}
         </p>
-        {/* Segments fill by count, never by slot identity: indexing them by
-            slot would leave gaps under a "5/5" caption if C were drafted
-            first, and the court already shows which slot is which. */}
+        {/* Fills by count, never by slot — slot-indexing leaves gaps under a "5/5" caption. */}
         <motion.div
-          // Segments flex to whatever the column already is, so the bar can
-          // never widen the header — at 390 an intrinsically-sized one pushed
-          // the page into a horizontal scroll.
+          // Segments flex to the column, so the bar can never widen the header.
           className="mt-1.5 flex w-full items-center justify-end gap-1"
           aria-hidden="true"
           animate={{ scale: isComplete && !reduced ? COMPLETE_PULSE : 1 }}

@@ -49,8 +49,7 @@ const BracketLadder = ({
               {round.matchups.map((matchup, index) => (
                 <motion.div
                   key={matchup.id}
-                  // Opacity and transform only — the connector ticks sit at each
-                  // column's midpoint, so an animated height would move them.
+                  // Opacity and transform only — an animated height would move the ticks.
                   initial={entranceFrom(
                     motionKind === "REVEALING",
                     reduced,

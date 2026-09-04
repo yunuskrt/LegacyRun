@@ -66,8 +66,7 @@ describe("normalizeSquadName", () => {
     expect(normalizeSquadName("   \t \n ")).toBeUndefined();
   });
 
-  // The literal is spelled out here on purpose: asserting only against the
-  // constant lets the cap move without a single test going red.
+  // Spelled out on purpose — asserting the constant lets the cap move silently.
   it("caps a long name at 40 characters", () => {
     expect(MAX_SQUAD_NAME_LENGTH).toBe(40);
     expect(normalizeSquadName("x".repeat(45))).toBe("x".repeat(40));

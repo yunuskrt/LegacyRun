@@ -20,8 +20,7 @@ type Props = {
   onDropPlayer: (playerSeasonId: string, position: Position) => void;
 };
 
-// Percentages of the court box, which is locked to the court SVG's 100x110
-// viewBox — that is what keeps the slots aligned at every breakpoint.
+// Percentages of the court box, locked to the SVG's 100x110 viewBox, so slots can't drift.
 const SLOT_PLACEMENT: Record<Position, string> = {
   PG: "left-[50%] top-[78%]",
   SG: "left-[15%] top-[60%]",
@@ -66,13 +65,10 @@ const DraftCourt = ({
               "absolute w-[30%] -translate-x-1/2 -translate-y-1/2",
               SLOT_PLACEMENT[position]
             )}
-            // Every slot accepts the drop so a mistaken one can be reported
-            // instead of silently doing nothing.
+            // Every slot accepts the drop so a mistaken one is reported, not ignored.
             onDragOver={(event) => event.preventDefault()}
             onDragEnter={() => setDragOver(position)}
-            // `dragleave` also fires when the pointer crosses into a child, and
-            // that one carries the same position — so the target check is not
-            // enough on its own and the state flickers off as fast as it is set.
+            // `dragleave` also fires crossing into a child, so the target check alone flickers.
             onDragLeave={(event) => {
               if (event.currentTarget.contains(event.relatedTarget as Node))
                 return;
@@ -92,9 +88,7 @@ const DraftCourt = ({
                 initial={{ opacity: 0, scale: 0.82, y: -12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                // Only the five empty slots arrive together, and they only do
-                // so on mount — a drafted card lands alone, so staggering it
-                // would just be lag (C waiting 0.24s where PG is instant).
+                // Empty slots only ever arrive together; a drafted card lands alone.
                 transition={staggeredTransition("spring", member ? 0 : index, {
                   step: 0.06,
                   reduced,

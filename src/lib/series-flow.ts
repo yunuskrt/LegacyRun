@@ -13,8 +13,7 @@ export const REPLAY_MODES: readonly ReplayMode[] = ["MANUAL", "AUTOMATIC"];
 export const DEFAULT_SPEED: ReplaySpeed = "NORMAL";
 export const DEFAULT_MODE: ReplayMode = "MANUAL";
 
-// These three beats are not part of the run of play, so speed — which paces
-// events against the game clock — deliberately does not scale them.
+// Outside the run of play, so speed deliberately does not scale them.
 export const FACE_OFF_MS = 2000;
 export const NEXT_GAME_MS = 2000;
 export const SERIES_CARD_MS = 2500;
@@ -22,8 +21,7 @@ export const SERIES_CARD_MS = 2500;
 export type SeriesStage =
   "FACE_OFF" | "GAME" | "GAME_FINAL" | "SERIES_WON" | "SERIES_LOST";
 
-// `NONE` is a stage that advances itself — the replay's own event timer owns
-// the run of play, and neither mode nor a click moves it along.
+// `NONE` advances itself — the replay's event timer owns the run of play.
 export type StageAdvance =
   { kind: "AUTO"; delayMs: number } | { kind: "CLICK" } | { kind: "NONE" };
 
@@ -44,8 +42,7 @@ export const stageAdvance = (
       return mode === "AUTOMATIC"
         ? { kind: "AUTO", delayMs: SERIES_CARD_MS }
         : { kind: "CLICK" };
-    // A loss always waits for a click, in both modes — auto-advancing past the
-    // one moment the player most wants to sit with is the wrong kind of smooth.
+    // A loss always waits for a click, in both modes.
     case "SERIES_LOST":
       return { kind: "CLICK" };
   }
@@ -53,8 +50,7 @@ export const stageAdvance = (
 
 export const NO_ADVANCE: StageAdvance = { kind: "NONE" };
 
-// The only thing a timer needs off a stage. `null` covers both `CLICK` and
-// `NONE`, which are the same instruction to a scheduler: do not schedule.
+// `null` covers CLICK and NONE alike — both mean "do not schedule".
 export const advanceDelayMs = (advance: StageAdvance): number | null =>
   advance.kind === "AUTO" ? advance.delayMs : null;
 
@@ -67,10 +63,7 @@ export const seriesEndStage = (
 export const isSeriesEnd = (stage: SeriesStage): boolean =>
   stage === "SERIES_WON" || stage === "SERIES_LOST";
 
-// The series' own stage. `seriesEndStage` reads `series.winner`, which is set
-// from the moment the series is simulated — routing it through here means the
-// result can only be reached once every game has been handed over, rather than
-// relying on the caller to guard it.
+// Makes the end unreachable until every game is watched, rather than trusting the caller.
 export const seriesStageOf = (
   tipped: boolean,
   hasCurrentGame: boolean,
@@ -83,9 +76,7 @@ export const seriesStageOf = (
   return seriesEndStage(matchup, series);
 };
 
-// Skipping is an explicit intervention, so it ends this game and stops there in
-// both modes — Automatic must not chain straight into the next game off the
-// back of it.
+// Skipping is an explicit intervention, so it stops here even in Automatic.
 export const gameAdvance = (
   isFinal: boolean,
   mode: ReplayMode,
@@ -102,8 +93,7 @@ export type SquadGameLine = {
   overtimes: number;
 };
 
-// The game-by-game list reads from the squad's side, never the home slot's.
-// Safe on a finished series only.
+// Reads from the squad's side, never the home slot's; finished series only.
 export const squadGameLines = (
   matchup: BracketMatchup,
   games: readonly GameResult[]
@@ -119,9 +109,7 @@ export const squadGameLines = (
   }));
 };
 
-// Named squads print their name and keep the `YOUR SQUAD` tag; an unnamed one
-// already reads `YOUR SQUAD` above, so repeating it in the sub-label would say
-// it twice.
+// An unnamed squad already reads `YOUR SQUAD` above, so the tag would say it twice.
 export const faceOffSubLabel = (squad: Squad, isNamed: boolean): string =>
   isNamed
     ? `YOUR SQUAD · AVG ${squadRatingOf(squad)}`

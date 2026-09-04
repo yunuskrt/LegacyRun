@@ -101,8 +101,7 @@ export const parseTeamSeasonId = (value: string): string | null => {
 
 export type TeamSeasonAnchor = { teamSlug: string; seasonYear: number };
 
-// The two anchored rerolls are symmetric: Another Team holds the season and
-// changes the franchise, Another Season holds the franchise and changes the year.
+// Symmetric: Another Team holds the season, Another Season holds the franchise.
 export const anotherTeamFilter = (anchor: TeamSeasonAnchor) => ({
   teamSlug: { not: anchor.teamSlug },
   seasonYear: anchor.seasonYear,

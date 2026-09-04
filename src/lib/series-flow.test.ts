@@ -35,8 +35,7 @@ const OPPONENT: BracketOpponent = {
   pedigree: 70,
 };
 
-// The squad sits on either slot depending on where the generator seeded it, so
-// every squad-facing helper is exercised from both.
+// The squad sits on either slot, so every squad-facing helper is exercised from both.
 const matchupWithSquadOn = (squadSide: MatchSideId): BracketMatchup => ({
   id: "m1",
   round: "CONFERENCE_SEMIS",
@@ -209,8 +208,7 @@ describe("seriesStageOf", () => {
     expect(seriesStageOf(true, true, matchup, lost)).toBe("GAME");
   });
 
-  // The whole series is simulated up front, so `series.winner` is set from the
-  // start. The stage is what keeps it out of reach until every game is watched.
+  // `series.winner` is set up front; the stage keeps it out of reach until watched.
   it("reaches the result only once no game is left", () => {
     expect(seriesStageOf(true, false, matchup, won)).toBe("SERIES_WON");
     expect(seriesStageOf(true, false, matchup, lost)).toBe("SERIES_LOST");
@@ -230,8 +228,7 @@ describe("seriesStageOf", () => {
 });
 
 describe("isSeriesEnd", () => {
-  // Both outcomes, not just the happy one: a loss ends the series exactly as
-  // much as a win does, and only the CTA differs.
+  // A loss ends the series as much as a win does; only the CTA differs.
   it("counts both outcomes and nothing before them", () => {
     expect(ALL_STAGES.filter(isSeriesEnd)).toEqual([
       "SERIES_WON",
@@ -271,8 +268,7 @@ describe("advanceDelayMs", () => {
     expect(advanceDelayMs(NO_ADVANCE)).toBeNull();
   });
 
-  // Every stage a mode would gate on a click must be unschedulable, or
-  // Automatic's timer would fire behind the button.
+  // A click-gated stage must be unschedulable, or the timer fires behind the button.
   it("leaves every CLICK stage unschedulable in both modes", () => {
     for (const stage of ALL_STAGES) {
       for (const mode of REPLAY_MODES) {

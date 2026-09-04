@@ -22,9 +22,7 @@ const RunSquadGrid = ({ players, section }: Props) => {
       </h2>
 
       <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {/* `orderMembersBySlots` already put these in slot order, so following
-            the render order is what makes this PG→C rather than draft order.
-            The same cap covers 390's vertical cascade and 1440's sweep. */}
+        {/* Already in slot order, so render order is what makes this PG→C. */}
         {players.map((player, index) => (
           <motion.li
             key={player.playerSeasonId}

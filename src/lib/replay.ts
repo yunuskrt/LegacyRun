@@ -11,27 +11,18 @@ import type {
   ScoringLine,
 } from "@/types/match";
 
-// Everything here derives from `events.slice(0, cursor + 1)` and nothing else.
-// `GameResult.homeScore`, `.winner`, `.scoring` and `.periodScores` all hold the
-// finished game, so reading any of them leaks the result ahead of the replay —
-// see context/docs/match-simulation.md §6.1.
+// Derives only from events[0..cursor] — reading the finished game leaks the result.
 
 export type ReplaySpeed = "SLOW" | "NORMAL" | "FAST";
 
-// Milliseconds of real time per second of game clock. Tuned against a real
-// simulated game so a Normal game lands near the 25s budget; replay.test.ts
-// asserts it, so a change here fails loudly rather than blowing the pacing.
+// Milliseconds of real time per second of game clock; replay.test.ts pins the budget.
 export const SPEED_FACTORS: Record<ReplaySpeed, number> = {
   SLOW: 16,
   NORMAL: 8,
   FAST: 2.5,
 };
 
-// The floor, not the speed factor, is what sets the Fast budget: at 2.5 an
-// average ~32s scoring gap comes out under 80ms, so nearly every event at Fast
-// is clamped here. 100ms is the perceptual limit for reading changes as
-// discrete events rather than one blur — below it Fast stops being a game and
-// becomes a skip, which is what the design doc forbids.
+// The floor, not the factor, sets the Fast budget; below 100ms events blur together.
 export const MIN_EVENT_DELAY_MS = 100;
 export const MAX_EVENT_DELAY_MS = 1200;
 export const BASE_PERIOD_BREAK_MS = 1500;
@@ -79,8 +70,7 @@ export const eventDelayMs = (
   );
 };
 
-// The run of play only — quarter breaks are not in it, so a regulation game
-// spends this plus three breaks on screen.
+// The run of play only — three quarter breaks land on top of this.
 export const gameBudgetMs = (
   events: readonly MatchEvent[],
   speed: ReplaySpeed
@@ -96,10 +86,7 @@ export const periodBreakMs = (speed: ReplaySpeed): number =>
     (BASE_PERIOD_BREAK_MS * SPEED_FACTORS[speed]) / SPEED_FACTORS.NORMAL
   );
 
-// Scheduling ----------------------------------------------------------------
-//
-// The hook is a timer and a cursor; these two decide what it does. They live
-// here because a rule inside a component or a hook is a rule nothing can pin.
+// Scheduling — the hook is a timer and a cursor; these two decide what it does.
 
 export type ReplayStatus = "PLAYING" | "PERIOD_BREAK" | "FINAL";
 
@@ -142,8 +129,7 @@ export const nextTick = (
   };
 };
 
-// Slicing once and passing the prefix around is what keeps every helper below
-// structurally unable to see the rest of the game.
+// Slicing once keeps every helper below structurally unable to see the rest.
 export const eventsThrough = (
   events: readonly MatchEvent[],
   cursor: number
@@ -167,8 +153,7 @@ export const scoreAt = (
     ? { home: 0, away: 0 }
     : { home: events[cursor].homeScore, away: events[cursor].awayScore };
 
-// The last event index of every period the game moves on from. The final
-// period is not a break — it ends the game.
+// The final period is not a break — it ends the game.
 export const periodBoundaries = (events: readonly MatchEvent[]): number[] => {
   const boundaries: number[] = [];
 
@@ -185,8 +170,7 @@ export type ScoringRun = {
   points: number;
 };
 
-// Only scoring events exist, so consecutive same-side events are by definition
-// unanswered.
+// Only scoring events exist, so consecutive same-side events are unanswered.
 export const scoringRun = (
   events: readonly MatchEvent[],
   cursor: number
@@ -207,8 +191,7 @@ export const scoringRun = (
   return { side, points };
 };
 
-// A flip of the lead, not a go-ahead from a tie — a tie has no leader to take
-// the lead from.
+// A flip of the lead, not a go-ahead from a tie — a tie has no leader.
 export const isLeadChange = (
   events: readonly MatchEvent[],
   cursor: number
@@ -228,10 +211,7 @@ export type MomentumPoint = {
   margin: number;
 };
 
-// The strip's x-axis, in game seconds. Regulation length until an overtime is
-// actually entered — reading `periodScores.length` or the last event's period
-// would widen the axis before the overtime is played, which is the same leak the
-// line score avoids by building its columns from the periods actually reached.
+// Regulation until an overtime is entered — a wider axis would announce it early.
 export const momentumAxisEnd = (
   events: readonly MatchEvent[],
   cursor: number
@@ -287,8 +267,7 @@ export type LineScoreCell = {
   isCurrent: boolean;
 };
 
-// Columns come from the periods actually reached, never from
-// `periodScores.length` — that would announce an overtime before it is played.
+// Columns come from periods actually reached, never `periodScores.length`.
 export const lineScoreThrough = (
   events: readonly MatchEvent[],
   cursor: number
@@ -389,8 +368,7 @@ export type ReplayFrame = {
   feed: FeedRow[];
   momentum: MomentumPoint[];
   momentumAxis: number;
-  // The scoreboard flash and the feed's LEAD_CHANGE badge read the same flag, so
-  // they cannot disagree about what counts as a lead change.
+  // The scoreboard flash and the feed's LEAD_CHANGE badge read this same flag.
   leadChange: boolean;
 };
 
@@ -468,8 +446,7 @@ export const periodSummary = (
 
 // Series dots ---------------------------------------------------------------
 
-// Counted over a prefix of the games array, never over `games.length` — the
-// length of a finished series is the series result.
+// Counted over a prefix, never `games.length` — that length is the series result.
 export const seriesWinsThrough = (
   games: readonly GameResult[],
   played: number
@@ -482,9 +459,7 @@ export const seriesWinsThrough = (
   };
 };
 
-// The other half of `seriesWinsThrough`: at the final buzzer the game on screen
-// joins the count, and the winner comes from the score the replay has reached,
-// not from `game.winner` — the finished log must not decide a live frame.
+// The winner comes from the score the replay reached, not from `game.winner`.
 export const winsAtBuzzer = (
   before: { home: number; away: number },
   isFinal: boolean,

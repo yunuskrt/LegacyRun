@@ -13,8 +13,7 @@ import {
 import type { Bracket, BracketOpponent, BracketRoundId } from "@/types/bracket";
 import type { GameResult, MatchSideId, SeriesState } from "@/types/match";
 
-// One round the squad actually played and finished. Every recap figure is
-// derived from these rows, so the whole module traverses the bracket once.
+// Every recap figure derives from these rows, so the bracket is traversed once.
 export type RunPathRow = {
   round: BracketRoundId;
   label: string;
@@ -26,8 +25,7 @@ export type RunPathRow = {
   games: readonly GameResult[];
 };
 
-// Only decided series appear: an in-flight round has no score to show, and the
-// mockup leaves rounds the squad never reached absent rather than greyed.
+// Decided series only — an in-flight or unreached round is absent, not greyed.
 export const runPath = (
   bracket: Bracket,
   series: readonly SeriesState[]
@@ -91,8 +89,7 @@ export type ScoringLeader = {
   pointsPerGame: number;
 };
 
-// Points are the only stat the database holds, so points per game is the only
-// rate this screen may show — see match-simulation.md §7.
+// Points are the only stat in the database, so PPG is the only rate available.
 export const runScoringLeader = (
   path: readonly RunPathRow[]
 ): ScoringLeader | null => {
@@ -126,8 +123,7 @@ export const runScoringLeader = (
       playerName: name,
       points,
       gamesPlayed: played,
-      // The divisor is games the squad played, not games the player appeared
-      // in: every drafted player plays every game, so the two are the same.
+      // Every drafted player plays every game, so squad games is the right divisor.
       pointsPerGame: played === 0 ? 0 : Math.round((points / played) * 10) / 10,
     };
   }
@@ -153,14 +149,7 @@ const marginOf = (row: RunPathRow, game: GameResult): number => {
   return squadPoints - opponentPoints;
 };
 
-// The ordering rule, fixed here and pinned by test. Candidates are the squad's
-// **wins** only, because the line reads "... over the 2017 Warriors" — a defeat
-// cannot be phrased that way, and a run with no wins simply has no signature.
-//
-//   1. the later round      — the spec's "preferring the latest round"
-//   2. a series decider     — game 7 outranks any other game in that round
-//   3. the larger margin
-//   4. the later game number, so a tie always resolves to one game
+// Wins only ("over the ..."), ranked by round, then game 7, then margin, then game.
 const isBetterSignature = (
   candidate: RunPathRow,
   candidateGame: GameResult,
@@ -231,20 +220,15 @@ export const opponentLabel = (opponent: BracketOpponent | null): string =>
 
 export const CHAMPION_OVERLINE = "THE RUN IS COMPLETE";
 
-// "Round 1" takes no article where every other round does, so the phrase comes
-// from ROUND_PHRASE and never from the bare label — concatenating an article
-// here is how this line reads "IN THE ROUND 1".
+// From ROUND_PHRASE, never the bare label — concatenating an article gives "THE ROUND 1".
 export const eliminationHeadline = (row: RunPathRow | null): string =>
   `ELIMINATED IN ${(row ? ROUND_PHRASE[row.round] : "the playoffs").toUpperCase()}`;
 
-// The one squad-facing line that reads opponent-first: it is the opponent's
-// sentence, so the winning score leads. Everything else on this screen puts the
-// squad first.
+// The one line that reads opponent-first — it is the opponent's sentence.
 export const defeatSubtitle = (row: RunPathRow): string =>
   `${opponentLabel(row.opponent)} won the series ${row.opponentWins}-${row.squadWins}`;
 
-// Built here rather than in the card so the article never doubles up on a
-// matchup with no resolved opponent.
+// Built here so an unresolved opponent drops the clause instead of doubling the article.
 export const signatureLine = (signature: SignatureGame): string => {
   const score = `${signature.squadPoints}-${signature.opponentPoints}`;
   const over = signature.opponent

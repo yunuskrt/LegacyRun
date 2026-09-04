@@ -16,8 +16,7 @@ import type { PlayoffTeamRow } from "@/lib/bracket";
 import type { Bracket } from "@/types/bracket";
 import type { MatchData, MatchPlayer } from "@/types/match";
 
-// The committed tables, folded into the shape the endpoint would return.
-// Nothing here touches the database.
+// The committed tables folded into the endpoint's shape; no database.
 const DATA_BY_ID = new Map(
   PLAYER_SEASON_DATA.map((row) => [row.playerSeasonId, row])
 );
@@ -66,8 +65,7 @@ describe("real team-seasons rate the way history says they should", () => {
     expect(Math.max(...nets)).toBeLessThan(18);
   });
 
-  // This is the §2 argument, pinned. team_seasons.rating puts PHI-1983 at 95 and
-  // ORL-1995 at 94 against CHI-1996's 91 — backwards for a difficulty ladder.
+  // Why team_seasons.rating is unused: it puts PHI-1983 at 95 against CHI-1996's 91.
   it("ranks the 72-10 Bulls above the teams the stored rating prefers", () => {
     expect(netOf("CHI-1996")).toBeGreaterThan(netOf("PHI-1983"));
     expect(netOf("CHI-1996")).toBeGreaterThan(netOf("ORL-1995"));
@@ -192,8 +190,7 @@ describe("driving a real bracket to a champion", () => {
         if (isSquadMatchup(matchup)) expect(matchup.winner).toBeNull();
       }
 
-      // The far half has produced the Conference Finals opponent and stopped;
-      // which slot it lands in depends on the half the squad was seeded into.
+      // Which slot the far half lands in depends on where the squad was seeded.
       const confFinals = resolved.bracket.rounds[2].matchups[0];
       const filled = [confFinals.home, confFinals.away].filter(Boolean);
 
@@ -214,8 +211,7 @@ describe("driving a real bracket to a champion", () => {
         run.seed
       ).bracket;
 
-      // Play whatever is ready, round by round, until the Finals resolve. The
-      // squad's half varies with its seeding, so nothing here is hardcoded.
+      // Nothing is hardcoded — the squad's half varies with its seeding.
       let played = 0;
 
       for (let round = 0; round < 8; round += 1) {

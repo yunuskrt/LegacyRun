@@ -11,8 +11,7 @@ type Props = {
   dimmed?: boolean;
 };
 
-// Low enough that up to ten meters can fill at once without the screen reading
-// as a cascade — three dots land in ~120ms.
+// Low enough that ten meters filling at once don't read as a cascade.
 const DOT_STEP = 0.04;
 
 const DifficultyMeter = ({ band, dimmed = false }: Props) => {
@@ -30,16 +29,13 @@ const DifficultyMeter = ({ band, dimmed = false }: Props) => {
         {[0, 1, 2].map((index) => (
           <span
             key={index}
-            // The track only paints where no fill covers it: the dimmed fill is
-            // semi-transparent, so leaving a track underneath would tint it.
+            // Only where no fill covers it — the dimmed fill is translucent and would tint.
             className={`relative block h-1.5 w-2.5 rounded-full ${
               index < filled ? "" : "bg-muted-foreground/25"
             }`}
           >
             {index < filled && (
-              // Only the filled dots step in; the track is always there, or the
-              // meter reads as three dots appearing rather than a level being
-              // set. A past result is not a reveal, so `dimmed` does not play.
+              // Only filled dots step in, and never when dimmed — a past result is no reveal.
               <motion.span
                 className={`absolute inset-0 rounded-full ${
                   dimmed ? "bg-primary/40" : "bg-primary"

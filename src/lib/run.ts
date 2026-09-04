@@ -13,8 +13,7 @@ export const normalizeSquadName = (raw: string): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-// The draft fills slots in whatever order the player picks; the squad reads in
-// formation order.
+// The draft fills slots in pick order; the squad reads in formation order.
 export const orderMembersBySlots = (
   members: readonly SquadMember[],
   slots: readonly Position[]

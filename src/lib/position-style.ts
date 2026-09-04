@@ -1,7 +1,6 @@
 import type { Position } from "@/types/game";
 
-// Tailwind can't build class names at runtime, so every position colour that
-// reaches the DOM has to be written out here as a literal.
+// Tailwind can't build class names at runtime, so every colour is a literal here.
 export const POSITION_TEXT: Record<Position, string> = {
   PG: "text-pos-pg",
   SG: "text-pos-sg",

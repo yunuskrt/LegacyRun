@@ -10,8 +10,7 @@ describe("splitIds", () => {
     expect(splitIds(" CHI-1996 , LAL-2020 ")).toEqual(["CHI-1996", "LAL-2020"]);
   });
 
-  // An empty parameter must read as "no ids", never as one blank id — the
-  // schemas downstream reject a zero-length string.
+  // An empty parameter means "no ids", never one blank id the schemas would reject.
   it("drops empty entries rather than emitting blanks", () => {
     expect(splitIds("")).toEqual([]);
     expect(splitIds(",")).toEqual([]);

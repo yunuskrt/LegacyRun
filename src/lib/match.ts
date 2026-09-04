@@ -16,11 +16,7 @@ import type {
   SeriesState,
 } from "@/types/match";
 
-// Rating the two sides ------------------------------------------------------
-//
-// Both reduce to a net rating in points per 100 possessions above average.
-// team_seasons.rating is never read here — see context/docs/match-simulation.md
-// §2. player_seasons.rating stays out of the math too; it is a card number.
+// Net rating per 100 possessions. Neither team_seasons.rating nor player rating is read.
 
 export const SQUAD_WEIGHTS = [1.0, 0.8, 0.65, 0.52, 0.42] as const;
 
@@ -73,8 +69,7 @@ const HOME_COURT_PATTERN = [
 const otherSide = (side: MatchSideId): MatchSideId =>
   side === "HOME" ? "AWAY" : "HOME";
 
-// The squad has no home city, so home court is earned rather than assigned.
-// Ties go to the historical team.
+// The squad has no home city, so home court is earned; ties go to the historical team.
 export const homeCourtSide = (
   home: MatchTeam,
   away: MatchTeam,
@@ -96,8 +91,7 @@ export const hostSideFor = (
 
 // The possession engine -----------------------------------------------------
 
-// 1.05 × 100 possessions × 2 sides = 210 combined, mid-range for 1981-2026.
-// The doc's 1.08 lands at 216 and misses its own 200-215 calibration target.
+// 210 combined, mid-range for 1981-2026; the doc's 1.08 overshoots its own target.
 export const BASE_PPP = 1.05;
 export const POSSESSIONS_PER_PERIOD = 25;
 export const REGULATION_PERIODS = 4;
@@ -111,15 +105,13 @@ export const THREE_RATE = 0.2;
 export const AND_ONE_RATE = 0.08;
 export const AND_ONE_FT_RATE = 0.75;
 
-// Derived from the outcome table rather than written down, so the table and the
-// points-per-possession target can never drift apart.
+// Derived from the outcome table, so the two can never drift apart.
 export const POINTS_PER_MADE =
   (1 - THREE_RATE - AND_ONE_RATE) * 2 +
   THREE_RATE * 3 +
   AND_ONE_RATE * (2 + AND_ONE_FT_RATE);
 
 // Only total BPM was ingested, so the differential is halved onto each side.
-// Over 100 possessions each, the expected margin is exactly that differential.
 export const effectivePpp = (net: number, opposingNet: number): number =>
   BASE_PPP + (net - opposingNet) / 200;
 
@@ -202,8 +194,7 @@ export const formatClock = (
   return `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`;
 };
 
-// Points first, then name, so a tie resolves the same way everywhere a scoring
-// list is shown — the finished box score and the replay's running leaders alike.
+// Points then name, so a tie resolves identically in every scoring list.
 export const byPointsDesc = (a: ScoringLine, b: ScoringLine): number =>
   b.points - a.points || a.playerName.localeCompare(b.playerName);
 
@@ -313,8 +304,7 @@ export const simulateGame = (
   let overtimes = 0;
 
   while (homeScore === awayScore) {
-    // Unreachable in practice — consecutive tied overtimes fall off a cliff.
-    // Throwing beats looping forever or inventing a tiebreak nobody specced.
+    // Unreachable in practice; throwing beats looping or inventing a tiebreak.
     if (overtimes >= MAX_OVERTIME_PERIODS) {
       throw new Error(`game ${seed} stayed tied after ${overtimes} overtimes`);
     }
@@ -521,8 +511,7 @@ export const playMatchup = (
   return { bracket: advanceBracket(bracket, matchupId, series.winner), series };
 };
 
-// The far half resolves itself so the bracket can show who is coming. These are
-// never the player's games and are never presented as live.
+// The far half resolves itself; these games are never the player's and never live.
 export const resolveOpponentMatchups = (
   bracket: Bracket,
   data: MatchData,

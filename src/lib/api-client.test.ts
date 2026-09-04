@@ -35,8 +35,7 @@ describe("requestJson", () => {
     expect(result).toEqual({ ok: false, error: "NO_ELIGIBLE_TEAM" });
   });
 
-  // The error is a value off the wire, so an unrecognized one must not reach
-  // the caller's message record — every consumer keys a toast off it.
+  // An error off the wire, so an unrecognized one must not reach the caller's messages.
   it("normalizes an unrecognized error to UNREACHABLE", async () => {
     const result = await requestJson(
       "/api/thing",
@@ -55,8 +54,7 @@ describe("requestJson", () => {
     });
   });
 
-  // An aborted request has to settle rather than throw — a superseded caller
-  // drops its own response by checking its signal after awaiting.
+  // An abort must settle, not throw, so a superseded caller can check its own signal.
   it("resolves rather than throwing when the request is aborted", async () => {
     const fetchImpl: FetchLike = () =>
       Promise.reject(new DOMException("Aborted", "AbortError"));

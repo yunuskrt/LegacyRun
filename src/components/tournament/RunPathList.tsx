@@ -21,9 +21,7 @@ const RunPathList = ({ path, section }: Props) => {
       </h2>
 
       <ul className="mt-4 flex flex-col gap-2">
-        {/* A Round 1 elimination is a single row, and `staggerDelay` already
-            returns 0 at index 0 — the one-row case is a plain fade by
-            construction, with no row-count guard to get wrong. */}
+        {/* `staggerDelay` returns 0 at index 0, so a one-row path fades by construction. */}
         {path.map((row, index) => (
           <motion.li
             key={row.round}
@@ -42,8 +40,7 @@ const RunPathList = ({ path, section }: Props) => {
                 {opponentLabel(row.opponent)}
               </p>
             </div>
-            {/* The badge arrives with its row and never on its own — one thing
-                per element. */}
+            {/* The badge arrives with its row, never on its own. */}
             <span
               className={`shrink-0 rounded-full px-2.5 py-0.5 text-[0.625rem] font-bold tabular-nums ${
                 row.won

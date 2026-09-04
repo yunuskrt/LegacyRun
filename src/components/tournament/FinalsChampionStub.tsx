@@ -13,14 +13,11 @@ type Props = {
   conference: Conference;
   opponent: BracketOpponent | null;
   roundsAway: number;
-  // This mount is the one that unlocks it, rather than any later return to the
-  // bracket with it already revealed.
+  // This mount is the unlock, not a later return with it already revealed.
   unlocking?: boolean;
 };
 
-// `opponent` is already the guarded value — the caller passes null until
-// `isFinalsOpponentRevealed`. Nothing here may reach for the drawn champion, or
-// the reveal transition becomes the leak the guard exists to prevent.
+// `opponent` is already guarded — nothing here may reach for the drawn champion.
 const FinalsChampionStub = ({
   conference,
   opponent,
@@ -36,8 +33,7 @@ const FinalsChampionStub = ({
       </p>
 
       {opponent ? (
-        // The bracket remounts between stages, so the two branches never
-        // coexist and this is an entrance rather than a crossfade between them.
+        // The bracket remounts between stages, so this is an entrance, not a crossfade.
         <motion.div
           initial={entranceFrom(unlocking, reduced, FADE_RISE.initial)}
           animate={FADE_RISE.animate}

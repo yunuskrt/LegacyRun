@@ -6,8 +6,7 @@ type Props = {
   dimmed?: boolean;
 };
 
-// The roster card's chip and the confirm dialog's. `CourtSlot` keeps its own:
-// that one is sized in `cqw` so the lineup scales as one unit.
+// `CourtSlot` keeps its own chip — that one is sized in `cqw` to scale with the court.
 const RatingBadge = ({ rating, dimmed = false }: Props) => {
   return (
     <span

@@ -37,16 +37,12 @@ type Props = {
   onNewRun: () => void;
 };
 
-// The three blocks of the screen, in reading order. Sections are one beat
-// apart; each block staggers internally at its own step.
+// Reading order: sections one beat apart, each staggering internally at its own step.
 const HEADER = 0;
 const SQUAD = 1;
 const RECAP = 2;
 
-// The one permitted overshoot on this screen, and the reason the glyph is the
-// only element with a scale: SPRING settles just past 1, well under the 1.06
-// ceiling. Defeat gets exactly the same entrance — a run that ends in Round 1
-// is the common case, and dramatizing it is how this screen becomes tiresome.
+// The only scale on the screen; defeat gets the identical entrance, being the common case.
 const GLYPH_ENTRANCE = { opacity: 0, scale: 0.9 };
 
 const RunResultScreen = ({
@@ -112,8 +108,7 @@ const RunResultScreen = ({
           {isChampion ? "NBA Champions" : "Run ended"}
         </motion.h1>
 
-        {/* The hero needs a subject, so an unnamed squad still gets a line —
-            `squadName` is already the YOUR SQUAD fallback. */}
+        {/* The hero needs a subject; `squadName` is already the YOUR SQUAD fallback. */}
         <motion.p
           {...headerLine(3)}
           className="text-foreground text-2xl font-bold tracking-wide break-words uppercase sm:text-3xl"
@@ -150,9 +145,7 @@ const RunResultScreen = ({
         transition={sequencedTransition("base", RECAP, 0, { reduced })}
         className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
       >
-        {/* Same press family as the draft's roster card — transform only, and
-            dropped outright under reduced motion, which snaps a transform
-            target rather than omitting it. */}
+        {/* Transform only, dropped under reduced motion, which snaps rather than omits. */}
         <motion.button
           type="button"
           onClick={onNewRun}
