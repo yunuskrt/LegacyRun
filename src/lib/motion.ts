@@ -33,6 +33,10 @@ export const FADE_RISE = {
   exit: { opacity: 0, y: -8 },
 } as const;
 
+// A dot scaling in — the series banner's game dots and the difficulty meter's
+// level. Small enough that the scale reads as arrival rather than a pop.
+export const DOT_ENTRANCE = { opacity: 0, scale: 0.6 } as const;
+
 export const STAGGER_STEP = 0.03;
 
 // No stagger sequence may run longer than this end to end, however long the

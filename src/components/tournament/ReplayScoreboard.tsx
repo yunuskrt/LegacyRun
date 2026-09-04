@@ -3,6 +3,7 @@
 import React from "react";
 import { motion, useAnimationControls, useReducedMotion } from "motion/react";
 import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
+import TeamCrest from "@/components/tournament/TeamCrest";
 import TweenNumber from "@/components/tournament/TweenNumber";
 import { transitionFor } from "@/lib/motion";
 import { periodLabel } from "@/lib/replay";
@@ -27,11 +28,9 @@ type Props = {
 const FLASH_FROM = { opacity: 0.3 };
 const FLASH_TO = { opacity: 1 };
 
-const Crest = ({ side }: { side: SeriesSideView }) =>
+const SideCrest = ({ side }: { side: SeriesSideView }) =>
   side.isSquad || !side.teamLogo ? (
-    <span className="border-primary bg-primary/15 text-primary flex size-11 shrink-0 items-center justify-center rounded-full border text-[0.625rem] font-bold">
-      {side.code}
-    </span>
+    <TeamCrest code={side.code} isSquad={side.isSquad} size="md" />
   ) : (
     <TeamLogoBadge teamName={side.name} teamLogo={side.teamLogo} size="sm" />
   );
@@ -78,8 +77,8 @@ const ReplayScoreboard = ({
   return (
     <div className="@container bg-card shadow-panel rounded-2xl px-5 py-6">
       <div className="flex items-start justify-between gap-3">
-        <Crest side={home} />
-        <Crest side={away} />
+        <SideCrest side={home} />
+        <SideCrest side={away} />
       </div>
 
       <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">

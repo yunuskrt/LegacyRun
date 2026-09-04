@@ -12,7 +12,7 @@ import ScoringLeaders from "@/components/tournament/ScoringLeaders";
 import SeriesBanner from "@/components/tournament/SeriesBanner";
 import { useAutoAdvance } from "@/hooks/useAutoAdvance";
 import { useReplay } from "@/hooks/useReplay";
-import { periodSummary } from "@/lib/replay";
+import { periodSummary, winsAtBuzzer } from "@/lib/replay";
 import { gameAdvance } from "@/lib/series-flow";
 import type { ReplaySpeed } from "@/lib/replay";
 import type { ReplayMode } from "@/lib/series-flow";
@@ -55,15 +55,12 @@ const GameReplay = ({
     jumpToEnd();
   };
 
-  // At the final buzzer this game joins the series count — and the winner comes
-  // from the score on screen, not from `game.winner`.
-  const wins =
-    status === "FINAL"
-      ? {
-          home: winsBefore.home + (frame.homeScore > frame.awayScore ? 1 : 0),
-          away: winsBefore.away + (frame.awayScore > frame.homeScore ? 1 : 0),
-        }
-      : winsBefore;
+  const wins = winsAtBuzzer(
+    winsBefore,
+    status === "FINAL",
+    frame.homeScore,
+    frame.awayScore
+  );
 
   return (
     // The control bar is pinned to the viewport below md, so the column has to

@@ -4,6 +4,7 @@ import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
 import DifficultyMeter from "@/components/tournament/DifficultyMeter";
+import TeamCrest from "@/components/tournament/TeamCrest";
 import { squadRatingOf } from "@/lib/run";
 import { FADE_RISE, entranceFrom, transitionFor } from "@/lib/motion";
 import {
@@ -56,9 +57,7 @@ const TeamSlotRow = ({
   if (slot.side === "SQUAD") {
     return (
       <div className="flex items-center gap-3">
-        <span className="border-primary bg-primary/15 text-primary flex size-9 shrink-0 items-center justify-center rounded-full border text-[0.625rem] font-bold tracking-tight">
-          {SQUAD_SHORT_CODE}
-        </span>
+        <TeamCrest code={SQUAD_SHORT_CODE} isSquad />
         <div className="min-w-0 flex-1">
           <p
             className={`text-sm font-bold tracking-wide break-words uppercase ${NAME_TRANSITION} ${

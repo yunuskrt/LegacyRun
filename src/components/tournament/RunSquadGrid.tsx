@@ -2,9 +2,9 @@
 
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
+import PositionChip from "@/components/tournament/PositionChip";
 import { formatSeason } from "@/lib/format";
 import { FADE_RISE, entranceFrom, sequencedTransition } from "@/lib/motion";
-import { POSITION_SOFT_BG, POSITION_TEXT } from "@/lib/position-style";
 import type { SquadMember } from "@/types/game";
 
 type Props = {
@@ -35,11 +35,7 @@ const RunSquadGrid = ({ players, section }: Props) => {
             })}
             className="border-border/60 bg-card flex flex-col gap-2 rounded-xl border px-3 py-3"
           >
-            <span
-              className={`flex size-7 items-center justify-center rounded-full text-[0.625rem] font-bold ${POSITION_SOFT_BG[player.position]} ${POSITION_TEXT[player.position]}`}
-            >
-              {player.position}
-            </span>
+            <PositionChip position={player.position} />
             <div>
               <p className="text-foreground text-sm font-semibold break-words">
                 {player.name}

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { entranceFrom, transitionFor } from "@/lib/motion";
+import { DOT_ENTRANCE, entranceFrom, transitionFor } from "@/lib/motion";
 import type { SeriesSideView } from "@/lib/tournament-view";
 
 type Props = {
@@ -12,8 +12,6 @@ type Props = {
   hostCode: string;
   wins: { home: number; away: number };
 };
-
-const DOT_ENTRANCE = { opacity: 0, scale: 0.6 };
 
 // One dot per game already played, filled for the home side's wins. The count
 // is the series so far, never the length of a finished series.

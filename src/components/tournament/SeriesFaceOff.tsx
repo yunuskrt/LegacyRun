@@ -1,5 +1,6 @@
 import React from "react";
 import { motion } from "motion/react";
+import TeamCrest from "@/components/tournament/TeamCrest";
 import { ROUND_LABELS } from "@/lib/bracket";
 import { transitionFor } from "@/lib/motion";
 import { faceOffSubLabel } from "@/lib/series-flow";
@@ -14,18 +15,6 @@ type Props = {
   squadName: string;
   opponent: BracketOpponent | null;
 };
-
-const Crest = ({ code, isSquad }: { code: string; isSquad: boolean }) => (
-  <span
-    className={`flex size-20 items-center justify-center rounded-full border text-xl font-bold tracking-tight sm:size-24 sm:text-2xl ${
-      isSquad
-        ? "border-primary bg-primary/10 text-primary shadow-trophy"
-        : "border-border bg-secondary text-muted-foreground"
-    }`}
-  >
-    {code}
-  </span>
-);
 
 const SeriesFaceOff = ({ round, squad, squadName, opponent }: Props) => {
   const named = hasSquadName(squad);
@@ -43,7 +32,7 @@ const SeriesFaceOff = ({ round, squad, squadName, opponent }: Props) => {
 
       <div className="flex w-full max-w-3xl items-start justify-center gap-6 sm:gap-12">
         <div className="flex min-w-0 flex-1 flex-col items-center gap-3">
-          <Crest code={SQUAD_SHORT_CODE} isSquad />
+          <TeamCrest code={SQUAD_SHORT_CODE} isSquad size="xl" glow />
           <h2 className="text-primary text-lg font-bold tracking-wide break-words uppercase sm:text-2xl">
             {squadName}
           </h2>
@@ -57,7 +46,11 @@ const SeriesFaceOff = ({ round, squad, squadName, opponent }: Props) => {
         </span>
 
         <div className="flex min-w-0 flex-1 flex-col items-center gap-3">
-          <Crest code={opponent?.teamSlug ?? "—"} isSquad={false} />
+          <TeamCrest
+            code={opponent?.teamSlug ?? "—"}
+            isSquad={false}
+            size="xl"
+          />
           <h2 className="text-foreground text-lg font-bold break-words sm:text-2xl">
             {opponent
               ? `${opponent.seasonYear} ${opponent.teamName}`

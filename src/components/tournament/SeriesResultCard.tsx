@@ -3,6 +3,7 @@
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Trophy } from "lucide-react";
+import TeamCrest from "@/components/tournament/TeamCrest";
 import {
   FADE_RISE,
   entranceFrom,
@@ -27,18 +28,6 @@ type Props = {
   ctaLabel: string;
   onContinue: () => void;
 };
-
-const Crest = ({ code, isSquad }: { code: string; isSquad: boolean }) => (
-  <span
-    className={`flex size-12 items-center justify-center rounded-full border text-[0.6875rem] font-bold tracking-tight ${
-      isSquad
-        ? "border-primary bg-primary/10 text-primary"
-        : "border-border bg-secondary text-muted-foreground"
-    }`}
-  >
-    {code}
-  </span>
-);
 
 // The series is over by the time this renders, so the full game-by-game list
 // reveals nothing ahead of its own replay.
@@ -85,7 +74,7 @@ const SeriesResultCard = ({
 
         <div className="mt-6 flex items-start justify-center gap-6">
           <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
-            <Crest code={SQUAD_SHORT_CODE} isSquad />
+            <TeamCrest code={SQUAD_SHORT_CODE} isSquad size="lg" />
             <p className="text-primary text-xs font-bold tracking-wide break-words uppercase">
               {squadName}
             </p>
@@ -94,7 +83,11 @@ const SeriesResultCard = ({
             VS
           </span>
           <div className="flex min-w-0 flex-1 flex-col items-center gap-2">
-            <Crest code={opponent?.teamSlug ?? "—"} isSquad={false} />
+            <TeamCrest
+              code={opponent?.teamSlug ?? "—"}
+              isSquad={false}
+              size="lg"
+            />
             <p className="text-foreground text-xs font-semibold break-words">
               {opponent
                 ? `${opponent.seasonYear} ${opponent.teamName}`

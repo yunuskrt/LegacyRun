@@ -11,27 +11,9 @@ import {
   roundMotionFor,
 } from "@/lib/tournament-view";
 import { isSquadMatchup } from "@/lib/match";
-import type {
-  BracketOpponent,
-  BracketRound,
-  BracketRoundId,
-} from "@/types/bracket";
-import type { Conference, Squad } from "@/types/game";
-import type { SeriesState } from "@/types/match";
+import type { BracketDisplayProps } from "@/lib/tournament-view";
 
-type Props = {
-  rounds: BracketRound[];
-  squad: Squad;
-  series: readonly SeriesState[];
-  nextMatchupId: string | null;
-  farConference: Conference;
-  finalsOpponent: BracketOpponent | null;
-  roundsUntilFinals: number;
-  revealedThrough: BracketRoundId | null;
-  // The archive: the run is over, so no matchup is "next" and the whole
-  // bracket opens expanded — there is nothing left to spoil.
-  readOnly?: boolean;
-};
+type Props = BracketDisplayProps;
 
 const BracketSpine = ({
   rounds,
@@ -44,6 +26,7 @@ const BracketSpine = ({
   revealedThrough,
   readOnly = false,
 }: Props) => {
+  // The archive opens expanded — there is nothing left to spoil.
   const [showFull, setShowFull] = React.useState(readOnly);
   const activeMatchupId = readOnly ? null : nextMatchupId;
   const reduced = useReducedMotion() ?? false;
