@@ -18,8 +18,7 @@ type Props = {
 const VIEW_WIDTH = 100;
 const VIEW_HEIGHT = 40;
 const MIN_SCALE = 8;
-// The widest margin would otherwise land exactly on the viewBox edge and have
-// half its stroke clipped away.
+// Without it the widest margin lands on the viewBox edge and loses half its stroke.
 const AMPLITUDE = VIEW_HEIGHT / 2 - 2;
 
 const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
@@ -30,9 +29,7 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
     ...points.map((point) => Math.abs(point.margin))
   );
 
-  // Coordinates are always plotted against regulation and the whole curve is
-  // scaled to the live axis, so an overtime compresses it in one transition
-  // instead of every point jumping to a new place at once.
+  // Plotted against regulation and scaled, so an overtime compresses it in one transition.
   const scaleX = REGULATION_SECONDS / axisEnd;
 
   const coords = points.map((point) => {
@@ -42,15 +39,12 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   });
 
-  // `momentumSeries` always opens at the tip-off point, so this is never empty
-  // in practice — but the prop type allows it and the old normalization guarded
-  // for it, so keep the guard rather than quietly dropping it.
+  // Never empty in practice, but the prop type allows it — keep the guard.
   const tip = points[points.length - 1] ?? { x: 0, margin: 0 };
   const tipLeft = ((tip.x / REGULATION_SECONDS) * scaleX * VIEW_WIDTH).toFixed(
     2
   );
-  // The same margin the stroke gets: a dot centred on the viewBox edge would
-  // lose half of itself in exactly the way Phase 17's widest margin did.
+  // The same margin the stroke gets, for the same clipping reason.
   const tipTop = (
     ((VIEW_HEIGHT / 2 - (tip.margin / span) * AMPLITUDE) / VIEW_HEIGHT) *
     100
@@ -88,8 +82,7 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
               transition={transitionFor("base", reduced)}
               style={{ transformBox: "view-box", transformOrigin: "0 0" }}
             >
-              {/* The fill has no animation of its own — two animated shapes
-                  tracking each other visibly disagree for a frame. */}
+              {/* Unanimated — two shapes tracking each other disagree for a frame. */}
               <polygon
                 points={`0,${VIEW_HEIGHT / 2} ${coords.join(" ")} ${(
                   (tip.x / REGULATION_SECONDS) *
@@ -109,8 +102,7 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
           )}
         </svg>
 
-        {/* "Here is now" — an HTML dot rather than an SVG circle, which the
-            stretched viewBox would render as an ellipse. */}
+        {/* An HTML dot, not an SVG circle — the stretched viewBox would ellipse it. */}
         <motion.span
           className="bg-primary absolute size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full"
           animate={{ left: `${tipLeft}%`, top: `${tipTop}%` }}

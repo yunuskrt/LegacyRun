@@ -25,8 +25,7 @@ export const BRACKET_FETCH_MESSAGE: Record<BracketFetchFailure, string> = {
   UNREACHABLE: "Couldn't reach the playoff archive. Try again.",
 };
 
-// The team-seasons the squad drafted from — a run never plays the roster it
-// picked its own players off.
+// A run never plays the team-seasons it drafted its own players off.
 export const squadTeamSeasonIds = (squad: Squad): string[] => [
   ...new Set(
     squad.players.map((player) => `${player.teamSlug}-${player.seasonYear}`)

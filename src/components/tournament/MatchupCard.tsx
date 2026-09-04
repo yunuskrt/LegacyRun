@@ -12,8 +12,7 @@ type Props = {
   squad: Squad;
   series: readonly SeriesState[];
   compact?: boolean;
-  // This round's result has just become visible, so the score badges play in
-  // rather than mounting already there.
+  // The result just became visible, so the badges play in rather than mount there.
   resolving?: boolean;
 };
 

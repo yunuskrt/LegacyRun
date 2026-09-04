@@ -63,8 +63,7 @@ const row = (
   ...overrides,
 });
 
-// One row per pedigree the generator needs, so a bracket can be built without
-// touching the database.
+// One row per pedigree the generator needs, so a bracket builds without a database.
 const pool = (): PlayoffTeamRow[] => [
   row({ teamSlug: "R1A", seed: 8, wins: 1, losses: 4 }),
   row({ teamSlug: "R1B", seed: 7, wins: 2, losses: 4 }),
@@ -143,8 +142,7 @@ const buildBracket = (squadRating = 70): Bracket => {
 const buildResolvedBracket = (squadRating = 70): Bracket =>
   resolveFarHalf(buildBracket(squadRating));
 
-// The far half resolves itself in the app; the tests need the same, or the
-// squad's next matchup never gets a second slot.
+// The far half must resolve here too, or the squad's next matchup lacks a second slot.
 const resolveFarHalf = (bracket: Bracket): Bracket => {
   let current = bracket;
 
@@ -260,9 +258,7 @@ describe("opponentOf", () => {
     ).toBeNull();
   });
 
-  // The Finals matchup's historical side is the drawn champion itself, which is
-  // what lets a screen holding `finalsOpponent` reuse it rather than reading the
-  // matchup's slots a second way.
+  // The Finals matchup's historical side is the drawn champion, so callers can reuse it.
   it("finds the drawn champion in the Finals matchup", () => {
     let bracket = buildResolvedBracket();
 
@@ -316,8 +312,7 @@ describe("difficultyBand", () => {
     expect(LEGENDARY_FLOOR).toBe(84);
   });
 
-  // Every band has to be reachable inside the generator's draw bands, or the
-  // meter reads the same all run.
+  // Every band must be reachable, or the meter reads the same all run.
   it("keeps all three bands reachable across the generator's bands", () => {
     const reached = new Set(
       [
@@ -403,8 +398,7 @@ describe("isFinalsOpponentRevealed", () => {
   });
 });
 
-// `revealedThroughFor` is the trigger the whole masking scheme hangs off, and
-// the far half resolving must never move it.
+// The whole masking scheme hangs off this, and a far-half result must never move it.
 describe("revealedThroughFor", () => {
   it("reveals nothing until the squad has completed a round", () => {
     expect(revealedThroughFor(buildResolvedBracket())).toBeNull();
@@ -449,8 +443,7 @@ describe("revealedThroughFor", () => {
     );
 
     expect(revealedThroughFor(lost)).toBe("FIRST_ROUND");
-    // The squad has no live matchup left, so the countdown falls back to the
-    // deepest round it reached rather than throwing.
+    // With no live matchup left, the countdown falls back to the deepest round reached.
     expect(roundsUntilFinals(lost)).toBe(3);
   });
 });
@@ -541,8 +534,7 @@ describe("visibleRounds", () => {
   });
 });
 
-// A4 is the hardest state to reach by play — three series wins — so the values
-// its heading, banner and CTA read are pinned here.
+// The hardest state to reach by play, so its heading, banner and CTA are pinned here.
 describe("the NBA Finals state", () => {
   it("names the Finals round, its opponent and its CTA once the squad arrives", () => {
     let bracket = buildResolvedBracket();
@@ -557,8 +549,7 @@ describe("the NBA Finals state", () => {
     expect(isFinalsOpponentRevealed(bracket)).toBe(true);
     expect(roundsUntilFinals(bracket)).toBe(0);
 
-    // The banner names the other-conference champion sitting in the live
-    // matchup, not the stub read separately.
+    // From the champion in the live matchup, not the stub read separately.
     const opponentSlot = next.home?.side === "OPPONENT" ? next.home : next.away;
     expect(opponentSlot?.side).toBe("OPPONENT");
     expect(opponentSlot?.side === "OPPONENT" && opponentSlot.opponent).toEqual(
@@ -598,8 +589,7 @@ describe("squadGameScore", () => {
     awayScore,
   });
 
-  // Swapping the slots puts the squad on the other side of a real matchup, so
-  // both orientations are exercised without a second fixture.
+  // Swapping the slots exercises both orientations without a second fixture.
   const mirrored = (matchup: BracketMatchup): BracketMatchup => ({
     ...matchup,
     home: matchup.away,
@@ -625,10 +615,7 @@ describe("squadGameScore", () => {
     expect(home.opponentPoints).toBe(away.squadPoints);
   });
 
-  // Game and series scores must resolve the squad to the same slot. A run whose
-  // bracket row reads 1-4 cannot list its one win on the other side game by
-  // game, which is the defect this shares a rule with `squadSeriesScore` to
-  // prevent.
+  // A row reading 1-4 cannot list its one win on the other side game by game.
   it("agrees with squadSeriesScore about which slot is the squad's", () => {
     const real = nextSquadMatchup(buildBracket()) as BracketMatchup;
 
@@ -658,8 +645,7 @@ describe("squadGameScore", () => {
 });
 
 describe("visibleSeriesFor", () => {
-  // The far half is simulated on arrival, so its scores sit in the log long
-  // before the bracket may show them.
+  // Far-half scores sit in the log long before the bracket may show them.
   it("withholds a score until the masked matchup carries a winner", () => {
     const bracket = buildBracket();
     const farMatchup = bracket.rounds[0].matchups.find(
@@ -695,8 +681,7 @@ describe("seriesScoreLabel", () => {
     expect(seriesScoreLabel(null, "HOME")).toBeNull();
   });
 
-  // A series still being played has a running tally but no winner, and must
-  // not print a score on either row.
+  // A series in play has a running tally but no winner, so neither row scores.
   it("prints nothing for a series that has not been decided", () => {
     const undecided: SeriesState = {
       matchupId: "r1-m1",
@@ -791,8 +776,7 @@ describe("postSeriesView", () => {
     ).toBe("RESULT");
   });
 
-  // Spelled out rather than built from ROUND_PHRASE: the article belongs to the
-  // round, and a label composed from the constant would pass however it changed.
+  // Spelled out — a label built from ROUND_PHRASE would pass however it changed.
   it("names the round the squad is continuing to", () => {
     const label = (round: BracketRoundId) =>
       postSeriesView({ kind: "IN_PROGRESS" }, nextMatchup(round)).ctaLabel;
@@ -801,9 +785,7 @@ describe("postSeriesView", () => {
     expect(label("NBA_FINALS")).toBe("Continue to the NBA Finals");
   });
 
-  // The rule this function exists for. Splitting the stage and the label across
-  // two hand-written expressions let an in-progress run reach the bracket under
-  // a button reading "See how the run ended"; no label may sit on both stages.
+  // No label may sit on both stages — split expressions once let the two disagree.
   it("never puts one label on both stages", () => {
     const labelStages = new Map<string, Set<string>>();
 
@@ -831,8 +813,7 @@ describe("postSeriesView", () => {
   });
 });
 
-// `bracketSlot` is a layout position that reads as a seed. Only
-// `BracketOpponent.seed` may reach the screen as a number.
+// `bracketSlot` reads as a seed but isn't one; only `BracketOpponent.seed` may show.
 describe("bracketSlot never renders", () => {
   const components = [
     "src/components/tournament/MatchupCard.tsx",
@@ -856,8 +837,7 @@ describe("bracketSlot never renders", () => {
   });
 });
 
-// The bracket remounts between stages, so every entrance is a mount animation
-// and this is what a freshly-mounted card is told to play.
+// The bracket remounts between stages, so this is what a fresh card is told to play.
 describe("roundMotionFor", () => {
   const ROUNDS: BracketRoundId[] = [
     "FIRST_ROUND",
@@ -904,9 +884,7 @@ describe("roundMotionFor", () => {
     });
   });
 
-  // Two different rules on two different rounds: the scores land on the round
-  // just completed, the slots on the one after it. Conflating them replays
-  // every score on every return to the bracket.
+  // Conflating the two rounds replays every score on every return to the bracket.
   it("never puts both treatments on the same round", () => {
     [null, ...ROUNDS].forEach((through) => {
       const played = motions(through);
@@ -923,8 +901,7 @@ describe("roundMotionFor", () => {
     });
   });
 
-  // The hazard this phase exists to avoid: an animation that fires because a
-  // far-half series resolved tells the player what the masking withholds.
+  // An animation firing on a far-half result tells the player what masking withholds.
   it("is unmoved by a far-half result", () => {
     const unresolved = buildBracket();
     const resolved = buildResolvedBracket();
@@ -996,9 +973,7 @@ describe("isChampionUnlocking", () => {
     );
   });
 
-  // A null opponent is the lock. Phase 16 shipped the 1985 Lakers into Round 1
-  // by reading the drawn champion instead of the guarded value, and the type
-  // cannot prevent it — both branches are `BracketOpponent | null`.
+  // A null opponent is the lock, and the type cannot enforce it — both branches match.
   it("never unlocks without a guarded opponent", () => {
     [null, "FIRST_ROUND", "CONFERENCE_SEMIS", "NBA_FINALS"].forEach(
       (through) => {

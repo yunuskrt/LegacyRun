@@ -66,8 +66,7 @@ const BracketSpine = ({
 
               <div className="flex flex-col gap-3">
                 {squadMatchup ? (
-                  // The reveal is the spine row, not a desktop column, but it
-                  // reads the same rule.
+                  // The spine row, not a desktop column, but the same rule.
                   <motion.div
                     initial={entranceFrom(
                       motionKind === "REVEALING",
@@ -92,8 +91,7 @@ const BracketSpine = ({
                   </div>
                 )}
 
-                {/* One height transition for the whole round's siblings — a
-                    per-item stagger turns a four-round expand into a cascade. */}
+                {/* One height transition — a per-item stagger becomes a cascade. */}
                 <AnimatePresence initial={false}>
                   {others.length > 0 && (
                     <motion.div
@@ -104,9 +102,7 @@ const BracketSpine = ({
                       transition={transitionFor("base", reduced)}
                       className="overflow-hidden"
                     >
-                      {/* The parent's gap already separates this wrapper from
-                          the squad card, so the inner spacing is between the
-                          siblings only. */}
+                      {/* The parent's gap already clears the squad card; this spaces siblings. */}
                       <div className="flex flex-col gap-3">
                         {others.map((matchup) => (
                           <MatchupCard

@@ -44,20 +44,13 @@ const RosterPlayerCard = ({
   const reason = blockedReason(availability, selectedPosition);
 
   return (
-    // The gesture sits on a wrapper because `motion.button` reserves
-    // `onDragStart`/`onDragEnd` for its own drag gesture, which would shadow the
-    // native HTML5 handlers the drag payload depends on.
+    // On a wrapper: `motion.button` reserves onDragStart/End and would shadow the native ones.
     <motion.div
-      // Transform and shadow only — a layout property here would reflow a
-      // 23-card grid on every pointer move. Reduced motion drops the gesture
-      // outright; motion would otherwise snap to the lifted value instead of
-      // animating to it, which still moves the card.
+      // Transform and shadow only; reduced motion drops it, since motion would snap it.
       whileHover={isDisabled || reduced ? undefined : { y: -2 }}
       whileTap={isDisabled || reduced ? undefined : { scale: 0.98 }}
       transition={transitionFor("quick", reduced)}
-      // Flex so the button fills the wrapper: the wrapper is the grid item
-      // now, and without this a card with no blocked-reason line comes out
-      // shorter than the one beside it.
+      // The wrapper is the grid item now, so the button must stretch to fill it.
       className={cn(
         "flex h-full rounded-xl",
         !isDisabled && "hover:shadow-[0_6px_18px_-10px_var(--primary)]"

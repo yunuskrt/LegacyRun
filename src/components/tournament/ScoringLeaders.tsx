@@ -31,11 +31,7 @@ const SideColumn = ({
       {lines.length === 0 && (
         <li className="text-muted-foreground text-xs">No points yet</li>
       )}
-      {/* Entering and leaving the top three fades; moving within it slides.
-          `layout` is disabled outright under reduced motion by MotionConfig.
-          `popLayout` is load-bearing: a departing leader and its replacement
-          overlap, and in the default mode both sit in flow, growing a
-          three-row list to four and bouncing the column 44px. */}
+      {/* `popLayout` is load-bearing: in the default mode an overlap grows the list to four. */}
       <AnimatePresence initial={false} mode="popLayout">
         {lines.map((line) => (
           <motion.li
@@ -47,9 +43,7 @@ const SideColumn = ({
             transition={transitionFor("quick")}
             className="bg-court flex items-center justify-between gap-2 rounded-lg px-3 py-2"
           >
-            {/* The column heading already names the side, so the accent goes on
-                the points. `PeriodBreakCard` accents the name instead — one
-                mixed list, where the name is the only side signal. */}
+            {/* Headings name the side, so the accent goes on points; `PeriodBreakCard` differs. */}
             <span className="text-foreground min-w-0 truncate text-sm">
               {line.playerName}
             </span>

@@ -4,8 +4,7 @@ const SEED_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 export const SEED_LENGTH = 8;
 
-// mulberry32 over an FNV-1a hash of the seed string. Math.random can't be
-// seeded, and a bracket has to reproduce from its runSeed.
+// mulberry32 over an FNV-1a hash — Math.random can't be seeded, and a run must replay.
 export const seededRng = (seed: string): Rng => {
   let state = 2166136261 >>> 0;
 
@@ -29,9 +28,6 @@ export const mintSeed = (rng: Rng = Math.random): string =>
     () => SEED_ALPHABET[drawIndex(SEED_ALPHABET.length, rng)]
   ).join("");
 
-// `% total` guards an rng that can return exactly 1, which would otherwise
-// index past the end. An empty pool returns 0 rather than `NaN`; every caller
-// already refuses one first, so this only keeps the refusal from being the sole
-// thing standing between a future caller and a silent bad index.
+// `% total` guards an rng returning exactly 1; the empty-pool 0 is a backstop, not a fix.
 export const drawIndex = (total: number, rng: Rng): number =>
   total <= 0 ? 0 : Math.floor(rng() * total) % total;

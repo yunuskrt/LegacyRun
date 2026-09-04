@@ -45,10 +45,7 @@ const PeriodBreakCard = ({ summary, home, away }: Props) => (
             key={`${line.side}-${line.playerSeasonId}`}
             className="bg-court flex items-center justify-between gap-2 rounded-lg px-3 py-2"
           >
-            {/* Both sides share one list here, so the name carries the squad
-                accent — it is the only thing saying whose player this is.
-                `ScoringLeaders` accents the points instead, because its headed
-                columns have already answered that. */}
+            {/* One mixed list, so the name accent is the only side signal; `ScoringLeaders` differs. */}
             <span
               className={`min-w-0 truncate text-sm ${
                 side.isSquad ? "text-primary" : "text-foreground"

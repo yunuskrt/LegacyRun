@@ -211,8 +211,7 @@ describe("drafting a player", () => {
 });
 
 describe("slotAcceptsPlayer", () => {
-  // A clean board with SF selected, and a mid-draft board where LeBron is
-  // already on the roster and his other season is on the offered team.
+  // A clean board, and one where LeBron's other season is on the offered team.
   const fresh = select(offer(INITIAL_DRAFT_STATE, "celtics-2008"), "SF");
   const withLebron = draft(
     select(offer(INITIAL_DRAFT_STATE, "heat-2013"), "SF"),
@@ -221,8 +220,7 @@ describe("slotAcceptsPlayer", () => {
   );
   const midDraft = select(offer(withLebron, "cavaliers-2016"), "PG");
 
-  // The predicate exists to light up slots before one is chosen, so what
-  // matters is that it never invites a drop the reducer then refuses.
+  // What matters is that it never invites a drop the reducer then refuses.
   it("matches what the reducer does, for every fixture player and slot", () => {
     [fresh, midDraft].forEach((state) => {
       const team = state.offeredTeam;
@@ -262,8 +260,7 @@ describe("slotAcceptsPlayer", () => {
     expect(slotAcceptsPlayer(fresh, slots, rondo, "C")).toBe(false);
   });
 
-  // Phase 9 put the identity check ahead of the position rules; the predicate
-  // inherits that ordering rather than restating it.
+  // The identity check leads the position rules, and the predicate inherits that order.
   it("refuses a person already drafted in another season, as a duplicate", () => {
     const cavsLebron = playerOf(teamOf("cavaliers-2016"), "lebron-james");
     expect(cavsLebron.playerSeasonId).not.toBe(

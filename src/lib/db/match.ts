@@ -1,8 +1,7 @@
 import { prisma } from "@/lib/db";
 import type { PlayerSeasonRow, RosterRow } from "@/lib/match";
 
-// player_season_data is an audit table everywhere else; this is the one feature
-// that reads it, and it reads only the three simulation inputs.
+// The one feature that reads the audit table, and only for the three sim inputs.
 const PLAYER_SELECT = {
   id: true,
   player: { select: { fullName: true } },

@@ -37,11 +37,9 @@ const RerollPool = ({
     <div>
       <Separator className="mb-4" />
 
-      {/* The gaps are tight because the dots cost ~30px the row did not have:
-          at 1024 and at 390 the label wrapped to two lines without them. */}
+      {/* Tight gaps — the dots cost ~30px the row did not have, wrapping the label. */}
       <div className="mb-3 flex items-center justify-between gap-2">
-        {/* The board column is at its narrowest between lg and xl, not at 390,
-            so the type step waits for xl rather than sm. */}
+        {/* The column is narrowest between lg and xl, not at 390, so the step waits for xl. */}
         <p className="text-muted-foreground text-xs tracking-[0.16em] uppercase xl:text-sm">
           Shared reroll pool
         </p>

@@ -41,11 +41,7 @@ const CourtSlot = ({
 }: Props) => {
   const reduced = useReducedMotion() ?? false;
 
-  // Transforms are percentages of the slot itself, never px — the court is a
-  // container-sized box, so a px lift would drift at 390 (Phase 5). Reduced
-  // motion drops the two transient drag responses but keeps the selection
-  // settle, which marks a state rather than reacting to the pointer; motion
-  // would otherwise snap them into place rather than omit them.
+  // Percentages, never px — reduced motion drops the drag responses but keeps selection.
   const gesture = {
     scale: isSelected ? 1.02 : 1,
     y: !reduced && dragState === "VALID" ? "-4%" : "0%",
@@ -58,8 +54,7 @@ const CourtSlot = ({
     x: { duration: reduced ? 0 : DENY_SHAKE.duration },
   };
 
-  // Every gold glow on an empty slot comes from this one overlay; whether it
-  // breathes or is held steady is decided in `draft-preview`.
+  // One overlay for every gold glow; `draft-preview` decides breathing or held.
   const isHeld = !isSlotBreathing({
     isInviting,
     isSelected,

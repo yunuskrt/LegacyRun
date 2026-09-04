@@ -107,8 +107,7 @@ const TournamentPage = ({}: Props) => {
     return () => controller.abort();
   }, [run, bracket, matchData, setMatchData, retryToken]);
 
-  // The far half plays itself out on arrival; `visibleRounds` is what keeps it
-  // hidden until the squad has completed the same round.
+  // The far half plays out on arrival; `visibleRounds` is what keeps it hidden.
   React.useEffect(() => {
     if (!run || !bracket || !matchData || farHalfRef.current) return;
 
@@ -199,8 +198,7 @@ const TournamentPage = ({}: Props) => {
     setStage(postSeries.stage);
   };
 
-  // The drawn Finals opponent is the only historical side of that matchup, so
-  // reaching it means `champion` is already resolved.
+  // The drawn Finals opponent is that matchup's only historical side, so this is `champion`.
   const finalsSlot = nextMatchup?.round === "NBA_FINALS" ? champion : null;
 
   const startNewRun = () => {
@@ -208,9 +206,7 @@ const TournamentPage = ({}: Props) => {
     router.push("/play/draft");
   };
 
-  // The archive shows the finished bracket in full: no masking, no "next up"
-  // ring, and the far-conference champion revealed whatever round the run
-  // ended in.
+  // The archive shows the finished bracket in full: no masking, no ring, champion revealed.
   const isArchive = stage === "ARCHIVE";
   const bracketRounds = isArchive ? bracket.rounds : rounds;
   const bracketChampion = isArchive ? finalsOpponent(bracket) : champion;

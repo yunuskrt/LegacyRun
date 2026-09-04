@@ -7,8 +7,7 @@ import type {
 
 export const TOTAL_REROLLS = 3;
 
-// Drag payload is the player-season id. `text/plain` rather than a custom MIME
-// type, which Safari drops on drop.
+// `text/plain`, not a custom MIME type — Safari drops those on drop.
 export const PLAYER_DRAG_TYPE = "text/plain";
 
 // The three reroll buttons draw on one shared pool — hard constraint 7.
@@ -36,8 +35,7 @@ export type DraftRejection =
 
 export type DraftAttempt = { ok: true } | { ok: false; reason: DraftRejection };
 
-// How a roster card reads for the current state: only DRAFTABLE can be picked,
-// AVAILABLE is waiting on a slot selection, the rest are dead ends this round.
+// Only DRAFTABLE can be picked; AVAILABLE waits on a slot, the rest are dead ends.
 export type PlayerAvailability =
   | "DRAFTABLE"
   | "AVAILABLE"
@@ -97,9 +95,7 @@ export const validateDraft = (
 ): DraftAttempt => {
   if (!state.offeredTeam) return { ok: false, reason: "NO_TEAM_OFFERED" };
   if (!state.selectedPosition) return { ok: false, reason: "NO_SLOT_SELECTED" };
-  // Hard constraint 6 — one appearance per person per run, any season. Checked
-  // ahead of the slot rules so the identity block is what the player is told,
-  // matching the order `playerAvailability` reports.
+  // Hard constraint 6, checked before the slot rules so identity is what the player is told.
   if (draftedPlayerSlugs(state).has(player.playerId))
     return { ok: false, reason: "ALREADY_DRAFTED" };
   if (!openPositions(state, slots).includes(position))
@@ -111,10 +107,7 @@ export const validateDraft = (
   return { ok: true };
 };
 
-// Would this slot take this player, if it were the selected one? Asked by the
-// court to decide which slots invite a hovered or dragged card. Derived from
-// `validateDraft` rather than restating its rules — a second copy that drifts
-// would light up a slot the reducer then rejects.
+// Derived from `validateDraft`, never restating it — a drifted copy invites a rejected drop.
 export const slotAcceptsPlayer = (
   state: DraftState,
   slots: readonly Position[],

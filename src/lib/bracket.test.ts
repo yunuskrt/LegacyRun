@@ -66,8 +66,7 @@ const pool = (): PlayoffTeamRow[] => {
     );
   }
 
-  // Rows that sit in two bands at once. Without them the bands never overlap in
-  // the fixture and the escalation floor looks load-bearing when it isn't.
+  // Rows in two bands at once — without them the escalation floor only looks load-bearing.
   rows.push(
     row({
       teamSlug: "EOV1",
@@ -487,8 +486,7 @@ describe("team rating exclusion", () => {
     const generator = readFileSync("src/lib/bracket.ts", "utf8");
     const queries = readFileSync("src/lib/db/bracket.ts", "utf8");
 
-    // Difficulty comes from playoff history alone — see §2 of
-    // context/docs/bracket-generation.md.
+    // Difficulty comes from playoff history alone, never a team rating.
     expect(queries).not.toMatch(/prisma\.teamSeason/);
     expect(queries).toMatch(/prisma\.playoffParticipation/);
     expect(queries).not.toMatch(/rating/);

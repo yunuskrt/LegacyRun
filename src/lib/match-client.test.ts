@@ -146,8 +146,7 @@ describe("matchDataUrl", () => {
     );
   });
 
-  // The whole reason this is a GET: five player-seasons and eight team-seasons
-  // are nowhere near a URL length limit.
+  // Why this is a GET: 5 player-seasons and 8 team-seasons never near a URL limit.
   it("stays far short of any URL length limit at full bracket size", () => {
     const url = matchDataUrl(matchDataRequestFor(squad, bracket));
 

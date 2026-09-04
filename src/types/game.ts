@@ -15,8 +15,7 @@ export type DraftablePlayer = {
   rating: number;
 };
 
-// One team+season offered during the draft, flattened for the UI. `teamLogo` is
-// derived from the team slug at read time, not stored in the database.
+// `teamLogo` is derived from the slug at read time, never stored in the database.
 export type DraftTeam = {
   teamSeasonId: string;
   teamName: string;
@@ -46,8 +45,7 @@ export type Squad = {
   players: SquadMember[];
 };
 
-// The confirmed squad plus the conference it will play. Runtime state only —
-// nothing about a run is persisted.
+// Runtime state only — nothing about a run is persisted.
 export type Run = {
   squad: Squad;
   conference: Conference;

@@ -46,8 +46,7 @@ const RunRecapStats = ({
 }: Props) => {
   const reduced = useReducedMotion() ?? false;
 
-  // A plain fade with no internal stagger. It is not in the motion doc's list,
-  // but leaving it as the only unanimated block on the screen reads as broken.
+  // A plain fade — the only unanimated block on the screen would read as broken.
   return (
     <motion.div
       initial={entranceFrom(true, reduced, FADE_RISE.initial)}

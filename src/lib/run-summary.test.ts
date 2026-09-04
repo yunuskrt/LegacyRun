@@ -38,8 +38,7 @@ type GameSpec = {
   scoring?: { name: string; points: number; side?: MatchSideId }[];
 };
 
-// Rows are hand-built so every derivation is exercised without a bracket: the
-// squad deliberately sits on AWAY, which catches anything reading HOME.
+// Hand-built rows with the squad on AWAY, which catches anything reading HOME.
 const SQUAD_SIDE: MatchSideId = "AWAY";
 const OTHER_SIDE: MatchSideId = "HOME";
 
@@ -137,8 +136,7 @@ describe("runScoringLeader", () => {
         scoring: [
           { name: "Jordan", points: 40 },
           { name: "Magic", points: 20 },
-          // Deliberately more than any squad player's run total, so dropping
-          // the side guard makes him the leader rather than tying.
+          // Above any squad total, so dropping the side guard makes him lead, not tie.
           { name: "Ewing", points: 70, side: OTHER_SIDE },
         ],
       },
@@ -358,8 +356,7 @@ describe("opponentLabel", () => {
   });
 });
 
-// The article rule Phase 16 established, in the one place this phase generates
-// round copy. Round 1 is the case a browser run never reproduced after the fix.
+// The article rule at the one place this module generates round copy.
 describe("eliminationHeadline", () => {
   const headlineFor = (round: BracketRoundId, label: string) =>
     eliminationHeadline(pathRow(round, label, "Knicks", [loss(1)]));

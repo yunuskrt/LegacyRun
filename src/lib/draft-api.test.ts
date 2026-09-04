@@ -174,9 +174,7 @@ describe("the two anchored rerolls", () => {
   });
 });
 
-// Applying the filters to a pool pins what they select, not how they are
-// spelled — the shape assertions above would survive a wrong axis being
-// pinned under a different representation.
+// Applying the filters pins what they select, not how they are spelled.
 describe("what the anchored filters select", () => {
   type Row = { id: string; teamSlug: string; seasonYear: number };
 

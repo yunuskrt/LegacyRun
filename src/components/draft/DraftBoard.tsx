@@ -140,9 +140,7 @@ const DraftBoard = ({
                     transition={staggeredTransition("base", index, {
                       reduced,
                     })}
-                    // On the wrapper, not the card: a disabled <button> does not
-                    // dispatch pointer events, and hovering a blocked player
-                    // must still tell the court to stop inviting.
+                    // On the wrapper: a disabled button dispatches no pointer events.
                     onPointerEnter={() => onHoverPlayer(player)}
                     onPointerLeave={() => onHoverPlayer(null)}
                   >
@@ -179,9 +177,7 @@ const DraftBoard = ({
               <span className={PLACEHOLDER_ICON}>
                 <Dices className="size-7" />
               </span>
-              {/* Separated rather than the roster heading's run of badges:
-                  this is a sentence at body weight, where unspaced positions
-                  read as one word. */}
+              {/* Separated, not badged — in a sentence, unspaced positions read as one word. */}
               <p className="mt-5 text-lg font-bold">
                 Open slots:{" "}
                 {openPositions.map((position, index) => (

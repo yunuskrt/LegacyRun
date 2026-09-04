@@ -9,8 +9,7 @@ import {
   Loader2Icon,
 } from "lucide-react";
 
-// The app renders dark only, so the theme is fixed rather than read from
-// next-themes as the shadcn template does.
+// The app renders dark only, so the theme is fixed rather than read from next-themes.
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner

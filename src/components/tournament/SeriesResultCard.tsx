@@ -29,8 +29,7 @@ type Props = {
   onContinue: () => void;
 };
 
-// The series is over by the time this renders, so the full game-by-game list
-// reveals nothing ahead of its own replay.
+// The series is over by the time this renders, so the full list reveals nothing.
 const SeriesResultCard = ({
   matchup,
   series,
@@ -45,9 +44,7 @@ const SeriesResultCard = ({
   const lines = squadGameLines(matchup, series.games);
 
   return (
-    // No exit: this card sits inside `TournamentStage`'s `mode="wait"`
-    // crossfade, which already covers the return to the bracket. A second one
-    // plays two transitions back to back.
+    // No exit — `TournamentStage`'s crossfade already covers the return to the bracket.
     <motion.div
       className="mx-auto w-full max-w-xl"
       initial={entranceFrom(true, reduced, FADE_RISE.initial)}

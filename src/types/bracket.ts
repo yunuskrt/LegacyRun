@@ -3,8 +3,7 @@ import type { Conference } from "@/types/game";
 
 export type { PlayoffRound };
 
-// A historical playoff team-season the squad can face. Deliberately carries no
-// team rating — difficulty comes from `pedigree`, never from team_seasons.
+// Carries no team rating on purpose — difficulty comes from `pedigree`.
 export type BracketOpponent = {
   teamSeasonId: string;
   teamSlug: string;

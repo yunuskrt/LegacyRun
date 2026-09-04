@@ -25,10 +25,7 @@ type Props = {
   resolving?: boolean;
 };
 
-// The strike itself is not animated — a rule that genuinely grows needs a
-// pseudo-element or an overlay, which is more machinery than it earns. The
-// colour crossfades and the strike appears with it. CSS, so the global
-// reduced-motion block already flattens it.
+// CSS, not motion — the colour crossfades and the strike appears with it.
 const NAME_TRANSITION = "transition-colors duration-[var(--duration-base)]";
 
 const TeamSlotRow = ({
@@ -41,8 +38,7 @@ const TeamSlotRow = ({
 }: Props) => {
   const reduced = useReducedMotion() ?? false;
 
-  // The bracket remounts between stages, so this plays only when the round it
-  // belongs to is the one whose result just became visible.
+  // Plays only for the round whose result just became visible.
   const score = scoreLabel && (
     <motion.span
       initial={entranceFrom(resolving, reduced, FADE_RISE.initial)}

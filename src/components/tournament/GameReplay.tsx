@@ -63,9 +63,7 @@ const GameReplay = ({
   );
 
   return (
-    // The control bar is pinned to the viewport below md, so the column has to
-    // reserve its height or the CTA scrolls underneath it. 144px covers the
-    // two-row bar the narrowest widths wrap to (measured 141px at 390).
+    // Reserves the pinned control bar's height (141px at 390) so the CTA clears it.
     <div className="flex flex-col gap-5 pb-36 md:pb-0">
       <SeriesBanner
         home={home}
@@ -75,11 +73,8 @@ const GameReplay = ({
         wins={wins}
       />
 
-      {/* Three columns only from xl — at lg they squeeze the scoreboard until
-          the numerals collide and the line score clips its total. */}
-      {/* `grid-cols-1` is load-bearing: without an explicit column the implicit
-          one sizes to max-content, and the line score's min-width drags every
-          sibling out past the viewport. */}
+      {/* Three columns only from xl — at lg the scoreboard numerals collide. */}
+      {/* `grid-cols-1` is load-bearing: the implicit column sizes to max-content. */}
       <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_minmax(0,21rem)]">
         <div className="order-4 lg:order-2 xl:order-1">
           <ScoringLeaders home={home} away={away} leaders={frame.leaders} />

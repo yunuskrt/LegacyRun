@@ -58,8 +58,7 @@ describe("drawIndex", () => {
     }
   });
 
-  // `% 0` is NaN, so an unguarded draw off an empty pool indexes `undefined`
-  // rather than failing. Every caller refuses one first; this is the backstop.
+  // `% 0` is NaN, so an unguarded empty pool indexes `undefined` instead of failing.
   it("returns zero for an empty pool", () => {
     expect(drawIndex(0, () => 0.5)).toBe(0);
   });

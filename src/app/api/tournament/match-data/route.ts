@@ -23,8 +23,7 @@ export async function GET(request: Request) {
       return apiFailure("NO_ELIGIBLE_TEAM", 404);
     }
 
-    // Frozen history and a pure function of the query, so it never goes stale.
-    // Errors are not cached.
+    // Frozen history, so it never goes stale; errors are not cached.
     return apiSuccess(data, { "Cache-Control": "max-age=31536000" });
   } catch (error) {
     console.error("[api/tournament/match-data] query failed", error);

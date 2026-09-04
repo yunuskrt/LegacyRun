@@ -11,8 +11,7 @@ import type { BracketOpponent } from "@/types/bracket";
 import type { PlayoffTeamRow } from "@/lib/bracket";
 import type { Conference } from "@/types/game";
 
-// The committed playoff table, shaped exactly as src/lib/db/bracket.ts returns
-// it. Nothing here touches the database.
+// The committed playoff table in the shape db/bracket.ts returns; no database.
 const TEAM_NAMES = new Map(TEAMS.map((team) => [team.slug, team.name]));
 
 const ROWS: PlayoffTeamRow[] = PLAYOFF_PARTICIPATION.map((row) => ({

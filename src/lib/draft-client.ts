@@ -9,8 +9,7 @@ export type DraftRequest =
   | { mode: "random" }
   | { mode: "another-team" | "another-season"; exclude: string };
 
-// Skip Round is an unanchored random draw — it differs from Get Random Team
-// only in costing a reroll, which is client state.
+// Skip Round differs from Get Random Team only in costing a reroll, which is client state.
 export const rerollRequest = (
   kind: RerollKind,
   currentTeamSeasonId: string

@@ -18,13 +18,11 @@ type Props = {
   period: number;
   clock: string;
   status: ReplayStatus;
-  // The cursor a lead change landed on, or null. A cursor rather than a boolean
-  // so two flips in a row are two distinct flashes.
+  // A cursor, not a boolean, so two flips in a row are two distinct flashes.
   leadChangeAt: number | null;
 };
 
-// Opacity only. The colour change is the leader switching to `text-primary` on
-// the same event; a scale on numerals this size reads as a jolt.
+// Opacity only — a scale on numerals this size reads as a jolt.
 const FLASH_FROM = { opacity: 0.3 };
 const FLASH_TO = { opacity: 1 };
 
@@ -56,8 +54,7 @@ const ReplayScoreboard = ({
 
     const flash = leader === "HOME" ? homeFlash : awayFlash;
 
-    // Starting a new animation on the same element replaces the running one, so
-    // a cluster of flips reads as a cluster of flashes rather than a queue.
+    // A new animation replaces the running one, so flips flash rather than queue.
     flash.set(FLASH_FROM);
     flash.start(FLASH_TO);
   }, [leadChangeAt, leader, reduced, homeFlash, awayFlash]);

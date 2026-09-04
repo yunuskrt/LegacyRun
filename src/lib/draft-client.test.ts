@@ -155,8 +155,7 @@ describe("requestDraftTeam", () => {
     ).resolves.toEqual({ ok: false, error: "UNREACHABLE" });
   });
 
-  // The race guard depends on this: an aborted request must resolve, not throw,
-  // so the caller can drop it by checking its own signal.
+  // The race guard depends on an abort resolving rather than throwing.
   it("resolves rather than throwing when the request is aborted", async () => {
     const controller = new AbortController();
     const fetchImpl: FetchLike = vi.fn().mockImplementation(() => {

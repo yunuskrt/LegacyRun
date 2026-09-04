@@ -98,8 +98,7 @@ describe("transitionFor", () => {
   });
 });
 
-// A zero-duration entrance still paints its initial frame — measured, not
-// assumed. Reduced motion therefore means no declared entrance at all.
+// A zero-duration entrance still paints its initial frame — measured, not assumed.
 describe("entranceFrom", () => {
   it("declares the entrance only when the element is actually entering", () => {
     expect(entranceFrom(true, false, FADE_RISE.initial)).toBe(
@@ -113,8 +112,7 @@ describe("entranceFrom", () => {
     expect(entranceFrom(false, true, FADE_RISE.initial)).toBe(false);
   });
 
-  // `false` is motion's own "start where you are", so the two non-entering
-  // cases are indistinguishable to the element — which is the point.
+  // `false` is motion's "start where you are", so both non-entering cases match.
   it("returns motion's start-where-you-are rather than an empty target", () => {
     expect(entranceFrom(false, false, { opacity: 0 })).not.toEqual({});
     expect(entranceFrom(false, false, { opacity: 0 })).toBe(false);
@@ -159,10 +157,7 @@ describe("sectionDelay", () => {
     expect(sectionDelay(-1)).toBe(0);
   });
 
-  // The whole point of a constant beat: the delay of a section must not depend
-  // on how much the section before it contained. An implementation that summed
-  // the previous block's length would read identically at three sections of
-  // equal size and blow out the moment one of them grew.
+  // The point of a constant beat: a summing version reads identically until a block grows.
   it("does not depend on how many items the previous section held", () => {
     const shortRun = sectionDelay(2);
     const longRun = sectionDelay(2);
@@ -187,10 +182,7 @@ describe("sectionDelay", () => {
     expect(sectionDelay(5, { reduced: true })).toBe(0);
   });
 
-  // Two scales, not one: a section beat has to outlast a list step or the
-  // blocks read as a single long list, and stay inside a transition or the
-  // screen pauses between them. Spelled out rather than compared to
-  // SECTION_STEP, which would assert the constant back to itself.
+  // Spelled out, not compared to SECTION_STEP, which would assert the constant to itself.
   it("beats slower than a list steps and faster than a transition runs", () => {
     const beat = sectionDelay(1);
 
@@ -216,8 +208,7 @@ describe("sequenceDelay", () => {
     expect(sequenceDelay(2, 0)).toBe(sectionDelay(2));
   });
 
-  // Both halves have to honour it — a mutant that drops `reduced` from only the
-  // section half still passes every stagger test in this file.
+  // Dropping `reduced` from the section half alone passes every stagger test here.
   it("collapses to zero under reduced motion, both halves", () => {
     expect(sequenceDelay(2, 4, { reduced: true })).toBe(0);
   });
@@ -227,8 +218,7 @@ describe("sequenceDelay", () => {
   });
 });
 
-// The staged result screen is the only place three sections run at once, and
-// the budget is the thing a future constant change would silently blow.
+// The budget is what a future constant change would silently blow.
 describe("the staged screen budget", () => {
   const settle = (section: number, index: number, step?: number) =>
     sequenceDelay(section, index, step ? { step } : {}) + DURATION.base;
@@ -240,8 +230,7 @@ describe("the staged screen budget", () => {
     expect(staggerDelay(4, { step: STAGE_STEP })).toBeCloseTo(0.24);
   });
 
-  // Header (5 staged) → the five (5 cards) → path (4 rows) + recap, three
-  // sections one beat apart. Measured in the browser at ~750ms end to end.
+  // Header → the five → path and recap: three sections, ~750ms end to end.
   it("finishes the whole three-section entrance under a second", () => {
     const last = Math.max(settle(0, 4, STAGE_STEP), settle(1, 4), settle(2, 3));
 
@@ -271,8 +260,7 @@ describe("sequencedTransition", () => {
     });
   });
 
-  // The glyph is the only spring on the screen and it sits at index 0, so this
-  // combination never runs with a real delay in the app.
+  // The only spring sits at index 0, so this never runs with a real delay in the app.
   it("merges the delay onto the spring, which carries no duration", () => {
     expect(sequencedTransition("spring", 1, 0)).toEqual({
       type: "spring",
@@ -305,8 +293,7 @@ describe("BREATHE — the one sanctioned loop", () => {
     expect(Math.max(...BREATHE.opacity)).toBe(1);
   });
 
-  // Slow enough to read as breathing rather than blinking, which is what
-  // makes one looping animation tolerable on the page at all.
+  // Slow enough to read as breathing rather than blinking.
   it("runs an order of magnitude slower than any transition", () => {
     expect(BREATHE.duration).toBeGreaterThanOrEqual(2.5);
     expect(BREATHE.duration).toBeLessThanOrEqual(3);
@@ -315,8 +302,7 @@ describe("BREATHE — the one sanctioned loop", () => {
 });
 
 describe("DENY_SHAKE", () => {
-  // A keyframe run that does not end where it began leaves the slot
-  // permanently offset — silent, and only visible by measuring.
+  // A run not ending where it began leaves the slot permanently offset, silently.
   it("starts and ends at rest", () => {
     expect(DENY_SHAKE.x[0]).toBe("0%");
     expect(DENY_SHAKE.x.at(-1)).toBe("0%");
@@ -342,8 +328,7 @@ describe("DENY_SHAKE", () => {
     expect(Math.max(...magnitudes)).toBeLessThanOrEqual(4);
   });
 
-  // Percentages of the shaken element, so the court's container-relative
-  // sizing carries it down to 390 instead of drifting.
+  // Percentages, so the court's container-relative sizing carries it down to 390.
   it("is expressed in percentages, never pixels", () => {
     DENY_SHAKE.x.forEach((value) => expect(value).toMatch(/%$/));
   });
@@ -353,8 +338,7 @@ describe("DENY_SHAKE", () => {
   });
 });
 
-// The CSS half of the vocabulary cannot import the TS half, so nothing but this
-// stops the two from drifting apart.
+// CSS cannot import TS, so nothing but this stops the two halves drifting apart.
 describe("globals.css mirrors the motion module", () => {
   const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 
