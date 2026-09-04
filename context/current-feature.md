@@ -1424,3 +1424,115 @@ consumers in `src/components/` have no tests, per `coding-standards.md`.
 Still open, and untouched by this refactor: run state is not persisted (settled
 as a deliberate no in Phase 19). The champion path still cannot be reached by
 playing. No touch-drag support. `bracketSlot` remains unrendered by design.
+
+### Refactor — `src/hooks` cleanup
+
+**Not a numbered phase.** A `refactor-scanner` audit of `src/hooks` (the two files
+Phases 17 and 18 left there) found one piece of dead code, one stale comment, an
+overloaded identifier and one control-flow inconsistency. All four are fixed
+here. **No behaviour, pacing or timing semantics change** — the diff is a
+deletion, a rename and a `switch`. Net −16/+12 across two files. No schema
+change, no migration, **no new dependency**, no database read or write, no new
+test, and no component touched: `GameReplay.tsx` and `SeriesReplay.tsx` are
+absent from the diff entirely.
+
+Gotchas:
+
+- **`advance` was dead, and the reason it survived three phases is an identifier
+  collision.** `useReplay` exported an event-stepper called `advance`; Phase 17
+  shipped it caller-less with the note "No caller until Phase 18's Skip to
+  final", and Phase 18 then implemented that with **`jumpToEnd` instead**. The
+  comment was never updated, so it kept promising a caller that had already
+  arrived elsewhere. Meanwhile `advance` also names a `StageAdvance` **parameter**
+  in `useAutoAdvance` and a `StageAdvance` **local** in `SeriesReplay` — so a
+  `grep advance` returns three hits meaning two unrelated things, and the dead one
+  hides in the noise. Deleting it removes the odd one out; renaming
+  `useAutoAdvance`'s parameter to `stageAdvance` (matching the lib function that
+  produces the value) closes the rest.
+- **The comment was on `jumpToEnd`, not on `advance`.** Worth recording because
+  the audit reported it the other way round, and it changes what the fix is.
+- **The stale comment was deleted, not rewritten — and the rewrite it replaced
+  was itself wrong.** The first attempt read "Drives 'Skip to final', which ends
+  the game without chaining into the next", which attributes to `jumpToEnd`
+  behaviour that is not in it: the non-chaining comes from `GameReplay`'s
+  `setSkipped(true)` feeding `gameAdvance(…, skipped)`. `jumpToEnd` only moves
+  the cursor. Caught in `/feature review` — a comment making a false claim is the
+  exact defect this refactor set out to remove, reintroduced while removing it.
+  `jumpToEnd` with `setCursor(events.length - 1)` needs no comment at all, and
+  `coding-standards.md` says not to narrate self-explanatory code.
+- **The tick handler's `if`/return relied on `ReplayTick` having exactly two
+  non-null variants.** After `if (!tick) return;` the `else` narrowed to `EVENT`
+  implicitly, so a third kind would have been mishandled as an event —
+  `setCursor(tick.cursor)` with no `cursor` on it. The explicit `switch` over
+  `tick.kind` makes an unknown kind fall through and do nothing, which is the
+  safer failure.
+- **That switch does _not_ enforce exhaustiveness, and the first draft of this
+  entry claimed it did.** Checked by injecting a third `ReplayTick` kind and
+  running `tsc`: **no error**. Phase 13's `rerollRequest` precedent does not
+  transfer — that switch _returns a value_, so a missing case makes the return
+  type `… | undefined` and fails. This one sits in a `void` `setTimeout`
+  callback, where TypeScript has nothing to check against. Enforcing it would
+  need an `assertNever` helper the codebase does not have, which is a new
+  abstraction for a two-variant union. **The gain here is explicitness and a
+  harmless failure mode, not a compile-time guarantee** — worth recording so the
+  next reader does not trust a check that is not there.
+- **The audit's fifth finding was deliberately declined.** Both hooks hand-roll
+  the same delay-gated `setTimeout` + `clearTimeout` cleanup, and a shared helper
+  would save ~6 lines. It is **mechanism, not a rule**, so it does not belong in
+  `src/lib/` under the extraction convention this project has followed since
+  Phase 11 — and `useReplay`'s effect still needs its own body to branch on
+  `tick.kind`, so it would reuse almost nothing. A new shared hook for that is
+  the abstraction `coding-standards.md` tells us to avoid. Recorded rather than
+  silently skipped.
+- **`advanceDelayMs`'s own `advance` parameter in `src/lib/series-flow.ts` was
+  left alone.** It is internally consistent within lib, and widening the rename
+  into a heavily mutation-covered module for a cosmetic gain is not worth it.
+- **The audit also confirmed a negative worth keeping:** no rules remain buried
+  in either hook. `nextTick`/`replayStatus` and
+  `advanceDelayMs`/`gameAdvance`/`seriesStageOf` already own every decision, which
+  is exactly the state the extraction convention aims for. `useAutoAdvance` is as
+  thin as its own comment claims.
+
+Verified: `npm test` (567 — unchanged, as a no-behaviour-change refactor should
+leave it), `tsc --noEmit`, `lint`, `format:check`, `build` — both `/play` routes
+still prerender static, all four API routes still dynamic.
+
+Driven against live Neon in the browser with **zero console errors and zero
+warnings**, and the drive deliberately targeted the rewritten timer rather than
+the page as a whole. 5/5 drafted off real rosters (I. Thomas SAC '13, W. Matthews
+POR '12, B. Hield IND '23, T. Gugliotta WAS '93, N. Noel PHI '16), EAST
+confirmed, bracket rendered, Round 1 played:
+
+- **Both `switch` branches exercised.** The `EVENT` branch drove the score
+  87-58 → 116-89 strictly monotonically across 49 samples with the clock ticking
+  Q3 2:24 → 0:00 → Q4 11:31; the `pauseAfter` → `RESUME` pair fired at the Q3/Q4
+  break and play resumed from it. A period break is the only thing that
+  exercises `RESUME`, so a game that never broke would have proven half the
+  rewrite.
+- **The game reached FINAL naturally** (117-90) and chained to `Next game`, which
+  is `useAutoAdvance` still scheduling correctly under its renamed parameter.
+- **`jumpToEnd` still works**: `Skip to final` took game 2 from 7-10 to 111-85
+  FINAL, and did not chain into game 3 — Phase 18's skip-suppression intact.
+
+**No tests were added, and `/feature test` confirmed why rather than assuming
+it.** Both hooks consume rules that are already pinned in lib — `replay.test.ts`
+has dedicated `nextTick` and `replayStatus` blocks plus the spoiler invariant,
+and `series-flow.test.ts` covers `advanceDelayMs` including the property that
+only `AUTO` yields a delay. Nothing was left behind in either hook to extract:
+the tick `switch` is a 1:1 application of what `nextTick` already decided, and
+`jumpToEnd`'s `events.length - 1` is the same boundary `replayStatus` already
+tests — a `finalCursor()` helper would assert the code back to itself, the hole
+Phase 12's name cap and Phase 19's leader guard both fell into.
+
+Not verified: the two hooks have no tests, per `coding-standards.md`, and
+**grep confirms no test file references either one** — so nothing in the 567
+would have caught a broken tick handler. The browser drive was the verification,
+not a supplement to one. Overtime did not come up,
+so the `RESUME` branch was confirmed at a quarter break only, not at an overtime
+break; both are the same code path. The dev server already running on port 3000
+was reused rather than restarted, so the check ran against HMR-applied edits
+rather than a cold build — the production `build` was verified separately.
+
+Still open, and untouched by this refactor: run state is not persisted (settled
+as a deliberate no in Phase 19). The champion path still cannot be reached by
+playing. No touch-drag support. `bracketSlot` remains unrendered by design.
