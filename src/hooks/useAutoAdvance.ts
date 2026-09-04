@@ -13,10 +13,10 @@ import type { StageAdvance } from "@/lib/series-flow";
 // unmemoized `onAdvance` would otherwise restart the hold on every render of
 // the parent, and the beat would never elapse.
 export const useAutoAdvance = (
-  advance: StageAdvance,
+  stageAdvance: StageAdvance,
   onAdvance: () => void
 ): void => {
-  const delayMs = advanceDelayMs(advance);
+  const delayMs = advanceDelayMs(stageAdvance);
   const callback = React.useRef(onAdvance);
 
   React.useEffect(() => {

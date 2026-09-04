@@ -17,7 +17,6 @@ export type Replay = {
   frame: ReplayFrame;
   cursor: number;
   status: ReplayStatus;
-  advance: () => void;
   jumpToEnd: () => void;
 };
 
@@ -47,24 +46,20 @@ export const useReplay = (game: GameResult, speed: ReplaySpeed): Replay => {
     if (!tick) return;
 
     const timer = setTimeout(() => {
-      if (tick.kind === "RESUME") {
-        setPaused(false);
-        return;
+      switch (tick.kind) {
+        case "RESUME":
+          setPaused(false);
+          return;
+        case "EVENT":
+          setCursor(tick.cursor);
+          if (tick.pauseAfter) setPaused(true);
+          return;
       }
-
-      setCursor(tick.cursor);
-      if (tick.pauseAfter) setPaused(true);
     }, tick.delayMs);
 
     return () => clearTimeout(timer);
   }, [cursor, paused, events, boundaries, speed]);
 
-  const advance = React.useCallback(() => {
-    setPaused(false);
-    setCursor((current) => Math.min(current + 1, events.length - 1));
-  }, [events.length]);
-
-  // No caller until Phase 18's "Skip to final".
   const jumpToEnd = React.useCallback(() => {
     setPaused(false);
     setCursor(events.length - 1);
@@ -72,5 +67,5 @@ export const useReplay = (game: GameResult, speed: ReplaySpeed): Replay => {
 
   const frame = React.useMemo(() => replayFrame(game, cursor), [game, cursor]);
 
-  return { frame, cursor, status, advance, jumpToEnd };
+  return { frame, cursor, status, jumpToEnd };
 };
