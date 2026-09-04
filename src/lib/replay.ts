@@ -482,6 +482,22 @@ export const seriesWinsThrough = (
   };
 };
 
+// The other half of `seriesWinsThrough`: at the final buzzer the game on screen
+// joins the count, and the winner comes from the score the replay has reached,
+// not from `game.winner` — the finished log must not decide a live frame.
+export const winsAtBuzzer = (
+  before: { home: number; away: number },
+  isFinal: boolean,
+  homeScore: number,
+  awayScore: number
+): { home: number; away: number } =>
+  isFinal
+    ? {
+        home: before.home + (homeScore > awayScore ? 1 : 0),
+        away: before.away + (awayScore > homeScore ? 1 : 0),
+      }
+    : before;
+
 export const periodLabel = (period: number): string =>
   period <= REGULATION_PERIODS
     ? `Q${period}`

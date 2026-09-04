@@ -1666,3 +1666,124 @@ Still open, and untouched by this refactor: run state is not persisted (settled
 as a deliberate no in Phase 19). The champion path still cannot be reached by
 playing. No touch-drag support. `bracketSlot` remains unrendered by design.
 Phase 12's 320px horizontal overflow on the draft page is untouched.
+
+### Refactor — `src/components/tournament` cleanup
+
+**Not a numbered phase.** A `refactor-scanner` audit of the 26 files in
+`src/components/tournament` found one crest duplicated six times, one decision
+rule still buried in a component, two smaller duplications, and one unexplained
+inconsistency. All six act-on findings are resolved here. Ships
+`src/components/tournament/TeamCrest.tsx` and `PositionChip.tsx`, `winsAtBuzzer`
+in `src/lib/replay.ts`, `DOT_ENTRANCE` in `src/lib/motion.ts`,
+`BracketDisplayProps` in `src/lib/tournament-view.ts`, and 5 Vitest tests
+(577 → 582). Net +161/−114 across 20 files. No schema change, no migration,
+**no new dependency**, no database read or write, and no API route touched.
+
+Gotchas:
+
+- **The crest had already drifted, and that is what the finding was really
+  about.** Six renderings: four inline spans filling `bg-primary/15` and two
+  local `Crest` components — in `SeriesResultCard` and `SeriesFaceOff`, byte-
+  identical apart from size and one `shadow-trophy` — filling `bg-primary/10`.
+  Five renderings of the same circle, two different fills, nothing saying why.
+  Unifying on `/15` (the majority, and the value on every screen that shows more
+  than one crest at a time) is the one **deliberate visual change** in this
+  refactor; it was measured on screen at all five sizes rather than assumed.
+- **Five size entries were kept, not folded.** The call sites genuinely render
+  36/40/44/48/96px. The audit suggested collapsing some, but that silently
+  resizes a screen this refactor does not own — the fix is one component, not one
+  size. `shadow-trophy` became a `glow` prop rather than being baked into `xl`,
+  so decoration stays independent of size.
+- **`ReplayScoreboard`'s crest fired on `side.isSquad || !side.teamLogo` and
+  painted everything it caught in squad gold**, so a logo-less opponent would
+  have rendered gold. It now passes `isSquad` truthfully.
+  `BracketOpponent.teamLogo` is a non-optional `string` always built by
+  `teamLogoPath()`, so that disjunct is opponent-unreachable — equivalent on
+  every reachable input, correct if it ever stops being.
+- **`tracking-tight` and `shrink-0` are now uniform** where three of the six
+  renderings had them and three did not. Sub-pixel on a three-character code; the
+  browser boxes match the pre-refactor values exactly. Recorded because it is a
+  real change, not because it is visible.
+- **`winsAtBuzzer` is the fifth extraction of this shape and the rule it pins is
+  an agreement, not a shape.** The buzzer increment sat in `GameReplay` deciding
+  from the live score who just won, while its other half `seriesWinsThrough` was
+  pure and tested two files away. The load-bearing test is that applying
+  `winsAtBuzzer` live must land exactly where `seriesWinsThrough` puts the same
+  game once it is in the past — disagreement is what makes the banner's dots jump
+  or double-count at a game boundary. Same move as Phase 11's `mode` dispatch,
+  13's `rerollRequest`, 17's `nextTick`, 18's `gameAdvance`, 19's
+  `eliminationHeadline`, the draft cleanup's `resolvePreviewPlayer`.
+- **A mutant survived the first run: `homeScore >= awayScore`.** A level score at
+  the buzzer would have credited home. Unreachable — overtime resolves or throws
+  (Phase 15) — so it is an equivalent mutant in practice, but unlike Phase 15's
+  `minutesPlayed <= 0` survivor it was cheap to close. The added test pins the
+  *refusal* rather than a case: credit nobody rather than invent a winner.
+- **Goal 5 resolved as a comment, and the divergence is load-bearing.**
+  `PeriodBreakCard` accents the player name, `ScoringLeaders` accents the points,
+  same row otherwise. Reading both first is what settled it: `ScoringLeaders`
+  splits by side into two headed columns, so its accent is decoration;
+  `PeriodBreakCard` renders one mixed list where **the name colour is the only
+  thing saying whose player it is**. Making them agree would break the break
+  card. Both now carry a cross-referencing line — the rationale this codebase
+  leaves for every other deliberate divergence.
+- **The two components' `Props` alias the shared type rather than importing it
+  inline** (`type Props = BracketDisplayProps`), keeping the mandated template's
+  local `Props` identifier. `BracketSpine`'s "opens expanded" note moved down to
+  the `showFull` line, where it actually applies; the shared type carries only
+  what is true of both.
+- **One defect was found in review by reading the diff, and it was mine.**
+  `ReplayScoreboard` kept a local component named `Crest` that calls `TeamCrest`
+  — two names for two things in one file, which is exactly the overloaded-
+  identifier defect the audit's own readability category names, reintroduced
+  while removing duplication. Renamed `SideCrest`, the same fix the `src/hooks`
+  refactor made with `advance` → `stageAdvance`.
+- **Five findings were declined, on the project's own precedent.**
+  `useReducedMotion() ?? false` × 13, the ladder/spine JSX merge (genuinely
+  different layouts per breakpoint), `ReplayControlBar`'s two segmented groups,
+  the `AWAITING WINNER` placeholder, and the duplicated `FinalsChampionStub`
+  call are **mechanism, not rules** — the bar that declined a shared timer helper
+  in the `src/hooks` refactor and shared class-string helpers in the
+  `src/components/draft` one. `PRESS_LIFT` shared with `RosterPlayerCard` reaches
+  into `components/draft` and guards reduced motion differently at each site, so
+  it is a separate call.
+- **The audit found no dead code**, and its claims were checked with grep rather
+  than repeated: all 26 components are imported, every prop has a consumer, and
+  `TeamLogoBadge`'s `size="sm"` — which looks unused inside this folder — is
+  consumed by `ReplayScoreboard`, `TeamSlotRow` and `FinalsChampionStub`.
+
+**Three mutations on `winsAtBuzzer`, two dead on the first run**, `replay.ts`
+byte-identical after each: `isFinal` ignored (1 test), the sides swapped (3), and
+the tie mutant recorded above, which now dies too.
+
+Verified: `npm test` (582), `tsc --noEmit`, `lint`, `format:check`, `build` —
+both `/play` routes still prerender static, all four API routes still dynamic.
+Phase 16's grep tests over the bracket components stay green; `bracketSlot` and
+`teamRating` appear nowhere in the folder. A grep also confirms no crest or chip
+literal survives anywhere in `src/components/tournament` — the remaining
+`size-*` hits are a placeholder box, two lucide icons and a spinner, and the
+remaining `bg-primary/10` is `LineScoreTable`'s cell highlight.
+
+Driven against live Neon with **zero console errors and zero warnings**, at true
+CSS widths of **1440 and 391 with no horizontal overflow at either**. A full run:
+5/5 drafted off real rosters, EAST confirmed, Round 1 played to a sweep. Every
+extracted size was measured on screen rather than sighted — the crests at
+**36/40/44/48/95px** with the `glow` shadow present only on the face-off and the
+opponent crest correctly `bg-secondary`, and the chips at **32px** on the squad
+rail and **28px** on the recap with all five position colours distinct.
+
+**Goal 2 was checked where it actually shows.** Sampling across the buzzer, the
+dot count went **0 → 1 on the transition**, then **0-1 → 0-2 → 0-3 → 0-4** across
+the series, one per game, ending `Series lost 0-4` with `PLAYOFF RECORD 0-4` on
+the recap and `ELIMINATED IN ROUND 1` — Phase 19's article rule intact.
+
+Not verified: the two new components have no tests, per `coding-standards.md`.
+The run went out 0-4 in Round 1, so the **champion path was again not reached by
+playing** — a seventh phase of evidence — and the later-round crests rest on the
+same components rendered earlier. The dev server already running on port 3000 was
+reused rather than restarted, so the browser check ran against HMR-applied edits;
+the production `build` was verified separately.
+
+Still open, and untouched by this refactor: run state is not persisted (settled
+as a deliberate no in Phase 19). The champion path still cannot be reached by
+playing. No touch-drag support. `bracketSlot` remains unrendered by design.
+Phase 12's 320px horizontal overflow on the draft page is untouched.

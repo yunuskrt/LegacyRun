@@ -2,9 +2,10 @@
 
 import React from "react";
 import { ChevronDown } from "lucide-react";
+import PositionChip from "@/components/tournament/PositionChip";
+import TeamCrest from "@/components/tournament/TeamCrest";
 import { squadRatingOf } from "@/lib/run";
 import { formatSeason } from "@/lib/format";
-import { POSITION_SOFT_BG, POSITION_TEXT } from "@/lib/position-style";
 import {
   CONFERENCE_NAME,
   SQUAD_SHORT_CODE,
@@ -19,11 +20,7 @@ type Props = {
 
 const PlayerChip = ({ player }: { player: SquadMember }) => (
   <li className="border-border/70 bg-card/70 flex items-center gap-3 rounded-xl border px-3 py-2.5">
-    <span
-      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[0.625rem] font-bold ${POSITION_SOFT_BG[player.position]} ${POSITION_TEXT[player.position]}`}
-    >
-      {player.position}
-    </span>
+    <PositionChip position={player.position} size="md" />
     <div className="min-w-0 flex-1">
       <p className="text-foreground truncate text-sm font-semibold">
         {player.name}
@@ -46,9 +43,7 @@ const SquadRail = ({ squad, conference }: Props) => {
   return (
     <section className="border-border/70 bg-card/60 rounded-2xl border px-4 py-4 sm:px-5">
       <div className="hidden items-center gap-3 md:flex">
-        <span className="border-primary bg-primary/15 text-primary flex size-10 shrink-0 items-center justify-center rounded-full border text-xs font-bold">
-          {SQUAD_SHORT_CODE}
-        </span>
+        <TeamCrest code={SQUAD_SHORT_CODE} isSquad size="sm" />
         <div>
           <p className="text-primary text-lg font-bold tracking-wide uppercase">
             {name}
@@ -72,9 +67,7 @@ const SquadRail = ({ squad, conference }: Props) => {
         aria-expanded={open}
         className="flex min-h-11 w-full items-center gap-3 text-left md:hidden"
       >
-        <span className="border-primary bg-primary/15 text-primary flex size-9 shrink-0 items-center justify-center rounded-full border text-[0.625rem] font-bold">
-          {SQUAD_SHORT_CODE}
-        </span>
+        <TeamCrest code={SQUAD_SHORT_CODE} isSquad />
         <span className="min-w-0 flex-1">
           <span className="text-primary block truncate text-sm font-bold tracking-wide uppercase">
             {name}

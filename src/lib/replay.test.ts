@@ -33,6 +33,7 @@ import {
   scoreAt,
   scoringRun,
   seriesWinsThrough,
+  winsAtBuzzer,
 } from "@/lib/replay";
 import type { ReplaySpeed } from "@/lib/replay";
 import type {
@@ -742,6 +743,60 @@ describe("seriesWinsThrough", () => {
     expect(seriesWinsThrough(games, 0)).toEqual({ home: 0, away: 0 });
     expect(seriesWinsThrough(games, 2)).toEqual({ home: 1, away: 1 });
     expect(seriesWinsThrough(games, 4)).toEqual({ home: 3, away: 1 });
+  });
+});
+
+describe("winsAtBuzzer", () => {
+  const decided = (winner: MatchSideId, home: number, away: number) =>
+    ({ winner, homeScore: home, awayScore: away }) as GameResult;
+
+  const before = { home: 1, away: 2 };
+
+  it("leaves the count alone until the final buzzer", () => {
+    // The finished score is already on the log; a game still playing must not
+    // borrow it. This is the spoiler rule the dots depend on.
+    expect(winsAtBuzzer(before, false, 118, 90)).toEqual(before);
+    expect(winsAtBuzzer(before, false, 0, 0)).toEqual(before);
+  });
+
+  it("credits the side ahead at the buzzer, and only that side", () => {
+    expect(winsAtBuzzer(before, true, 118, 90)).toEqual({ home: 2, away: 2 });
+    expect(winsAtBuzzer(before, true, 90, 118)).toEqual({ home: 1, away: 3 });
+  });
+
+  it("never adds more than one win", () => {
+    const after = winsAtBuzzer(before, true, 101, 99);
+
+    expect(after.home + after.away).toBe(before.home + before.away + 1);
+  });
+
+  // Overtime means a level score at FINAL is unreachable, so this pins the
+  // refusal rather than a case: credit nobody rather than invent a winner.
+  it("credits neither side on a level score", () => {
+    expect(winsAtBuzzer(before, true, 100, 100)).toEqual(before);
+  });
+
+  // The rule this exists for: the live increment has to land exactly where
+  // `seriesWinsThrough` puts the same game once it is in the past. Disagreement
+  // makes the banner's dot count jump or double-count at every game boundary.
+  it("agrees with seriesWinsThrough across a whole series", () => {
+    const games = [
+      decided("HOME", 110, 104),
+      decided("AWAY", 98, 112),
+      decided("AWAY", 91, 95),
+      decided("HOME", 120, 117),
+    ];
+
+    games.forEach((game, index) => {
+      const live = winsAtBuzzer(
+        seriesWinsThrough(games, index),
+        true,
+        game.homeScore,
+        game.awayScore
+      );
+
+      expect(live).toEqual(seriesWinsThrough(games, index + 1));
+    });
   });
 });
 

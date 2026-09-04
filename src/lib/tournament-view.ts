@@ -180,6 +180,23 @@ export const seriesSides = (
   away: sideView("AWAY", matchup.away, squad),
 });
 
+// One bracket, two layouts: `BracketLadder` above md and `BracketSpine` below
+// it, rendered side by side from the same values. The shape is shared so the
+// two contracts cannot drift apart a field at a time.
+export type BracketDisplayProps = {
+  rounds: BracketRound[];
+  squad: Squad;
+  series: readonly SeriesState[];
+  nextMatchupId: string | null;
+  farConference: Conference;
+  finalsOpponent: BracketOpponent | null;
+  roundsUntilFinals: number;
+  revealedThrough: BracketRoundId | null;
+  // The archive: the run is over, so no matchup is "next", nothing here is an
+  // affordance, and nothing is being revealed.
+  readOnly?: boolean;
+};
+
 export type MatchupCardState = "UPCOMING" | "NEXT" | "RESOLVED";
 
 export const matchupCardState = (

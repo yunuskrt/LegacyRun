@@ -47,6 +47,9 @@ const SideColumn = ({
             transition={transitionFor("quick")}
             className="bg-court flex items-center justify-between gap-2 rounded-lg px-3 py-2"
           >
+            {/* The column heading already names the side, so the accent goes on
+                the points. `PeriodBreakCard` accents the name instead — one
+                mixed list, where the name is the only side signal. */}
             <span className="text-foreground min-w-0 truncate text-sm">
               {line.playerName}
             </span>

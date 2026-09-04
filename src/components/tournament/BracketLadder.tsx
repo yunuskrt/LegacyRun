@@ -10,28 +10,9 @@ import {
   matchupCardState,
   roundMotionFor,
 } from "@/lib/tournament-view";
-import type {
-  BracketOpponent,
-  BracketRound,
-  BracketRoundId,
-} from "@/types/bracket";
-import type { Conference } from "@/types/game";
-import type { Squad } from "@/types/game";
-import type { SeriesState } from "@/types/match";
+import type { BracketDisplayProps } from "@/lib/tournament-view";
 
-type Props = {
-  rounds: BracketRound[];
-  squad: Squad;
-  series: readonly SeriesState[];
-  nextMatchupId: string | null;
-  farConference: Conference;
-  finalsOpponent: BracketOpponent | null;
-  roundsUntilFinals: number;
-  revealedThrough: BracketRoundId | null;
-  // The archive: the run is over, so no matchup is "next", nothing here is an
-  // affordance, and nothing is being revealed.
-  readOnly?: boolean;
-};
+type Props = BracketDisplayProps;
 
 const BracketLadder = ({
   rounds,

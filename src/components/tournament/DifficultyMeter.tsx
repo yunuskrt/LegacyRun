@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { entranceFrom, staggeredTransition } from "@/lib/motion";
+import { DOT_ENTRANCE, entranceFrom, staggeredTransition } from "@/lib/motion";
 import { BAND_DOTS } from "@/lib/tournament-view";
 import type { DifficultyBand } from "@/lib/tournament-view";
 
@@ -14,8 +14,6 @@ type Props = {
 // Low enough that up to ten meters can fill at once without the screen reading
 // as a cascade — three dots land in ~120ms.
 const DOT_STEP = 0.04;
-
-const DOT_ENTRANCE = { opacity: 0, scale: 0.6 };
 
 const DifficultyMeter = ({ band, dimmed = false }: Props) => {
   const reduced = useReducedMotion() ?? false;
