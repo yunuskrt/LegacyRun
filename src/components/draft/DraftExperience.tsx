@@ -31,6 +31,7 @@ import {
   rerollRequest,
   type DraftRequest,
 } from "@/lib/draft-client";
+import { resolvePreviewPlayer } from "@/lib/draft-preview";
 import { buildRun } from "@/lib/run";
 import { cn } from "@/lib/utils";
 import type {
@@ -68,22 +69,7 @@ const DraftExperience = ({ slots }: Props) => {
   );
   const inFlight = React.useRef<AbortController | null>(null);
 
-  // A drag outranks a hover by construction: mid-drag the pointer is over the
-  // court, not the card, so a stale hover must never win.
-  //
-  // Both are then checked against the roster on the board, because a card that
-  // unmounts under the pointer never fires `pointerleave` — drafting by click
-  // otherwise leaves the drafted player previewed, and since he is now a
-  // duplicate no slot would invite anything for the rest of the run.
-  const candidate = dragPlayer ?? hoverPlayer;
-  const previewPlayer =
-    candidate &&
-    state.offeredTeam?.players.some(
-      (player) => player.playerSeasonId === candidate.playerSeasonId
-    )
-      ? candidate
-      : null;
-
+  const previewPlayer = resolvePreviewPlayer(state, dragPlayer, hoverPlayer);
   const open = openPositions(state, slots);
   const isComplete = isDraftComplete(state, slots);
 

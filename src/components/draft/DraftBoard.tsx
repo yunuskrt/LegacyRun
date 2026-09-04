@@ -179,6 +179,9 @@ const DraftBoard = ({
               <span className={PLACEHOLDER_ICON}>
                 <Dices className="size-7" />
               </span>
+              {/* Separated rather than the roster heading's run of badges:
+                  this is a sentence at body weight, where unspaced positions
+                  read as one word. */}
               <p className="mt-5 text-lg font-bold">
                 Open slots:{" "}
                 {openPositions.map((position, index) => (

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { TRADITIONAL_SLOTS } from "@/data/formations";
 import { MOCK_DRAFT_TEAMS } from "@/data/mock-draft-teams";
-import { isSlotBreathing, slotMotionState } from "@/lib/draft-preview";
+import {
+  isSlotBreathing,
+  resolvePreviewPlayer,
+  slotMotionState,
+} from "@/lib/draft-preview";
 import {
   createDraftReducer,
   INITIAL_DRAFT_STATE,
@@ -41,6 +45,139 @@ const slotAt = (position: Position, overrides = {}) =>
     accepts,
     ...overrides,
   });
+
+describe("resolvePreviewPlayer", () => {
+  const otherTeam = MOCK_DRAFT_TEAMS.find(
+    (t) => t.teamSeasonId === "bulls-1996"
+  );
+  if (!otherTeam) throw new Error("missing fixture team bulls-1996");
+
+  const jordan = otherTeam.players.find((p) => p.playerId === "michael-jordan");
+  if (!jordan) throw new Error("missing fixture player michael-jordan");
+
+  it("previews the hovered player when nothing is being dragged", () => {
+    expect(resolvePreviewPlayer(offered, null, pierce)).toBe(pierce);
+  });
+
+  it("previews the dragged player when nothing is hovered", () => {
+    expect(resolvePreviewPlayer(offered, rondo, null)).toBe(rondo);
+  });
+
+  it("previews nothing with an empty hand", () => {
+    expect(resolvePreviewPlayer(offered, null, null)).toBeNull();
+  });
+
+  // Mid-drag the pointer is over the court, not the card, so a hover left
+  // behind by the drag must never outrank the player actually in hand.
+  it("lets a drag outrank a stale hover", () => {
+    expect(resolvePreviewPlayer(offered, rondo, pierce)).toBe(rondo);
+  });
+
+  // The bug this function exists for: a card that unmounts under the pointer
+  // never fires `pointerleave`, so drafting by click leaves a stale hover
+  // behind. Drafting also clears the board, and a player off the board must
+  // not keep the court reacting to him for the rest of the run.
+  it("drops a hover left behind by the draft that cleared the board", () => {
+    const drafted = reduce(
+      reduce(offered, { type: "SELECT_SLOT", position: "SF" }),
+      { type: "DRAFT_PLAYER", player: pierce, position: "SF" }
+    );
+
+    expect(drafted.offeredTeam).toBeNull();
+    expect(resolvePreviewPlayer(drafted, null, pierce)).toBeNull();
+  });
+
+  it("drops a hover held over from the previous team on the board", () => {
+    const rerolled = reduce(offered, { type: "REROLL", team: otherTeam });
+
+    expect(resolvePreviewPlayer(rerolled, null, pierce)).toBeNull();
+    expect(resolvePreviewPlayer(rerolled, null, jordan)).toBe(jordan);
+  });
+
+  // The staleness check has to cover the stronger of the two states as well —
+  // a drag is not exempt from it just because it wins the ranking.
+  it("checks a drag against the board too, not just a hover", () => {
+    const rerolled = reduce(offered, { type: "REROLL", team: otherTeam });
+
+    expect(resolvePreviewPlayer(rerolled, pierce, jordan)).toBeNull();
+  });
+
+  it("previews nothing before any team reaches the board", () => {
+    expect(resolvePreviewPlayer(INITIAL_DRAFT_STATE, pierce, rondo)).toBeNull();
+  });
+
+  // The invariant the court depends on: `slotMotionState` runs the preview
+  // through `validateDraft`, which would happily rule on a player who is not
+  // on the board at all. Whatever comes back is always a player the board is
+  // currently offering.
+  it("only ever previews a player the board is currently offering", () => {
+    const boards = [team, otherTeam];
+
+    boards.forEach((board) => {
+      const state = reduce(INITIAL_DRAFT_STATE, {
+        type: "OFFER_TEAM",
+        team: board,
+      });
+      const ids = new Set(board.players.map((p) => p.playerSeasonId));
+
+      boards.forEach((source) => {
+        source.players.forEach((player) => {
+          [
+            resolvePreviewPlayer(state, player, null),
+            resolvePreviewPlayer(state, null, player),
+          ].forEach((preview) => {
+            if (preview === null) return;
+            expect(ids.has(preview.playerSeasonId)).toBe(true);
+          });
+        });
+      });
+    });
+  });
+});
+
+// The two halves of the pointer pipeline, checked together: separately they
+// each pass while the court still misreads a stale pointer.
+describe("resolvePreviewPlayer + slotMotionState", () => {
+  const otherTeam = MOCK_DRAFT_TEAMS.find(
+    (t) => t.teamSeasonId === "bulls-1996"
+  );
+  if (!otherTeam) throw new Error("missing fixture team bulls-1996");
+
+  // The shipped bug, end to end: draft by click, so the card unmounts under
+  // the pointer without firing `pointerleave`. The drafted player is now a
+  // duplicate, so leaving him previewed makes every slot refuse him and the
+  // court stops inviting anything for the rest of the run.
+  it("keeps every open slot inviting under a hover the draft left behind", () => {
+    const drafted = reduce(
+      reduce(offered, { type: "SELECT_SLOT", position: "SF" }),
+      { type: "DRAFT_PLAYER", player: pierce, position: "SF" }
+    );
+    const next = reduce(drafted, { type: "OFFER_TEAM", team: otherTeam });
+    const open = slots.filter((position) => position !== "SF");
+    const acceptsNext = (player: DraftablePlayer, position: Position) =>
+      slotAcceptsPlayer(next, slots, player, position);
+
+    const invitedWith = (previewPlayer: DraftablePlayer | null) =>
+      open.filter(
+        (position) =>
+          slotMotionState({
+            position,
+            isFilled: false,
+            isOpen: true,
+            isSelected: false,
+            previewPlayer,
+            dragOver: null,
+            accepts: acceptsNext,
+          }).isInviting
+      );
+
+    expect(invitedWith(resolvePreviewPlayer(next, null, pierce))).toEqual(open);
+
+    // Without the staleness check the preview survives as `pierce`, and this
+    // is what the court then reads — so the assertion above is not vacuous.
+    expect(invitedWith(pierce)).toEqual([]);
+  });
+});
 
 describe("slotMotionState — invitation", () => {
   it("invites every open slot when nothing is previewed", () => {
