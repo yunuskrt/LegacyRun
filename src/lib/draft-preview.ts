@@ -1,3 +1,4 @@
+import type { DraftState } from "@/lib/draft";
 import type { DraftablePlayer, Position } from "@/types/game";
 
 // How a court slot responds to the player currently under the pointer or on the
@@ -6,6 +7,28 @@ import type { DraftablePlayer, Position } from "@/types/game";
 // drop the reducer then rejects.
 
 export type SlotDragState = "NONE" | "VALID" | "INVALID";
+
+// A drag outranks a hover by construction: mid-drag the pointer is over the
+// court, not the card, so a stale hover must never win.
+//
+// The winner is then checked against the roster on the board, because a card
+// that unmounts under the pointer never fires `pointerleave` — drafting by
+// click otherwise leaves the drafted player previewed, and since he is now a
+// duplicate no slot would invite anything for the rest of the run.
+export const resolvePreviewPlayer = (
+  state: DraftState,
+  dragPlayer: DraftablePlayer | null,
+  hoverPlayer: DraftablePlayer | null
+): DraftablePlayer | null => {
+  const candidate = dragPlayer ?? hoverPlayer;
+  if (!candidate) return null;
+
+  const isOnBoard = state.offeredTeam?.players.some(
+    (player) => player.playerSeasonId === candidate.playerSeasonId
+  );
+
+  return isOnBoard ? candidate : null;
+};
 
 type SlotInput = {
   position: Position;

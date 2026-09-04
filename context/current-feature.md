@@ -1536,3 +1536,133 @@ rather than a cold build — the production `build` was verified separately.
 Still open, and untouched by this refactor: run state is not persisted (settled
 as a deliberate no in Phase 19). The champion path still cannot be reached by
 playing. No touch-drag support. `bracketSlot` remains unrendered by design.
+
+### Refactor — `src/components/draft` cleanup
+
+**Not a numbered phase.** A `refactor-scanner` audit of the 10 files in
+`src/components/draft` found one rule still buried in a component, one comment
+that documented the opposite of what the code does, and two duplications. All
+four are fixed here. **No behaviour changed on screen** — the diff is one
+extraction, one comment correction, one presentational component and one
+recorded decision. Ships `resolvePreviewPlayer` in `src/lib/draft-preview.ts`,
+`src/components/draft/RatingBadge.tsx`, and 10 Vitest tests (567 → 577). Net
++121/−35 across 8 files. No schema change, no migration, **no new dependency**,
+no database read or write, and no API route touched.
+
+Gotchas:
+
+- **The extracted rule is the one piece of the pointer pipeline that had already
+  shipped a bug.** `previewPlayer` sat inline in `DraftExperience` as
+  `dragPlayer ?? hoverPlayer` filtered against the offered roster; that filter
+  exists because a card unmounting under the pointer never fires
+  `pointerleave`, so drafting by click left the drafted player previewed — and
+  since he is then a duplicate, **no slot invited anything for the rest of the
+  run**. Phase 20 part 2 found that by driving the UI and fixed it in place. It
+  is a decision rule, not mechanism, so it belongs beside `slotMotionState` and
+  `isSlotBreathing` where a test can reach it — the extraction convention this
+  project has followed since Phase 11's `mode` dispatch.
+- **`DraftTopBar`'s progress-bar comment claimed the opposite of the code.** It
+  read "one segment per slot, indexed by slot order, so the bar fills PG→C",
+  but the component receives only `filledSlots` and `totalSlots` — it has no
+  position data at all — and fills on `index < filledSlots`, i.e. purely by
+  count. Phase 20 part 2 had already **rejected** slot-indexing (it leaves gaps
+  under a "5/5" caption if C is drafted first), so the comment was a leftover
+  from the design that lost. A future reader restoring the documented behaviour
+  would have reintroduced exactly that. Replaced with the real rule and the
+  reason for it.
+- **`CourtSlot`'s rating chip is deliberately not merged into `RatingBadge`.**
+  It is sized in `cqw` under Phase 5's container-scaling rule, so it is
+  correctly divergent from the two fixed-size chips; the shared component says
+  so in a comment. Only `RosterPlayerCard` (with `dimmed`) and
+  `SquadConfirmDialog` use it.
+- **`DraftBoard`'s two open-position renderings were left as two.** The roster
+  heading prints a run of bold badges, the idle placeholder threads `" · "`
+  separators — same data, same file, ~60 lines apart, with nothing saying why.
+  They are genuinely different contexts (a small uppercase caption versus a
+  body-weight sentence, where unspaced positions read as one word), so the fix
+  is the recorded decision, not a unification that would make one of them wrong.
+- **Five findings were deliberately declined**, and the two that matter are
+  declined on the project's own precedent: `useReducedMotion() ?? false`
+  repeated in seven files, and a shared "interactive row" Tailwind base across
+  three, are **mechanism, not rules** — the same bar that declined a shared
+  timer helper in the `src/hooks` refactor. Also left: the two-line position
+  accent stripe duplicated across two files, `DraftBoard`'s `stateKey`-vs-render
+  dual branch (they agree today; drift hazard only), and `openPositions` naming
+  a function in lib and a prop in `DraftBoard`.
+- **`blockedReason` was assessed for extraction and declined.** It is a pure
+  function inside `RosterPlayerCard`, which is normally exactly what
+  `/feature test` hoists out — but each branch is a 1:1 constant lookup, so a
+  direct test asserts the strings back to itself, the hole Phase 12's name cap
+  and Phase 19's leader guard both fell into. Its one non-tautological property
+  (a card is disabled exactly when it has a reason to show) spans `isDisabled`,
+  which is component-local too, so pinning half the pair buys little. Folding
+  both into one function returning `{ isDisabled, reason }` would make that
+  agreement structural rather than tested, and is the better fix if it is ever
+  worth doing.
+- **The audit found no dead code**, and its one severity claim was checked
+  rather than repeated: `TeamLogoBadge`'s `size="sm"` looks unused inside
+  `src/components/draft/` but is consumed by `ReplayScoreboard`, `TeamSlotRow`
+  and `FinalsChampionStub`.
+
+**`/feature test` closed three holes in tests written during implementation,
+and the third is the one that matters.** The ranking table was missing its
+drag-only row. The invariant was never stated — `slotMotionState` runs the
+preview through `validateDraft`, which will happily rule on a player who is not
+on the board at all, so "whatever comes back is a player the board is currently
+offering" is the property the court depends on; it is now asserted across both
+fixture rosters, every player, both hands. And **nothing linked the two halves
+of the pipeline** — `resolvePreviewPlayer` and `slotMotionState` sat in separate
+describe blocks with no test spanning the seam the bug actually lived in. The
+end-to-end test drafts by click, offers the next team, and asserts every open
+slot still invites; it carries a second assertion that the same call with the
+stale player invites **nothing**, so the first cannot pass vacuously.
+
+**Three mutations, all dead**, `draft-preview.ts` byte-identical after each:
+dropping the staleness check (**6** tests, up from 4 before the new ones),
+letting a hover outrank a drag (2), and exempting the drag from the staleness
+check while keeping it for the hover (3, including the new invariant). That
+third mutant is the one the original seven tests would have missed.
+
+Verified: `npm test` (577), `tsc --noEmit`, `lint`, `format:check`, `build` —
+both `/play` routes still prerender static, all four API routes still dynamic.
+
+Driven against live Neon in the browser with **zero console errors and zero
+warnings**, at true CSS widths of **1440 and 391 with no horizontal overflow at
+either**. The drive deliberately targeted the extracted rule rather than the
+page as a whole, measuring the court's breathe loops (2800ms, infinite,
+opacity 0.7→1→0.7) per slot:
+
+- **Invitation narrows to exactly the slots that accept the previewed player.**
+  With PG selected, hovering an SG card left **only the SG slot breathing**;
+  hovering a PG card left **none** (the PG slot being selected, and no other
+  slot taking a PG). At rest, four breathing and the selected slot held.
+- **The regression case passes end to end.** Drafted Morant by clicking his
+  card, so it unmounted under the pointer with no `pointerleave`; drew the next
+  team and **all four remaining slots breathed again**. The stale-preview bug
+  would have left zero.
+- **Both badge variants measured identical to before the extraction** — solid
+  gold on the 4 draftable cards, `bg-primary/25` + `text-primary-foreground/70`
+  on all 17 blocked ones, and the same 14px / 700 / 2px-8px / 8px in the
+  dialog's five rows. The progress bar read 5/5 with all five segments at
+  `scaleX` 1, which is the count-based fill the corrected comment describes.
+- Full run to hand-off: 5/5 drafted off real rosters, dialog ordered PG→C, EAST
+  confirmed, landed on `/play/tournament` at Round 1.
+
+**A measurement caveat worth carrying:** the first hover probe showed no
+narrowing and read as a defect. The pointer was already inside that card's box
+from the previous click, so **no `pointerenter` ever fired** — the component was
+correct and the probe was not. Any future drive of this page must move the
+pointer between two elements before trusting a hover reading.
+
+Not verified: the touched components have no tests, per `coding-standards.md`.
+`RatingBadge` is a component and is covered only by the browser measurements
+above. The cross-season duplicate is still test-only — the offered team is
+server-random, so the same player cannot be forced onto a second board from the
+UI (unchanged since Phase 13). The dev server already running on port 3000 was
+reused rather than restarted, so the browser check ran against HMR-applied edits
+rather than a cold build; the production `build` was verified separately.
+
+Still open, and untouched by this refactor: run state is not persisted (settled
+as a deliberate no in Phase 19). The champion path still cannot be reached by
+playing. No touch-drag support. `bracketSlot` remains unrendered by design.
+Phase 12's 320px horizontal overflow on the draft page is untouched.

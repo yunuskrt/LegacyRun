@@ -3,6 +3,7 @@
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Ban } from "lucide-react";
+import RatingBadge from "@/components/draft/RatingBadge";
 import { PLAYER_DRAG_TYPE, type PlayerAvailability } from "@/lib/draft";
 import { abbreviatePlayerName } from "@/lib/format";
 import { transitionFor } from "@/lib/motion";
@@ -112,16 +113,7 @@ const RosterPlayerCard = ({
               {player.position}
             </span>
           </span>
-          <span
-            className={cn(
-              "rounded-md px-2 py-0.5 text-sm font-bold",
-              isDisabled
-                ? "bg-primary/25 text-primary-foreground/70"
-                : "bg-primary text-primary-foreground"
-            )}
-          >
-            {player.rating}
-          </span>
+          <RatingBadge rating={player.rating} dimmed={isDisabled} />
         </div>
 
         {reason && (

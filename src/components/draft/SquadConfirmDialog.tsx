@@ -3,6 +3,7 @@
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ShieldCheck } from "lucide-react";
+import RatingBadge from "@/components/draft/RatingBadge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -96,9 +97,7 @@ const SquadConfirmDialog = ({
                 </p>
               </div>
 
-              <span className="bg-primary text-primary-foreground rounded-md px-2 py-0.5 text-sm font-bold">
-                {member.rating}
-              </span>
+              <RatingBadge rating={member.rating} />
             </motion.li>
           ))}
         </ul>

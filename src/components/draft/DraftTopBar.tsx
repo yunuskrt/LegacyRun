@@ -45,8 +45,9 @@ const DraftTopBar = ({ filledSlots, totalSlots }: Props) => {
         <p className="text-primary text-xl font-bold sm:text-2xl">
           <TweenNumber value={filledSlots} />/{totalSlots}
         </p>
-        {/* One segment per slot, indexed by slot order, so the bar fills PG→C
-            like the court rather than in draft order. */}
+        {/* Segments fill by count, never by slot identity: indexing them by
+            slot would leave gaps under a "5/5" caption if C were drafted
+            first, and the court already shows which slot is which. */}
         <motion.div
           // Segments flex to whatever the column already is, so the bar can
           // never widen the header — at 390 an intrinsically-sized one pushed
