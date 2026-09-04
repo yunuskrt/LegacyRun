@@ -17,6 +17,7 @@ import {
   matchupCardState,
   nextSquadMatchup,
   opponentOf,
+  postSeriesView,
   revealedThroughFor,
   roundMotionFor,
   roundsUntilFinals,
@@ -32,6 +33,7 @@ import {
   visibleRounds,
   visibleSeriesFor,
 } from "@/lib/tournament-view";
+import type { RunOutcome } from "@/lib/tournament-view";
 import type { PlayoffTeamRow } from "@/lib/bracket";
 import type {
   Bracket,
@@ -256,6 +258,23 @@ describe("opponentOf", () => {
         winner: null,
       })
     ).toBeNull();
+  });
+
+  // The Finals matchup's historical side is the drawn champion itself, which is
+  // what lets a screen holding `finalsOpponent` reuse it rather than reading the
+  // matchup's slots a second way.
+  it("finds the drawn champion in the Finals matchup", () => {
+    let bracket = buildResolvedBracket();
+
+    for (let round = 0; round < 3; round += 1) {
+      bracket = winSquadMatchup(bracket);
+    }
+
+    const finals = nextSquadMatchup(bracket) as BracketMatchup;
+
+    expect(finals.round).toBe("NBA_FINALS");
+    expect(opponentOf(finals)).not.toBeNull();
+    expect(opponentOf(finals)).toEqual(finalsOpponent(bracket));
   });
 });
 
@@ -742,6 +761,76 @@ describe("runOutcome", () => {
   });
 });
 
+describe("postSeriesView", () => {
+  const nextMatchup = (round: BracketRoundId): BracketMatchup => ({
+    id: `next-${round}`,
+    round,
+    home: null,
+    away: null,
+    winner: null,
+  });
+
+  const outcomes: RunOutcome[] = [
+    { kind: "IN_PROGRESS" },
+    { kind: "CHAMPION" },
+    { kind: "ELIMINATED", round: "FIRST_ROUND" },
+  ];
+
+  const everyView = () =>
+    outcomes.flatMap((outcome) =>
+      [null, nextMatchup("CONFERENCE_SEMIS")].map((matchup) =>
+        postSeriesView(outcome, matchup)
+      )
+    );
+
+  it("returns to the bracket only while the run is unfinished", () => {
+    expect(postSeriesView({ kind: "IN_PROGRESS" }, null).stage).toBe("BRACKET");
+    expect(postSeriesView({ kind: "CHAMPION" }, null).stage).toBe("RESULT");
+    expect(
+      postSeriesView({ kind: "ELIMINATED", round: "FIRST_ROUND" }, null).stage
+    ).toBe("RESULT");
+  });
+
+  // Spelled out rather than built from ROUND_PHRASE: the article belongs to the
+  // round, and a label composed from the constant would pass however it changed.
+  it("names the round the squad is continuing to", () => {
+    const label = (round: BracketRoundId) =>
+      postSeriesView({ kind: "IN_PROGRESS" }, nextMatchup(round)).ctaLabel;
+
+    expect(label("FIRST_ROUND")).toBe("Continue to Round 1");
+    expect(label("NBA_FINALS")).toBe("Continue to the NBA Finals");
+  });
+
+  // The rule this function exists for. Splitting the stage and the label across
+  // two hand-written expressions let an in-progress run reach the bracket under
+  // a button reading "See how the run ended"; no label may sit on both stages.
+  it("never puts one label on both stages", () => {
+    const labelStages = new Map<string, Set<string>>();
+
+    everyView().forEach(({ stage, ctaLabel }) => {
+      const stages = labelStages.get(ctaLabel) ?? new Set<string>();
+
+      stages.add(stage);
+      labelStages.set(ctaLabel, stages);
+    });
+
+    labelStages.forEach((stages) => expect(stages.size).toBe(1));
+  });
+
+  it("keeps an in-progress run on the bracket when no matchup is ready", () => {
+    const view = postSeriesView({ kind: "IN_PROGRESS" }, null);
+    const ended = postSeriesView(
+      { kind: "ELIMINATED", round: "FIRST_ROUND" },
+      null
+    );
+
+    expect(view.stage).toBe("BRACKET");
+    expect(view.ctaLabel).not.toBe(ended.ctaLabel);
+    // No round to name, so it must not promise one either.
+    expect(view.ctaLabel).not.toContain("Continue to");
+  });
+});
+
 // `bracketSlot` is a layout position that reads as a seed. Only
 // `BracketOpponent.seed` may reach the screen as a number.
 describe("bracketSlot never renders", () => {
@@ -750,6 +839,7 @@ describe("bracketSlot never renders", () => {
     "src/components/tournament/TeamSlotRow.tsx",
     "src/components/tournament/BracketLadder.tsx",
     "src/components/tournament/BracketSpine.tsx",
+    "src/components/tournament/BracketStageView.tsx",
     "src/components/tournament/FinalsChampionStub.tsx",
     "src/components/tournament/SeriesResultCard.tsx",
   ];

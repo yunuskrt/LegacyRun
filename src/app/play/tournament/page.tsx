@@ -2,10 +2,8 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { Crown, Trophy } from "lucide-react";
 import { useRun } from "@/components/play/RunProvider";
-import BracketLadder from "@/components/tournament/BracketLadder";
-import BracketSpine from "@/components/tournament/BracketSpine";
+import BracketStageView from "@/components/tournament/BracketStageView";
 import RunResultScreen from "@/components/tournament/RunResultScreen";
 import SeriesReplay from "@/components/tournament/SeriesReplay";
 import SquadRail from "@/components/tournament/SquadRail";
@@ -22,14 +20,12 @@ import {
   requestMatchData,
 } from "@/lib/match-client";
 import { findMatchup, playMatchup, resolveOpponentMatchups } from "@/lib/match";
-import { ROUND_LABELS, oppositeConference } from "@/lib/bracket";
+import { oppositeConference } from "@/lib/bracket";
 import {
-  CONFERENCE_NAME,
-  PLAY_CTA,
-  ROUND_PHRASE,
   finalsOpponent,
   isFinalsOpponentRevealed,
   nextSquadMatchup,
+  postSeriesView,
   revealedThroughFor,
   roundsUntilFinals,
   runOutcome,
@@ -196,26 +192,16 @@ const TournamentPage = ({}: Props) => {
     setStage("SERIES");
   };
 
+  const postSeries = postSeriesView(outcome, nextMatchup);
+
   const continueFromSeries = () => {
     setActiveMatchupId(null);
-    setStage(outcome.kind === "IN_PROGRESS" ? "BRACKET" : "RESULT");
+    setStage(postSeries.stage);
   };
 
-  const seriesCtaLabel =
-    outcome.kind === "IN_PROGRESS" && nextMatchup
-      ? `Continue to ${ROUND_PHRASE[nextMatchup.round]}`
-      : outcome.kind === "CHAMPION"
-        ? "See the result"
-        : "See how the run ended";
-
-  const finalsSlot =
-    nextMatchup?.round === "NBA_FINALS"
-      ? nextMatchup.home?.side === "OPPONENT"
-        ? nextMatchup.home.opponent
-        : nextMatchup.away?.side === "OPPONENT"
-          ? nextMatchup.away.opponent
-          : null
-      : null;
+  // The drawn Finals opponent is the only historical side of that matchup, so
+  // reaching it means `champion` is already resolved.
+  const finalsSlot = nextMatchup?.round === "NBA_FINALS" ? champion : null;
 
   const startNewRun = () => {
     resetRun();
@@ -230,81 +216,26 @@ const TournamentPage = ({}: Props) => {
   const bracketChampion = isArchive ? finalsOpponent(bracket) : champion;
 
   const bracketView = (
-    <>
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-primary text-[0.6875rem] font-semibold tracking-[0.18em]">
-            {CONFERENCE_NAME[conference].toUpperCase()} CONFERENCE BRACKET
-          </p>
-          <h1 className="text-foreground mt-1 flex items-center gap-3 text-3xl font-bold sm:text-4xl">
-            {!isArchive && nextMatchup?.round === "NBA_FINALS" && (
-              <Trophy className="text-primary size-7" aria-hidden="true" />
-            )}
-            {isArchive
-              ? "The run is complete"
-              : nextMatchup
-                ? ROUND_LABELS[nextMatchup.round]
-                : "Your bracket"}
-          </h1>
-        </div>
-
-        {isArchive ? (
-          <button
-            type="button"
-            onClick={() => setStage("RESULT")}
-            className="border-border bg-secondary text-foreground min-h-11 rounded-xl border px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase"
-          >
-            Back to results
-          </button>
-        ) : (
-          nextMatchup && (
-            <button
-              type="button"
-              onClick={playNextRound}
-              className="bg-gold text-primary-foreground rounded-xl px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase"
-            >
-              {PLAY_CTA[nextMatchup.round]}
-            </button>
-          )
-        )}
-      </header>
-
-      {!isArchive && finalsSlot && (
-        <p className="border-primary/50 bg-card/60 text-foreground flex items-center gap-3 rounded-xl border px-4 py-3 text-[0.6875rem] font-semibold tracking-[0.14em] uppercase">
-          <Crown className="text-primary size-4 shrink-0" aria-hidden="true" />
-          One series from the title — {squadName} vs {finalsSlot.seasonYear}{" "}
-          {finalsSlot.teamName}
-        </p>
-      )}
-
-      <div className="hidden md:block">
-        <BracketLadder
-          rounds={bracketRounds}
-          squad={squad}
-          series={series}
-          nextMatchupId={nextMatchup?.id ?? null}
-          farConference={farConference}
-          finalsOpponent={bracketChampion}
-          roundsUntilFinals={roundsUntilFinals(bracket)}
-          revealedThrough={revealedThrough}
-          readOnly={isArchive}
-        />
-      </div>
-
-      <div className="md:hidden">
-        <BracketSpine
-          rounds={bracketRounds}
-          squad={squad}
-          series={series}
-          nextMatchupId={nextMatchup?.id ?? null}
-          farConference={farConference}
-          finalsOpponent={bracketChampion}
-          roundsUntilFinals={roundsUntilFinals(bracket)}
-          revealedThrough={revealedThrough}
-          readOnly={isArchive}
-        />
-      </div>
-    </>
+    <BracketStageView
+      conference={conference}
+      squadName={squadName}
+      isArchive={isArchive}
+      nextMatchup={nextMatchup}
+      finalsSlot={finalsSlot}
+      display={{
+        rounds: bracketRounds,
+        squad,
+        series,
+        nextMatchupId: nextMatchup?.id ?? null,
+        farConference,
+        finalsOpponent: bracketChampion,
+        roundsUntilFinals: roundsUntilFinals(bracket),
+        revealedThrough,
+        readOnly: isArchive,
+      }}
+      onPlayNextRound={playNextRound}
+      onBackToResults={() => setStage("RESULT")}
+    />
   );
 
   const resultView = (
@@ -335,7 +266,7 @@ const TournamentPage = ({}: Props) => {
               squad={squad}
               speed={speed}
               mode={mode}
-              ctaLabel={seriesCtaLabel}
+              ctaLabel={postSeries.ctaLabel}
               onSpeedChange={setSpeed}
               onModeChange={setMode}
               onContinue={continueFromSeries}
