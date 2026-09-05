@@ -210,3 +210,9 @@ Comment-stripped transpilation of all 82 changed files hashed identically to `ma
 
 Named the three reroll buttons, whose labels vanish below `sm` while lucide hides the icon from the a11y tree, gave `/play/draft` its missing `<h1>`, and lifted the loss badge from 3.89:1 to 5.12:1.
 No foreground passes AA on the old `--destructive` — black tops out at 4.80 — so the badge could only be fixed by lightening the token to `oklch(0.65 0.2 25)`, which also repaired three latent small-text failures elsewhere.
+
+### Fix — Code Scan Follow-ups
+
+Bounded `excludeSeasons` at `SQUAD_SIZE + TOTAL_REROLLS` — the most team-seasons a run can ever be offered — dropped `unoptimized` from the app's only `next/image`, and corrected `teamInitials`' comment; `teamInitials` also got the first tests it has ever had, since the fallback is now a verified path.
+The bound counts ids *after* `splitIds` strips blanks, so padding a list with empty entries does not consume it; a missing logo now fails as a **400** from `/_next/image` rather than a direct 404, and `onError` still fires on that.
+The draft is **not** drag-only, correcting the previous entry's touch concern — `RosterPlayerCard` has an `onClick`, and selecting a slot then clicking a player completes a run without any drag.

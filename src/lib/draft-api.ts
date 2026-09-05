@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { TOTAL_REROLLS } from "@/lib/draft";
 import { splitIds } from "@/lib/query";
 import { teamLogoPath } from "@/lib/team-logo";
+import { SQUAD_SIZE } from "@/types/game";
 import type { DraftTeam, Position } from "@/types/game";
 
 export const DRAFT_TEAM_MODES = [
@@ -35,7 +37,13 @@ export type TeamSeasonRosterRow = {
 
 const teamSeasonId = z.string().trim().min(1).max(64);
 
-const idList = z.string().transform(splitIds).pipe(z.array(teamSeasonId));
+// A run is offered one team-season per slot plus one per reroll, so it can never exclude more.
+const MAX_EXCLUDED_SEASONS = SQUAD_SIZE + TOTAL_REROLLS;
+
+const idList = z
+  .string()
+  .transform(splitIds)
+  .pipe(z.array(teamSeasonId).max(MAX_EXCLUDED_SEASONS));
 
 const draftTeamQuerySchema = z
   .object({

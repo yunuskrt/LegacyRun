@@ -36,7 +36,6 @@ const TeamLogoBadge = ({ teamName, teamLogo, size = "md" }: Props) => {
           alt={teamName}
           width={56}
           height={56}
-          unoptimized
           className="size-full object-contain p-1.5"
           onError={() => setHasLogo(false)}
         />
