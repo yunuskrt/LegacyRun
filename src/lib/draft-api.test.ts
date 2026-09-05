@@ -8,9 +8,14 @@ import {
   toDraftTeam,
 } from "@/lib/draft-api";
 import type { DraftTeamFetchers, TeamSeasonRosterRow } from "@/lib/draft-api";
+import { TOTAL_REROLLS } from "@/lib/draft";
+import { SQUAD_SIZE } from "@/types/game";
 
 const query = (search: string) =>
   parseDraftTeamQuery(new URLSearchParams(search));
+
+const seasonIds = (count: number) =>
+  Array.from({ length: count }, (_, index) => `CHI-${1990 + index}`);
 
 const row: TeamSeasonRosterRow = {
   id: "CHI-1996",
@@ -62,6 +67,31 @@ describe("parseDraftTeamQuery", () => {
     expect(query("excludeSeasons=CHI-1996,,%20LAL-2020%20,")).toEqual({
       mode: "random",
       excludeSeasons: ["CHI-1996", "LAL-2020"],
+    });
+  });
+
+  it("accepts excludeSeasons at the one-per-slot-plus-reroll ceiling", () => {
+    const ids = seasonIds(SQUAD_SIZE + TOTAL_REROLLS);
+
+    expect(query(`excludeSeasons=${ids.join(",")}`)).toEqual({
+      mode: "random",
+      excludeSeasons: ids,
+    });
+  });
+
+  it("rejects excludeSeasons past the ceiling instead of passing it to the query", () => {
+    const ids = seasonIds(SQUAD_SIZE + TOTAL_REROLLS + 1);
+
+    expect(query(`excludeSeasons=${ids.join(",")}`)).toBeNull();
+  });
+
+  it("counts excludeSeasons against the ceiling after blanks are dropped", () => {
+    const ids = seasonIds(SQUAD_SIZE + TOTAL_REROLLS);
+    const padded = `${ids.join(",")},,,,,`;
+
+    expect(query(`excludeSeasons=${padded}`)).toEqual({
+      mode: "random",
+      excludeSeasons: ids,
     });
   });
 

@@ -5,7 +5,7 @@ export const formatSeason = (seasonYear: number): string =>
 export const formatSeasonShort = (seasonYear: number): string =>
   `'${String(seasonYear % 100).padStart(2, "0")}`;
 
-// Fallback for the logo badge — `public/logos/` is empty until the PNGs land.
+// Fallback for the logo badge when a team's PNG is missing or fails to load.
 export const teamInitials = (teamName: string): string =>
   teamName
     .split(/\s+/)
