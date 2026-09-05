@@ -205,3 +205,8 @@ This fixed a latent defect where an in-progress run reached the bracket under a 
 
 Deleted the unused `ui/badge.tsx`, corrected `project-overview.md`'s "In planning" status and `context/README.md`'s file listing, collapsed all 264 multi-line comments in `src/` to one line each, and condensed these history entries from 2,012 lines to 232 — the full text of every earlier entry survives in git.
 Comment-stripped transpilation of all 82 changed files hashed identically to `main`, proving no code changed; `src/data/` was not touched.
+
+### Fix — Accessibility Fixes from the UI Review
+
+Named the three reroll buttons, whose labels vanish below `sm` while lucide hides the icon from the a11y tree, gave `/play/draft` its missing `<h1>`, and lifted the loss badge from 3.89:1 to 5.12:1.
+No foreground passes AA on the old `--destructive` — black tops out at 4.80 — so the badge could only be fixed by lightening the token to `oklch(0.65 0.2 25)`, which also repaired three latent small-text failures elsewhere.

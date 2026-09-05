@@ -31,9 +31,10 @@ const DraftTopBar = ({ filledSlots, totalSlots }: Props) => {
           <p className="text-xl leading-tight font-bold tracking-[0.18em] sm:text-2xl">
             LEGACYRUN
           </p>
-          <p className="text-muted-foreground text-sm sm:text-base">
+          {/* The h1 names the screen, not the wordmark above it — as on the bracket. */}
+          <h1 className="text-muted-foreground text-sm sm:text-base">
             Draft Room · 1980–2026
-          </p>
+          </h1>
         </div>
       </div>
 

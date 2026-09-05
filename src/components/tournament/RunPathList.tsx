@@ -45,7 +45,7 @@ const RunPathList = ({ path, section }: Props) => {
               className={`shrink-0 rounded-full px-2.5 py-0.5 text-[0.625rem] font-bold tabular-nums ${
                 row.won
                   ? "bg-primary text-primary-foreground"
-                  : "bg-destructive text-foreground"
+                  : "bg-destructive text-primary-foreground"
               }`}
             >
               {row.squadWins}-{row.opponentWins}
