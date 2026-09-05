@@ -74,6 +74,8 @@ const RerollPool = ({
           <button
             key={kind}
             type="button"
+            // The visible label is hidden below sm, so the name has to live here too.
+            aria-label={label}
             disabled={isDisabled}
             onClick={() => onReroll(kind)}
             className={cn(

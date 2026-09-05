@@ -146,7 +146,8 @@
   --muted-foreground: oklch(0.68 0.024 258);
   --accent: oklch(0.32 0.04 258);
   --accent-foreground: oklch(0.96 0.008 250);
-  --destructive: oklch(0.6 0.2 25);
+  /* 0.65, not 0.6 — below this no text passes AA on a solid destructive fill. */
+  --destructive: oklch(0.65 0.2 25);
   --border: oklch(0.32 0.03 258);
   --input: oklch(0.32 0.03 258);
   --ring: oklch(0.8 0.15 82);
