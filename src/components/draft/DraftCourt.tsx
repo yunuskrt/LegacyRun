@@ -43,7 +43,8 @@ const DraftCourt = ({
   const [dragOver, setDragOver] = React.useState<Position | null>(null);
 
   return (
-    <div className="bg-court shadow-panel @container border-border relative aspect-[100/110] w-full rounded-2xl border bg-no-repeat [background-image:url(/assets/court.svg)] [background-size:100%_100%]">
+    // Capped on width, never height — a height cap stretches the court and spreads the slots.
+    <div className="bg-court shadow-panel @container border-border relative mx-auto aspect-[100/110] w-full rounded-2xl border bg-no-repeat [background-image:url(/assets/court.svg)] [background-size:100%_100%] lg:max-w-[calc((100svh_-_12rem)/1.1)]">
       {slots.map((position, index) => {
         const member = members.find((entry) => entry.position === position);
         const isOpen = hasActiveTeam && !member;

@@ -38,7 +38,7 @@ Home → Start Game → Select Formation → Draft → Team Complete
 
 - Player is repeatedly shown a random real historical **team + season** (e.g. "2010 Cleveland Cavaliers") and picks one eligible player from that roster for an open slot.
 - **Duplicate rule:** a player (identity normalized across all their seasons — 2008 LeBron and 2010 LeBron are the same person) can be selected only once per run.
-- **Reroll/skip system:** a single unified **"Reroll"** action (3 per run) that swaps the current team+season for a new one — simpler than three separately named actions with a shared pool, and trivially satisfies "never exceed 3 combined" since there's only one action type. Always visible as a remaining count.
+- **Reroll/skip system:** a **"Reroll"** action (5 per run) that swaps the current team+season for a new one. Always visible as a remaining count.
 - Position matching: primary + optional secondary position per player-season; a player must fit an open formation slot to be selectable.
 
 ### C) Historical Data Pool
@@ -121,7 +121,7 @@ Two routes, not five+: keeps the live simulation and bracket experience continuo
 ## 🎯 MVP Scope
 
 - **Data:** historical teams/rosters/positions (all team-seasons), player- and team-season ratings, and playoff participation for the bracket (1980–2026)
-- **Game:** formation select, draft w/ 3 rerolls, duplicate-player prevention, team completion, conference select, tournament, match simulation, manual/automatic modes, 3 speeds, live bracket, win/loss result
+- **Game:** formation select, draft w/ 5 rerolls, duplicate-player prevention, team completion, conference select, tournament, match simulation, manual/automatic modes, 3 speeds, live bracket, win/loss result
 - **UI:** Home, Draft, Team, Bracket, Simulation, Results
 - **Postponed:** AI commentary, advanced animation, accounts, leaderboards, multiplayer, deep statistics
 
@@ -135,7 +135,7 @@ Two routes, not five+: keeps the live simulation and bracket experience continuo
 4. No LLM determines core game logic — tournament brackets or match results.
 5. No scraping of external sites during normal gameplay; external sources are for controlled, offline ingestion only.
 6. A player can be selected once per run, regardless of season (identity normalized).
-7. Exactly 3 total reroll/skip opportunities per run.
+7. Exactly 5 total reroll/skip opportunities per run, shared across every reroll action.
 8. Exactly a 5-player team, respecting the selected formation's slots.
 9. Match results are probabilistic — stronger teams win more often, but upsets must stay possible.
 10. Simulation speed changes presentation pacing only, never the result.

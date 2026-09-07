@@ -64,7 +64,17 @@ const GameReplay = ({
 
   return (
     // Reserves the pinned control bar's height (141px at 390) so the CTA clears it.
-    <div className="flex flex-col gap-5 pb-36 md:pb-0">
+    <div className="flex flex-col gap-4 pb-36 md:pb-0">
+      {/* First in the column, but `fixed` below md, so mobile keeps its bottom bar. */}
+      <ReplayControlBar
+        speed={speed}
+        mode={mode}
+        canSkip={status !== "FINAL"}
+        onSpeedChange={onSpeedChange}
+        onModeChange={onModeChange}
+        onSkip={skip}
+      />
+
       <SeriesBanner
         home={home}
         away={away}
@@ -75,12 +85,12 @@ const GameReplay = ({
 
       {/* Three columns only from xl — at lg the scoreboard numerals collide. */}
       {/* `grid-cols-1` is load-bearing: the implicit column sizes to max-content. */}
-      <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_minmax(0,21rem)]">
+      <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_minmax(0,21rem)]">
         <div className="order-4 lg:order-2 xl:order-1">
           <ScoringLeaders home={home} away={away} leaders={frame.leaders} />
         </div>
 
-        <div className="order-1 flex flex-col gap-5 lg:col-span-2 xl:order-2 xl:col-span-1">
+        <div className="order-1 flex flex-col gap-4 lg:col-span-2 xl:order-2 xl:col-span-1">
           <ReplayScoreboard
             home={home}
             away={away}
@@ -133,15 +143,6 @@ const GameReplay = ({
           {ctaLabel}
         </button>
       )}
-
-      <ReplayControlBar
-        speed={speed}
-        mode={mode}
-        canSkip={status !== "FINAL"}
-        onSpeedChange={onSpeedChange}
-        onModeChange={onModeChange}
-        onSkip={skip}
-      />
     </div>
   );
 };

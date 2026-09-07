@@ -51,7 +51,7 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
   ).toFixed(2);
 
   return (
-    <div className="bg-card shadow-panel rounded-2xl px-4 py-4">
+    <div className="bg-card shadow-panel rounded-2xl px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.18em]">
           MOMENTUM · SCORE MARGIN
@@ -61,7 +61,7 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
         </p>
       </div>
 
-      <div className="relative mt-3 h-24 w-full">
+      <div className="relative mt-2 h-16 w-full">
         <svg
           viewBox={`0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`}
           preserveAspectRatio="none"

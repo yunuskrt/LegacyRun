@@ -247,7 +247,7 @@ const TournamentPage = ({}: Props) => {
   );
 
   return (
-    <main className="bg-room flex flex-1 flex-col gap-8 px-4 py-8 sm:px-6 lg:px-10">
+    <main className="bg-room flex flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-10">
       {/* The result screen lists the five itself, so the rail would repeat them. */}
       {stage !== "RESULT" && (
         <SquadRail squad={squad} conference={conference} />
