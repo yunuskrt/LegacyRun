@@ -7,13 +7,14 @@ argument-hint: run|check
 Review the codebase for cleanup tasks:
 
 1. Make sure that the history in @context/current-feature.md is in order from oldest to newest
-2. Find unnecessary console.log statements in src/
-3. Find unused imports
-4. Check for stale TODO comments
-5. Find orphaned/unused files
-6. Check that context files match actual project state
-7. Check if the .env.production has the same variables (not always the same value) as the .env. If something is missing, tell me.
-8. Find `@ts-ignore` comments that might be stale
+2. Find long comment blocks for a statement (more than 1 line or 50 characters)
+3. Find unnecessary console.log statements in src/
+4. Find unused imports
+5. Check for stale TODO comments
+6. Find orphaned/unused files
+7. Check that context files match actual project state
+8. Check if the .env.production has the same variables (not always the same value) as the .env. If something is missing, tell me.
+9. Find `@ts-ignore` comments that might be stale
 
 **Mode: $ARGUMENTS**
 
