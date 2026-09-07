@@ -97,14 +97,6 @@ const TeamSlotRow = ({
         >
           {opponent.seasonYear} {opponent.teamName}
         </p>
-        <p className="mt-1 flex flex-wrap items-center gap-2">
-          <span className="border-border text-muted-foreground rounded-md border px-1.5 py-0.5 text-[0.625rem] font-semibold tracking-[0.12em]">
-            {opponent.seed} SEED
-          </span>
-          <span className="text-muted-foreground text-[0.6875rem] font-medium">
-            {opponent.wins}-{opponent.losses}
-          </span>
-        </p>
         {!compact && (
           <p className="mt-1.5">
             <DifficultyMeter

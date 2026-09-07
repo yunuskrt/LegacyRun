@@ -115,7 +115,7 @@ const DraftBoard = ({
                   </>
                 ) : (
                   <>
-                    Roster · Select an open slot{" "}
+                    Roster · Open slots{" "}
                     {openPositions.map((position) => (
                       <span
                         key={position}
@@ -168,9 +168,7 @@ const DraftBoard = ({
                 <Loader2 className="size-7 animate-spin" />
               </span>
               <p className="mt-5 text-lg font-bold">Drawing a team</p>
-              <p className="text-muted-foreground mt-1">
-                Pulling a season from 1,292 historical rosters.
-              </p>
+              <p className="text-muted-foreground mt-1">Pulling a team.</p>
             </div>
           ) : (
             <div className="py-6 text-center">

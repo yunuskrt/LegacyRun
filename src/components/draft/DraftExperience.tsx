@@ -47,7 +47,6 @@ type Props = {
 
 const REJECTION_MESSAGE: Record<DraftRejection, string> = {
   NO_TEAM_OFFERED: "Get a random team before drafting.",
-  NO_SLOT_SELECTED: "Select an open slot on the court first.",
   SLOT_FILLED: "That slot already has a player.",
   WRONG_POSITION: "Attempt to place in wrong position.",
   ALREADY_DRAFTED: "That player is already on your roster.",

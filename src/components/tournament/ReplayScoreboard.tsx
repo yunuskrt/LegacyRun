@@ -60,7 +60,7 @@ const ReplayScoreboard = ({
   }, [leadChangeAt, leader, reduced, homeFlash, awayFlash]);
 
   const scoreClass = (side: "HOME" | "AWAY") =>
-    `text-[clamp(3.25rem,11cqw,5.5rem)] leading-none font-bold tabular-nums ${
+    `text-[clamp(2.75rem,9cqw,4.5rem)] leading-none font-bold tabular-nums ${
       leader === side ? "text-primary" : "text-foreground"
     }`;
 
@@ -72,13 +72,13 @@ const ReplayScoreboard = ({
         : periodLabel(period);
 
   return (
-    <div className="@container bg-card shadow-panel rounded-2xl px-5 py-6">
+    <div className="@container bg-card shadow-panel rounded-2xl px-5 py-3">
       <div className="flex items-start justify-between gap-3">
         <SideCrest side={home} />
         <SideCrest side={away} />
       </div>
 
-      <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+      <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="min-w-0 text-left">
           <motion.span
             className="block"
@@ -88,7 +88,7 @@ const ReplayScoreboard = ({
             <TweenNumber value={homeScore} className={scoreClass("HOME")} />
           </motion.span>
           <p
-            className={`mt-2 text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
+            className={`mt-1.5 text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
               home.isSquad ? "text-primary" : "text-muted-foreground"
             }`}
           >
@@ -116,7 +116,7 @@ const ReplayScoreboard = ({
             <TweenNumber value={awayScore} className={scoreClass("AWAY")} />
           </motion.span>
           <p
-            className={`mt-2 text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
+            className={`mt-1.5 text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
               away.isSquad ? "text-primary" : "text-muted-foreground"
             }`}
           >

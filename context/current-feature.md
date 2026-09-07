@@ -216,3 +216,10 @@ No foreground passes AA on the old `--destructive` — black tops out at 4.80 �
 Bounded `excludeSeasons` at `SQUAD_SIZE + TOTAL_REROLLS` — the most team-seasons a run can ever be offered — dropped `unoptimized` from the app's only `next/image`, and corrected `teamInitials`' comment; `teamInitials` also got the first tests it has ever had, since the fallback is now a verified path.
 The bound counts ids *after* `splitIds` strips blanks, so padding a list with empty entries does not consume it; a missing logo now fails as a **400** from `/_next/image` rather than a direct 404, and `onError` still fires on that.
 The draft is **not** drag-only, correcting the previous entry's touch concern — `RosterPlayerCard` has an `onClick`, and selecting a slot then clicking a player completes a run without any drag.
+
+### Feature — Draft Ergonomics & Replay Control Placement
+
+Raised the reroll pool from 3 to 5, capped the court so all five slots fit a desktop viewport, opened a second way to draft — click a player and he takes his own slot, with slot-first and drag-and-drop untouched — moved the replay control bar above the scoreboard, compacted the replay, and dropped the seed and win–loss line from the bracket.
+The player-first path was a rules change, not wiring: `DraftBoard` already passed `selectedPosition ?? player.position`, and only `validateDraft`'s `NO_SLOT_SELECTED` guard stood in the way; retiring it made `AVAILABLE` identical to `DRAFTABLE` and that rejection unreachable, so both were deleted rather than left as dead branches.
+The court is capped on **width** — a `max-height` on an `aspect-ratio` box overrides the ratio and would spread the percentage-placed slots — and `PlayByPlayFeed`'s `max-h-[32rem]` turned out to be the replay grid's real height driver, so compacting the scoreboard bought nothing until the feed came down too.
+The FINAL state is the tallest, not the live one: measuring only mid-game hid a 45px overflow that pushed the continue button below the fold at 1440×900. Mobile's pinned control bar is unchanged — still 141px against its 144px reservation, still 44px touch targets — because `fixed` ignores DOM order.

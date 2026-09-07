@@ -39,8 +39,7 @@ const RosterPlayerCard = ({
 }: Props) => {
   const reduced = useReducedMotion() ?? false;
   const isDraftable = availability === "DRAFTABLE";
-  const isDisabled =
-    availability !== "DRAFTABLE" && availability !== "AVAILABLE";
+  const isDisabled = !isDraftable;
   const reason = blockedReason(availability, selectedPosition);
 
   return (

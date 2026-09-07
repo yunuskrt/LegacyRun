@@ -5,7 +5,7 @@ import type {
   SquadMember,
 } from "@/types/game";
 
-export const TOTAL_REROLLS = 3;
+export const TOTAL_REROLLS = 5;
 
 // `text/plain`, not a custom MIME type — Safari drops those on drop.
 export const PLAYER_DRAG_TYPE = "text/plain";
@@ -28,17 +28,15 @@ export type DraftAction =
 
 export type DraftRejection =
   | "NO_TEAM_OFFERED"
-  | "NO_SLOT_SELECTED"
   | "SLOT_FILLED"
   | "WRONG_POSITION"
   | "ALREADY_DRAFTED";
 
 export type DraftAttempt = { ok: true } | { ok: false; reason: DraftRejection };
 
-// Only DRAFTABLE can be picked; AVAILABLE waits on a slot, the rest are dead ends.
+// Only DRAFTABLE can be picked; the rest are dead ends.
 export type PlayerAvailability =
   | "DRAFTABLE"
-  | "AVAILABLE"
   | "OFF_SLOT"
   | "OUT_OF_POSITION"
   | "ALREADY_DRAFTED";
@@ -94,13 +92,13 @@ export const validateDraft = (
   position: Position
 ): DraftAttempt => {
   if (!state.offeredTeam) return { ok: false, reason: "NO_TEAM_OFFERED" };
-  if (!state.selectedPosition) return { ok: false, reason: "NO_SLOT_SELECTED" };
   // Hard constraint 6, checked before the slot rules so identity is what the player is told.
   if (draftedPlayerSlugs(state).has(player.playerId))
     return { ok: false, reason: "ALREADY_DRAFTED" };
   if (!openPositions(state, slots).includes(position))
     return { ok: false, reason: "SLOT_FILLED" };
-  if (position !== state.selectedPosition)
+  // No slot picked is the player-first path, where the player's own position is the target.
+  if (state.selectedPosition && position !== state.selectedPosition)
     return { ok: false, reason: "WRONG_POSITION" };
   if (player.position !== position)
     return { ok: false, reason: "WRONG_POSITION" };
@@ -131,8 +129,10 @@ export const playerAvailability = (
   if (!openPositions(state, slots).includes(player.position))
     return "OUT_OF_POSITION";
 
-  if (!state.selectedPosition) return "AVAILABLE";
-  return player.position === state.selectedPosition ? "DRAFTABLE" : "OFF_SLOT";
+  // With no slot picked every open-position player is draftable into his own slot.
+  return !state.selectedPosition || player.position === state.selectedPosition
+    ? "DRAFTABLE"
+    : "OFF_SLOT";
 };
 
 export const toSquadMember = (

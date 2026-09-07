@@ -47,7 +47,7 @@ const ReplayControlBar = ({
   onModeChange,
   onSkip,
 }: Props) => (
-  <div className="border-border/70 bg-card/95 fixed inset-x-0 bottom-0 z-30 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 backdrop-blur md:static md:rounded-xl md:border md:px-3">
+  <div className="border-border/70 bg-card/95 fixed inset-x-0 bottom-0 z-30 flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3 backdrop-blur md:static md:rounded-xl md:border md:px-3 md:py-2">
     <div
       className="bg-court flex items-center gap-1 rounded-lg p-1"
       role="group"

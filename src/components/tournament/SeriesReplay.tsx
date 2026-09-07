@@ -94,7 +94,7 @@ const SeriesReplay = ({
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <p className="text-muted-foreground text-center text-[0.625rem] font-semibold tracking-[0.18em]">
         {ROUND_LABELS[matchup.round].toUpperCase()}
       </p>
