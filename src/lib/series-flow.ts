@@ -76,13 +76,11 @@ export const seriesStageOf = (
   return seriesEndStage(matchup, series);
 };
 
-// Skipping is an explicit intervention, so it stops here even in Automatic.
+// Skipping ends the game, not the run — how the buzzer was reached does not change the mode.
 export const gameAdvance = (
   isFinal: boolean,
-  mode: ReplayMode,
-  skipped: boolean
-): StageAdvance =>
-  isFinal && !skipped ? stageAdvance("GAME_FINAL", mode) : NO_ADVANCE;
+  mode: ReplayMode
+): StageAdvance => (isFinal ? stageAdvance("GAME_FINAL", mode) : NO_ADVANCE);
 
 export type SquadGameLine = {
   gameNumber: number;

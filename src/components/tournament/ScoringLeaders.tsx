@@ -3,13 +3,14 @@
 import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { transitionFor } from "@/lib/motion";
-import type { SeriesSideView } from "@/lib/tournament-view";
+import { bySide } from "@/lib/tournament-view";
+import type { SeriesSideView, SidePair } from "@/lib/tournament-view";
 import type { ScoringLine } from "@/types/match";
 
 type Props = {
-  home: SeriesSideView;
-  away: SeriesSideView;
-  leaders: { home: ScoringLine[]; away: ScoringLine[] };
+  first: SeriesSideView;
+  second: SeriesSideView;
+  leaders: SidePair<ScoringLine[]>;
 };
 
 const SideColumn = ({
@@ -61,14 +62,14 @@ const SideColumn = ({
   </div>
 );
 
-const ScoringLeaders = ({ home, away, leaders }: Props) => (
+const ScoringLeaders = ({ first, second, leaders }: Props) => (
   <div className="bg-card shadow-panel rounded-2xl px-4 py-4">
     <p className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.18em]">
       SCORING LEADERS · POINTS
     </p>
     <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-1 xl:gap-5">
-      <SideColumn side={home} lines={leaders.home} />
-      <SideColumn side={away} lines={leaders.away} />
+      <SideColumn side={first} lines={bySide(leaders, first.id)} />
+      <SideColumn side={second} lines={bySide(leaders, second.id)} />
     </div>
   </div>
 );

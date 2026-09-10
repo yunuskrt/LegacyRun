@@ -14,6 +14,7 @@ import { useAutoAdvance } from "@/hooks/useAutoAdvance";
 import { useReplay } from "@/hooks/useReplay";
 import { periodSummary, winsAtBuzzer } from "@/lib/replay";
 import { gameAdvance } from "@/lib/series-flow";
+import { hostFirstSides, squadWinsOf } from "@/lib/tournament-view";
 import type { ReplaySpeed } from "@/lib/replay";
 import type { ReplayMode } from "@/lib/series-flow";
 import type { SeriesSideView } from "@/lib/tournament-view";
@@ -45,21 +46,20 @@ const GameReplay = ({
   onFinish,
 }: Props) => {
   const { frame, cursor, status, jumpToEnd } = useReplay(game, speed);
-  const [skipped, setSkipped] = React.useState(false);
-  const host = game.hostSide === "HOME" ? home : away;
+  // `first` is the host by construction, so the scoreboard follows the series around.
+  const { first, second } = hostFirstSides({ home, away }, game.hostSide);
+  const scores = { home: frame.homeScore, away: frame.awayScore };
 
-  useAutoAdvance(gameAdvance(status === "FINAL", mode, skipped), onFinish);
+  useAutoAdvance(gameAdvance(status === "FINAL", mode), onFinish);
 
-  const skip = () => {
-    setSkipped(true);
-    jumpToEnd();
-  };
-
-  const wins = winsAtBuzzer(
-    winsBefore,
-    status === "FINAL",
-    frame.homeScore,
-    frame.awayScore
+  const wins = squadWinsOf(
+    winsAtBuzzer(
+      winsBefore,
+      status === "FINAL",
+      frame.homeScore,
+      frame.awayScore
+    ),
+    { home, away }
   );
 
   return (
@@ -72,14 +72,14 @@ const GameReplay = ({
         canSkip={status !== "FINAL"}
         onSpeedChange={onSpeedChange}
         onModeChange={onModeChange}
-        onSkip={skip}
+        onSkip={jumpToEnd}
       />
 
       <SeriesBanner
-        home={home}
-        away={away}
+        first={first}
+        second={second}
         gameNumber={game.gameNumber}
-        hostCode={host.code}
+        hostCode={first.code}
         wins={wins}
       />
 
@@ -87,15 +87,18 @@ const GameReplay = ({
       {/* `grid-cols-1` is load-bearing: the implicit column sizes to max-content. */}
       <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_minmax(0,21rem)]">
         <div className="order-4 lg:order-2 xl:order-1">
-          <ScoringLeaders home={home} away={away} leaders={frame.leaders} />
+          <ScoringLeaders
+            first={first}
+            second={second}
+            leaders={frame.leaders}
+          />
         </div>
 
         <div className="order-1 flex flex-col gap-4 lg:col-span-2 xl:order-2 xl:col-span-1">
           <ReplayScoreboard
-            home={home}
-            away={away}
-            homeScore={frame.homeScore}
-            awayScore={frame.awayScore}
+            first={first}
+            second={second}
+            scores={scores}
             period={frame.period}
             clock={frame.clock}
             status={status}
@@ -103,11 +106,11 @@ const GameReplay = ({
           />
           <LineScoreTable
             cells={frame.lineScore}
-            home={home}
-            away={away}
-            homeScore={frame.homeScore}
-            awayScore={frame.awayScore}
+            first={first}
+            second={second}
+            scores={scores}
           />
+          {/* Home/away, not first/second — its y-axis polarity is anchored to the slot. */}
           <MomentumStrip
             points={frame.momentum}
             axisEnd={frame.momentumAxis}
@@ -118,7 +121,7 @@ const GameReplay = ({
         </div>
 
         <div className="order-5 lg:order-3 xl:order-3">
-          <PlayByPlayFeed rows={frame.feed} home={home} away={away} />
+          <PlayByPlayFeed rows={frame.feed} first={first} second={second} />
         </div>
 
         <AnimatePresence>
@@ -126,8 +129,8 @@ const GameReplay = ({
             <div className="bg-background/70 absolute inset-0 z-10 flex items-center justify-center px-4 backdrop-blur-[2px]">
               <PeriodBreakCard
                 summary={periodSummary(game.events, cursor)}
-                home={home}
-                away={away}
+                first={first}
+                second={second}
               />
             </div>
           )}

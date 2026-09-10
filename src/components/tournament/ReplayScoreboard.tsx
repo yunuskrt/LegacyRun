@@ -7,14 +7,15 @@ import TeamCrest from "@/components/tournament/TeamCrest";
 import TweenNumber from "@/components/tournament/TweenNumber";
 import { transitionFor } from "@/lib/motion";
 import { periodLabel } from "@/lib/replay";
-import type { SeriesSideView } from "@/lib/tournament-view";
+import { bySide } from "@/lib/tournament-view";
+import type { SeriesSideView, SidePair } from "@/lib/tournament-view";
 import type { ReplayStatus } from "@/hooks/useReplay";
 
 type Props = {
-  home: SeriesSideView;
-  away: SeriesSideView;
-  homeScore: number;
-  awayScore: number;
+  // Host first — the pair swaps when the series changes venue.
+  first: SeriesSideView;
+  second: SeriesSideView;
+  scores: SidePair<number>;
   period: number;
   clock: string;
   status: ReplayStatus;
@@ -34,34 +35,39 @@ const SideCrest = ({ side }: { side: SeriesSideView }) =>
   );
 
 const ReplayScoreboard = ({
-  home,
-  away,
-  homeScore,
-  awayScore,
+  first,
+  second,
+  scores,
   period,
   clock,
   status,
   leadChangeAt,
 }: Props) => {
   const reduced = useReducedMotion() ?? false;
-  const homeFlash = useAnimationControls();
-  const awayFlash = useAnimationControls();
+  const firstFlash = useAnimationControls();
+  const secondFlash = useAnimationControls();
+  const firstScore = bySide(scores, first.id);
+  const secondScore = bySide(scores, second.id);
   const leader =
-    homeScore === awayScore ? null : homeScore > awayScore ? "HOME" : "AWAY";
+    firstScore === secondScore
+      ? null
+      : firstScore > secondScore
+        ? first.id
+        : second.id;
 
   React.useEffect(() => {
     if (leadChangeAt === null || reduced || leader === null) return;
 
-    const flash = leader === "HOME" ? homeFlash : awayFlash;
+    const flash = leader === first.id ? firstFlash : secondFlash;
 
     // A new animation replaces the running one, so flips flash rather than queue.
     flash.set(FLASH_FROM);
     flash.start(FLASH_TO);
-  }, [leadChangeAt, leader, reduced, homeFlash, awayFlash]);
+  }, [leadChangeAt, leader, reduced, first.id, firstFlash, secondFlash]);
 
-  const scoreClass = (side: "HOME" | "AWAY") =>
+  const scoreClass = (side: SeriesSideView) =>
     `text-[clamp(2.75rem,9cqw,4.5rem)] leading-none font-bold tabular-nums ${
-      leader === side ? "text-primary" : "text-foreground"
+      leader === side.id ? "text-primary" : "text-foreground"
     }`;
 
   const periodText =
@@ -74,25 +80,25 @@ const ReplayScoreboard = ({
   return (
     <div className="@container bg-card shadow-panel rounded-2xl px-5 py-3">
       <div className="flex items-start justify-between gap-3">
-        <SideCrest side={home} />
-        <SideCrest side={away} />
+        <SideCrest side={first} />
+        <SideCrest side={second} />
       </div>
 
       <div className="mt-2 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="min-w-0 text-left">
           <motion.span
             className="block"
-            animate={homeFlash}
+            animate={firstFlash}
             transition={transitionFor("quick", reduced)}
           >
-            <TweenNumber value={homeScore} className={scoreClass("HOME")} />
+            <TweenNumber value={firstScore} className={scoreClass(first)} />
           </motion.span>
           <p
             className={`mt-1.5 text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
-              home.isSquad ? "text-primary" : "text-muted-foreground"
+              first.isSquad ? "text-primary" : "text-muted-foreground"
             }`}
           >
-            {home.name}
+            {first.name}
           </p>
         </div>
 
@@ -110,17 +116,17 @@ const ReplayScoreboard = ({
         <div className="min-w-0 text-right">
           <motion.span
             className="block"
-            animate={awayFlash}
+            animate={secondFlash}
             transition={transitionFor("quick", reduced)}
           >
-            <TweenNumber value={awayScore} className={scoreClass("AWAY")} />
+            <TweenNumber value={secondScore} className={scoreClass(second)} />
           </motion.span>
           <p
             className={`mt-1.5 text-[0.625rem] font-bold tracking-[0.14em] break-words uppercase ${
-              away.isSquad ? "text-primary" : "text-muted-foreground"
+              second.isSquad ? "text-primary" : "text-muted-foreground"
             }`}
           >
-            {away.name}
+            {second.name}
           </p>
         </div>
       </div>

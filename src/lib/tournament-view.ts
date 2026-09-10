@@ -173,6 +173,30 @@ export const seriesSides = (
   away: sideView("AWAY", matchup.away, squad),
 });
 
+export type SidePair<T> = { home: T; away: T };
+
+// Every replay value is slot-keyed, so display order is a lookup rather than a reshuffle.
+export const bySide = <T>(pair: SidePair<T>, side: MatchSideId): T =>
+  side === "HOME" ? pair.home : pair.away;
+
+// The hosting slot leads the scoreboard, and `hostSide` alternates game to game.
+export const hostFirstSides = (
+  sides: SidePair<SeriesSideView>,
+  hostSide: MatchSideId
+): { first: SeriesSideView; second: SeriesSideView } => ({
+  first: bySide(sides, hostSide),
+  second: bySide(sides, hostSide === "HOME" ? "AWAY" : "HOME"),
+});
+
+// Series wins read from the squad's side — the squad is the home slot only in seeds 1-4.
+export const squadWinsOf = (
+  wins: SidePair<number>,
+  sides: SidePair<SeriesSideView>
+): { squad: number; opponent: number } =>
+  sides.away.isSquad
+    ? { squad: wins.away, opponent: wins.home }
+    : { squad: wins.home, opponent: wins.away };
+
 // Shared by BracketLadder (above md) and BracketSpine (below) so the two cannot drift.
 export type BracketDisplayProps = {
   rounds: BracketRound[];

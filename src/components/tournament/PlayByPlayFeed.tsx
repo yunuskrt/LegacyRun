@@ -4,13 +4,14 @@ import React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { transitionFor } from "@/lib/motion";
 import { periodLabel } from "@/lib/replay";
+import { bySide } from "@/lib/tournament-view";
 import type { FeedBadge, FeedRow } from "@/lib/replay";
 import type { SeriesSideView } from "@/lib/tournament-view";
 
 type Props = {
   rows: FeedRow[];
-  home: SeriesSideView;
-  away: SeriesSideView;
+  first: SeriesSideView;
+  second: SeriesSideView;
 };
 
 const BADGE_STYLE: Record<FeedBadge, string> = {
@@ -26,7 +27,7 @@ const badgeLabel = (badge: FeedBadge, row: FeedRow): string =>
       ? "LEAD CHANGE"
       : (row.runLabel ?? "RUN");
 
-const PlayByPlayFeed = ({ rows, home, away }: Props) => (
+const PlayByPlayFeed = ({ rows, first, second }: Props) => (
   <div className="bg-card shadow-panel flex max-h-[28rem] flex-col rounded-2xl">
     <p className="text-muted-foreground shrink-0 px-4 pt-4 pb-3 text-[0.625rem] font-semibold tracking-[0.18em]">
       PLAY-BY-PLAY
@@ -41,7 +42,8 @@ const PlayByPlayFeed = ({ rows, home, away }: Props) => (
 
       <AnimatePresence initial={false}>
         {rows.map((row) => {
-          const side = row.side === "HOME" ? home : away;
+          const side = row.side === first.id ? first : second;
+          const scores = { home: row.homeScore, away: row.awayScore };
 
           return (
             <motion.li
@@ -75,7 +77,7 @@ const PlayByPlayFeed = ({ rows, home, away }: Props) => (
               </span>
 
               <span className="text-foreground shrink-0 text-xs font-bold tabular-nums">
-                {row.homeScore}-{row.awayScore}
+                {bySide(scores, first.id)}-{bySide(scores, second.id)}
               </span>
             </motion.li>
           );

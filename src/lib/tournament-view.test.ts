@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { BANDS, generateBracket, oppositeConference } from "@/lib/bracket";
-import { advanceBracket } from "@/lib/match";
+import { advanceBracket, hostSideFor } from "@/lib/match";
 import {
   BAND_DOTS,
   ELITE_FLOOR,
@@ -9,9 +9,11 @@ import {
   PLAY_CTA,
   ROUND_PHRASE,
   SQUAD_FALLBACK_NAME,
+  bySide,
   difficultyBand,
   finalsOpponent,
   hasSquadName,
+  hostFirstSides,
   isChampionUnlocking,
   isFinalsOpponentRevealed,
   matchupCardState,
@@ -30,10 +32,15 @@ import {
   squadPath,
   squadSeriesScore,
   squadSideOf,
+  squadWinsOf,
   visibleRounds,
   visibleSeriesFor,
 } from "@/lib/tournament-view";
-import type { RunOutcome } from "@/lib/tournament-view";
+import type {
+  RunOutcome,
+  SeriesSideView,
+  SidePair,
+} from "@/lib/tournament-view";
 import type { PlayoffTeamRow } from "@/lib/bracket";
 import type {
   Bracket,
@@ -42,7 +49,7 @@ import type {
   BracketRoundId,
 } from "@/types/bracket";
 import type { Squad } from "@/types/game";
-import type { SeriesState } from "@/types/match";
+import type { MatchSideId, SeriesState } from "@/types/match";
 
 const squad = (name?: string): Squad => ({
   name,
@@ -223,6 +230,109 @@ describe("seriesSides", () => {
     expect(squadOf(named).name).toBe("Dynasty Five");
     expect(squadOf(unnamed).name).toBe(SQUAD_FALLBACK_NAME);
     expect(squadOf(unnamed).teamLogo).toBeNull();
+  });
+});
+
+describe("bySide", () => {
+  it("picks the half of a pair that the slot names", () => {
+    const pair = { home: "H", away: "A" };
+
+    expect(bySide(pair, "HOME")).toBe("H");
+    expect(bySide(pair, "AWAY")).toBe("A");
+  });
+});
+
+describe("hostFirstSides", () => {
+  const sides = () => seriesSides(nextSquadMatchup(buildBracket())!, squad());
+
+  it("leads with the hosting slot, whichever slot that is", () => {
+    const pair = sides();
+
+    expect(hostFirstSides(pair, "HOME")).toEqual({
+      first: pair.home,
+      second: pair.away,
+    });
+    expect(hostFirstSides(pair, "AWAY")).toEqual({
+      first: pair.away,
+      second: pair.home,
+    });
+  });
+
+  // `hostSide` alternates 2-2-1-1-1, so both orders occur inside one series.
+  it("always returns both sides exactly once", () => {
+    const pair = sides();
+
+    for (const host of ["HOME", "AWAY"] as const) {
+      const { first, second } = hostFirstSides(pair, host);
+
+      expect([first.id, second.id].sort()).toEqual(["AWAY", "HOME"]);
+    }
+  });
+
+  // The feature itself: the scoreboard changes cities with the series.
+  it("swaps the pair over a series, following the 2-2-1-1-1 pattern", () => {
+    const pair = sides();
+    const leadingIds = [1, 2, 3, 4, 5, 6, 7].map(
+      (game) => hostFirstSides(pair, hostSideFor(game, "HOME")).first.id
+    );
+
+    expect(leadingIds).toEqual([
+      "HOME",
+      "HOME",
+      "AWAY",
+      "AWAY",
+      "HOME",
+      "AWAY",
+      "HOME",
+    ]);
+  });
+
+  // The scoreboard reads its numbers through `first`/`second`, never through the slot.
+  it("pairs each listed side with that side's score", () => {
+    const pair = sides();
+    const scores = { home: 118, away: 104 };
+
+    for (const game of [1, 3]) {
+      const { first, second } = hostFirstSides(pair, hostSideFor(game, "HOME"));
+
+      expect(bySide(scores, first.id)).toBe(
+        first.id === "HOME" ? scores.home : scores.away
+      );
+      expect(bySide(scores, second.id)).not.toBe(bySide(scores, first.id));
+    }
+  });
+});
+
+describe("squadWinsOf", () => {
+  const withSquadOn = (side: MatchSideId): SidePair<SeriesSideView> => {
+    const pair = seriesSides(nextSquadMatchup(buildBracket())!, squad());
+    const [squadView, otherView] = pair.home.isSquad
+      ? [pair.home, pair.away]
+      : [pair.away, pair.home];
+
+    return side === "HOME"
+      ? {
+          home: { ...squadView, id: "HOME" },
+          away: { ...otherView, id: "AWAY" },
+        }
+      : {
+          home: { ...otherView, id: "HOME" },
+          away: { ...squadView, id: "AWAY" },
+        };
+  };
+
+  // The squad is the home slot only when its rating landed it in seeds 1-4.
+  it("reads the squad's wins from either slot", () => {
+    const wins = { home: 3, away: 1 };
+
+    expect(squadWinsOf(wins, withSquadOn("HOME"))).toEqual({
+      squad: 3,
+      opponent: 1,
+    });
+    expect(squadWinsOf(wins, withSquadOn("AWAY"))).toEqual({
+      squad: 1,
+      opponent: 3,
+    });
   });
 });
 

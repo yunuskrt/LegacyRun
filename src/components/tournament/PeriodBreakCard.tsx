@@ -4,16 +4,17 @@ import React from "react";
 import { motion } from "motion/react";
 import { transitionFor } from "@/lib/motion";
 import { periodBreakLabel } from "@/lib/replay";
+import { bySide } from "@/lib/tournament-view";
 import type { PeriodSummary } from "@/lib/replay";
 import type { SeriesSideView } from "@/lib/tournament-view";
 
 type Props = {
   summary: PeriodSummary;
-  home: SeriesSideView;
-  away: SeriesSideView;
+  first: SeriesSideView;
+  second: SeriesSideView;
 };
 
-const PeriodBreakCard = ({ summary, home, away }: Props) => (
+const PeriodBreakCard = ({ summary, first, second }: Props) => (
   <motion.div
     initial={{ opacity: 0, scale: 0.96 }}
     animate={{ opacity: 1, scale: 1 }}
@@ -26,7 +27,7 @@ const PeriodBreakCard = ({ summary, home, away }: Props) => (
       {periodBreakLabel(summary.period)}
     </p>
     <p className="text-foreground mt-3 text-4xl font-bold tabular-nums">
-      {summary.home}-{summary.away}
+      {bySide(summary, first.id)}-{bySide(summary, second.id)}
     </p>
     <p className="text-muted-foreground mt-1 text-xs">Quarter score</p>
 
@@ -38,7 +39,7 @@ const PeriodBreakCard = ({ summary, home, away }: Props) => (
         <li className="text-muted-foreground text-xs">No points scored</li>
       )}
       {summary.leaders.map((line) => {
-        const side = line.side === "HOME" ? home : away;
+        const side = line.side === first.id ? first : second;
 
         return (
           <li
