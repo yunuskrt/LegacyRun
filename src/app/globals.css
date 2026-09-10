@@ -128,6 +128,18 @@
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* A server render cannot know `prefers-reduced-motion`, so branching a motion
+     `initial` on it mismatches on hydration. Statically rendered entrances declare
+     their initial frame unconditionally and are pinned to their rest state here
+     instead — which also keeps the content visible before JS runs. */
+  [data-motion-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  [data-motion-spent] {
+    opacity: 0 !important;
+  }
 }
 
 /* Dark Trophy Room — see context/theme.md */
@@ -191,5 +203,7 @@
   }
   html {
     @apply font-sans;
+    /* The landing page's "How it works" jump; the reduced-motion block above undoes it. */
+    scroll-behavior: smooth;
   }
 }

@@ -1,11 +1,20 @@
 import React from "react";
+import BracketSection from "@/components/landing/BracketSection";
+import ClosingSection from "@/components/landing/ClosingSection";
+import DraftSection from "@/components/landing/DraftSection";
+import HeroSection from "@/components/landing/HeroSection";
+import PoolSection from "@/components/landing/PoolSection";
 
 type Props = {};
 
 const Home = ({}: Props) => {
   return (
-    <main className="flex flex-1 items-center justify-center">
-      <h1 className="text-4xl font-semibold tracking-tight">Legacy Run</h1>
+    <main className="flex-1">
+      <HeroSection />
+      <PoolSection />
+      <DraftSection />
+      <BracketSection />
+      <ClosingSection />
     </main>
   );
 };

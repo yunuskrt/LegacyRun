@@ -24,6 +24,6 @@ Quick-reference list of what's being built, in build order. For the detailed, pa
 - [x] **Phase 18 — Modes, Speeds & Series Flow**: Manual/Automatic modes, Slow/Normal/Fast speeds, a per-game `Skip to final`, and the series as a unit — face-off, game-to-game chaining, series won/lost cards. Speed rescales pacing only and modes switch mid-replay, both free because the log is already computed (hard constraints 10 and 11). A loss always waits for a click, in both modes. Full spec: `context/features/phase-18-modes-speeds-series-flow.md`.
 - [x] **Phase 19 — Results & Run Summary**: victory/defeat screen and run recap — the five, the path, playoff record, run scoring leader, signature game — plus a read-only bracket archive and a new-run reset. Every figure derived from `SeriesState[]`, points only. **Closes the run-persistence question** left open since Phase 12. Full spec: `context/features/phase-19-results-run-summary.md`.
 - [x] **Phase 20 — Motion & Transition Polish**: Framer Motion across draft reveals, rounds, score updates.
-- [ ] **Phase 21 — Home Screen**: landing page and Start Game CTA.
+- [x] **Phase 21 — Home Screen**: landing page and Start Game CTA.
 - [ ] **Phase 22 — AI Commentary (Post-MVP)**: optional, non-authoritative match commentary.
 - [ ] **Phase 23 — Production Deployment**: Vercel + Neon production setup, smoke test.

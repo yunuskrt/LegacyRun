@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { DOT_ENTRANCE, entranceFrom, staggeredTransition } from "@/lib/motion";
+import { DOT_ENTRANCE, staggeredTransition } from "@/lib/motion";
 import { BAND_DOTS } from "@/lib/tournament-view";
 import type { DifficultyBand } from "@/lib/tournament-view";
 
@@ -40,7 +40,10 @@ const DifficultyMeter = ({ band, dimmed = false }: Props) => {
                 className={`absolute inset-0 rounded-full ${
                   dimmed ? "bg-primary/40" : "bg-primary"
                 }`}
-                initial={entranceFrom(!dimmed, reduced, DOT_ENTRANCE)}
+                // Not branched on `reduced`: a statically rendered meter would then
+                // mismatch on hydration. `data-motion-reveal` pins the rest state instead.
+                data-motion-reveal
+                initial={dimmed ? false : DOT_ENTRANCE}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={staggeredTransition("quick", index, {
                   step: DOT_STEP,
