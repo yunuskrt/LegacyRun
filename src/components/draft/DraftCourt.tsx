@@ -3,6 +3,11 @@
 import React from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import CourtSlot from "@/components/draft/CourtSlot";
+import {
+  COURT_SHELL,
+  COURT_SLOT_PLACEMENT,
+  COURT_SLOT_WIDTH,
+} from "@/lib/court-layout";
 import { PLAYER_DRAG_TYPE } from "@/lib/draft";
 import { slotMotionState } from "@/lib/draft-preview";
 import { staggeredTransition } from "@/lib/motion";
@@ -20,15 +25,6 @@ type Props = {
   onDropPlayer: (playerSeasonId: string, position: Position) => void;
 };
 
-// Percentages of the court box, locked to the SVG's 100x110 viewBox, so slots can't drift.
-const SLOT_PLACEMENT: Record<Position, string> = {
-  PG: "left-[50%] top-[78%]",
-  SG: "left-[15%] top-[60%]",
-  SF: "left-[85%] top-[58%]",
-  PF: "left-[27%] top-[27%]",
-  C: "left-[62%] top-[15%]",
-};
-
 const DraftCourt = ({
   slots,
   members,
@@ -44,7 +40,12 @@ const DraftCourt = ({
 
   return (
     // Capped on width, never height — a height cap stretches the court and spreads the slots.
-    <div className="bg-court shadow-panel @container border-border relative mx-auto aspect-[100/110] w-full rounded-2xl border bg-no-repeat [background-image:url(/assets/court.svg)] [background-size:100%_100%] lg:max-w-[calc((100svh_-_12rem)/1.1)]">
+    <div
+      className={cn(
+        COURT_SHELL,
+        "shadow-panel border-border mx-auto border lg:max-w-[calc((100svh_-_12rem)/1.1)]"
+      )}
+    >
       {slots.map((position, index) => {
         const member = members.find((entry) => entry.position === position);
         const isOpen = hasActiveTeam && !member;
@@ -63,8 +64,9 @@ const DraftCourt = ({
           <div
             key={position}
             className={cn(
-              "absolute w-[30%] -translate-x-1/2 -translate-y-1/2",
-              SLOT_PLACEMENT[position]
+              "absolute -translate-x-1/2 -translate-y-1/2",
+              COURT_SLOT_WIDTH,
+              COURT_SLOT_PLACEMENT[position]
             )}
             // Every slot accepts the drop so a mistaken one is reported, not ignored.
             onDragOver={(event) => event.preventDefault()}

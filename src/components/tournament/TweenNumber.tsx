@@ -7,12 +7,15 @@ import { DURATION, EASE } from "@/lib/motion";
 type Props = {
   value: number;
   className?: string;
+  format?: (value: number) => string;
 };
 
 // The score climbs rather than snaps — what makes a precomputed log read as live.
-const TweenNumber = ({ value, className }: Props) => {
+const TweenNumber = ({ value, className, format }: Props) => {
   const raw = useMotionValue(value);
-  const rounded = useTransform(raw, (current) => Math.round(current));
+  const rounded = useTransform(raw, (current) =>
+    (format ?? String)(Math.round(current))
+  );
 
   React.useEffect(() => {
     const controls = animate(raw, value, {
