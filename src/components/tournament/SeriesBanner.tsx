@@ -6,11 +6,12 @@ import { DOT_ENTRANCE, entranceFrom, transitionFor } from "@/lib/motion";
 import type { SeriesSideView } from "@/lib/tournament-view";
 
 type Props = {
-  home: SeriesSideView;
-  away: SeriesSideView;
+  first: SeriesSideView;
+  second: SeriesSideView;
   gameNumber: number;
   hostCode: string;
-  wins: { home: number; away: number };
+  // Squad-anchored, unlike the sides — gold dots must count your wins from either slot.
+  wins: { squad: number; opponent: number };
 };
 
 // The series so far, never the length of a finished one.
@@ -48,14 +49,14 @@ const SideLabel = ({ side }: { side: SeriesSideView }) => (
   </span>
 );
 
-const SeriesBanner = ({ home, away, gameNumber, hostCode, wins }: Props) => (
+const SeriesBanner = ({ first, second, gameNumber, hostCode, wins }: Props) => (
   <div className="border-border/70 bg-card/70 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3">
     <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-      <SideLabel side={home} />
+      <SideLabel side={first} />
       <span className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.18em]">
         VS
       </span>
-      <SideLabel side={away} />
+      <SideLabel side={second} />
     </div>
 
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -67,11 +68,11 @@ const SeriesBanner = ({ home, away, gameNumber, hostCode, wins }: Props) => (
       </span>
       <span className="flex items-center gap-2">
         <span className="sr-only">
-          Series {wins.home}-{wins.away}
+          Series {wins.squad}-{wins.opponent}
         </span>
-        <Dots won={wins.home} lost={wins.away} />
+        <Dots won={wins.squad} lost={wins.opponent} />
         <span className="text-muted-foreground text-[0.625rem] font-semibold">
-          {wins.home}-{wins.away}
+          {wins.squad}-{wins.opponent}
         </span>
       </span>
     </div>

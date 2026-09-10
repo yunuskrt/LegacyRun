@@ -2,9 +2,9 @@
 
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Check } from "lucide-react";
+import TeamLogoBadge from "@/components/draft/TeamLogoBadge";
 import { isSlotBreathing, type SlotDragState } from "@/lib/draft-preview";
-import { abbreviatePlayerName, formatSeasonShort } from "@/lib/format";
+import { abbreviatePlayerName } from "@/lib/format";
 import { BREATHE, DENY_SHAKE, transitionFor } from "@/lib/motion";
 import {
   POSITION_BORDER,
@@ -26,6 +26,10 @@ type Props = {
 
 const SLOT_SHELL =
   "flex min-h-[20cqw] w-full flex-col items-center justify-center rounded-[1.6cqw] p-[2cqw]";
+
+// Same box as SLOT_SHELL, but left-aligned — a filled card reads as a stat line, not a badge.
+const FILLED_SHELL =
+  "flex min-h-[20cqw] w-full flex-col justify-center rounded-[1.6cqw] p-[2.2cqw]";
 
 const JERSEY =
   "block size-[9cqw] bg-current [mask-image:url(/assets/jersey-empty-slot.svg)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]";
@@ -93,26 +97,39 @@ const CourtSlot = ({
         animate={gesture}
         transition={gestureTransition}
         className={cn(
-          SLOT_SHELL,
+          FILLED_SHELL,
           "bg-card relative border-2",
           POSITION_BORDER[position],
           POSITION_GLOW[position]
         )}
       >
-        <span className="bg-primary text-primary-foreground absolute top-[1.4cqw] right-[1.4cqw] flex size-[2.6cqw] items-center justify-center rounded-full">
-          <Check className="size-[1.8cqw]" strokeWidth={3.5} />
-        </span>
-        <span className="text-muted-foreground block size-[9cqw] bg-current [mask-image:url(/assets/player-silhouette.svg)] [mask-position:center] [mask-repeat:no-repeat] [mask-size:contain]" />
-        <p className="mt-[1.4cqw] text-center text-[clamp(0.6rem,1.85cqw,0.95rem)] leading-tight font-semibold">
+        <div className="flex items-center justify-between gap-[1cqw]">
+          <span className="flex min-w-0 items-center gap-[1.2cqw]">
+            <TeamLogoBadge
+              teamName={member.teamName}
+              teamLogo={member.teamLogo}
+              size="court"
+            />
+            <span
+              className={cn(
+                "text-[clamp(0.5rem,1.95cqw,0.85rem)] leading-none font-bold tracking-[0.1em]",
+                POSITION_TEXT[position]
+              )}
+            >
+              {position}
+            </span>
+          </span>
+          <span className="bg-primary text-primary-foreground flex shrink-0 items-center justify-center rounded-full px-[1.5cqw] py-[0.8cqw] text-[clamp(0.5rem,1.85cqw,0.8rem)] leading-none font-bold">
+            {member.rating}
+            <span className="sr-only"> overall</span>
+          </span>
+        </div>
+
+        <p className="mt-[1.8cqw] truncate text-[clamp(0.6rem,2.1cqw,1.05rem)] leading-tight font-semibold">
           {abbreviatePlayerName(member.name)}
         </p>
-        <p className="mt-[0.8cqw] flex items-center gap-[1cqw] text-[clamp(0.5rem,1.45cqw,0.8rem)] leading-none">
-          <span className={cn("font-bold", POSITION_TEXT[position])}>
-            {position} {formatSeasonShort(member.seasonYear)}
-          </span>
-          <span className="bg-primary text-primary-foreground rounded-[0.5cqw] px-[0.9cqw] py-[0.5cqw] font-bold">
-            {member.rating}
-          </span>
+        <p className="text-muted-foreground mt-[0.7cqw] truncate text-[clamp(0.5rem,1.75cqw,0.85rem)] leading-tight">
+          {member.seasonYear} {member.teamName}
         </p>
       </motion.div>
     );

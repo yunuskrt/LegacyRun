@@ -5,7 +5,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { teamInitials } from "@/lib/format";
 
-type BadgeSize = "sm" | "md";
+type BadgeSize = "sm" | "md" | "court";
 
 type Props = {
   teamName: string;
@@ -13,14 +13,24 @@ type Props = {
   size?: BadgeSize;
 };
 
+// `court` is sized in cqw so it scales with the court, unlike the two px sizes.
 const BOX: Record<BadgeSize, string> = {
   sm: "size-9 rounded-lg",
   md: "size-14 rounded-xl",
+  court: "size-[4.6cqw] rounded-[0.5cqw]",
 };
 
 const FALLBACK_TEXT: Record<BadgeSize, string> = {
   sm: "text-[0.625rem]",
   md: "text-lg",
+  court: "text-[clamp(0.35rem,1.2cqw,0.6rem)]",
+};
+
+// At court size the box is ~16px, where a fixed 6px inset would leave almost no logo.
+const INSET: Record<BadgeSize, string> = {
+  sm: "p-1.5",
+  md: "p-1.5",
+  court: "p-[0.3cqw]",
 };
 
 const TeamLogoBadge = ({ teamName, teamLogo, size = "md" }: Props) => {
@@ -36,7 +46,7 @@ const TeamLogoBadge = ({ teamName, teamLogo, size = "md" }: Props) => {
           alt={teamName}
           width={56}
           height={56}
-          className="size-full object-contain p-1.5"
+          className={`size-full object-contain ${INSET[size]}`}
           onError={() => setHasLogo(false)}
         />
       ) : (

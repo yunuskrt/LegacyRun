@@ -240,24 +240,22 @@ describe("isSeriesEnd", () => {
 describe("gameAdvance", () => {
   it("does not advance while the game is still running", () => {
     for (const mode of REPLAY_MODES) {
-      expect(gameAdvance(false, mode, false)).toEqual({ kind: "NONE" });
-      expect(gameAdvance(false, mode, true)).toEqual({ kind: "NONE" });
+      expect(gameAdvance(false, mode)).toEqual({ kind: "NONE" });
     }
   });
 
+  // A skipped buzzer is the same buzzer, so the mode alone decides what happens next.
   it("hands game-to-game back to the mode at the final buzzer", () => {
-    expect(gameAdvance(true, "MANUAL", false)).toEqual({ kind: "CLICK" });
-    expect(gameAdvance(true, "AUTOMATIC", false)).toEqual({
+    expect(gameAdvance(true, "MANUAL")).toEqual({ kind: "CLICK" });
+    expect(gameAdvance(true, "AUTOMATIC")).toEqual({
       kind: "AUTO",
       delayMs: NEXT_GAME_MS,
     });
   });
 
-  // Skipping is explicit, so it stops at this game's final even in Automatic.
-  it("never chains into the next game after a skip, in either mode", () => {
-    for (const mode of REPLAY_MODES) {
-      expect(advanceDelayMs(gameAdvance(true, mode, true))).toBeNull();
-    }
+  it("waits for a click at the final buzzer only in Manual", () => {
+    expect(advanceDelayMs(gameAdvance(true, "MANUAL"))).toBeNull();
+    expect(advanceDelayMs(gameAdvance(true, "AUTOMATIC"))).toBe(NEXT_GAME_MS);
   });
 });
 

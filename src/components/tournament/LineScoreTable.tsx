@@ -1,18 +1,18 @@
 import React from "react";
 import { periodLabel } from "@/lib/replay";
+import { bySide } from "@/lib/tournament-view";
 import type { LineScoreCell } from "@/lib/replay";
-import type { SeriesSideView } from "@/lib/tournament-view";
+import type { SeriesSideView, SidePair } from "@/lib/tournament-view";
 
 type Props = {
   cells: LineScoreCell[];
-  home: SeriesSideView;
-  away: SeriesSideView;
-  homeScore: number;
-  awayScore: number;
+  first: SeriesSideView;
+  second: SeriesSideView;
+  scores: SidePair<number>;
 };
 
-const LineScoreTable = ({ cells, home, away, homeScore, awayScore }: Props) => {
-  const row = (side: SeriesSideView, total: number) => (
+const LineScoreTable = ({ cells, first, second, scores }: Props) => {
+  const row = (side: SeriesSideView) => (
     <tr className="border-border/50 border-t">
       <th
         scope="row"
@@ -23,7 +23,7 @@ const LineScoreTable = ({ cells, home, away, homeScore, awayScore }: Props) => {
         {side.code}
       </th>
       {cells.map((cell) => {
-        const value = side.id === "HOME" ? cell.home : cell.away;
+        const value = bySide(cell, side.id);
 
         return (
           <td
@@ -39,7 +39,7 @@ const LineScoreTable = ({ cells, home, away, homeScore, awayScore }: Props) => {
         );
       })}
       <td className="text-foreground px-4 py-2 text-center text-sm font-bold tabular-nums">
-        {total}
+        {bySide(scores, side.id)}
       </td>
     </tr>
   );
@@ -73,8 +73,8 @@ const LineScoreTable = ({ cells, home, away, homeScore, awayScore }: Props) => {
             </tr>
           </thead>
           <tbody>
-            {row(home, homeScore)}
-            {row(away, awayScore)}
+            {row(first)}
+            {row(second)}
           </tbody>
         </table>
       </div>
