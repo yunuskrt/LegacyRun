@@ -2,10 +2,12 @@
 
 import React from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { Crown, ShieldOff } from "lucide-react";
+import { Crown, Share2, ShieldOff } from "lucide-react";
 import RunPathList from "@/components/tournament/RunPathList";
 import RunRecapStats from "@/components/tournament/RunRecapStats";
 import RunSquadGrid from "@/components/tournament/RunSquadGrid";
+import ShareRunDialog from "@/components/tournament/ShareRunDialog";
+import { buildShareCard } from "@/lib/share-card";
 import {
   FADE_RISE,
   STAGE_STEP,
@@ -57,6 +59,11 @@ const RunResultScreen = ({
   const reduced = useReducedMotion() ?? false;
   const path = runPath(bracket, series);
   const eliminated = eliminationRow(path);
+  const [shareOpen, setShareOpen] = React.useState(false);
+  const shareCard = React.useMemo(
+    () => buildShareCard(squad, bracket, series, isChampion),
+    [squad, bracket, series, isChampion]
+  );
 
   // Glyph, overline, outcome, name — staged rather than staggered as a list.
   const headerLine = (index: number) => ({
@@ -157,6 +164,17 @@ const RunResultScreen = ({
         </motion.button>
         <motion.button
           type="button"
+          onClick={() => setShareOpen(true)}
+          {...press}
+          transition={transitionFor("quick", reduced)}
+          className="border-border bg-secondary text-foreground flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase sm:w-auto"
+        >
+          <Share2 className="size-4" aria-hidden="true" />
+          Share your run
+        </motion.button>
+
+        <motion.button
+          type="button"
           onClick={onReviewBracket}
           {...press}
           transition={transitionFor("quick", reduced)}
@@ -165,6 +183,12 @@ const RunResultScreen = ({
           Review bracket
         </motion.button>
       </motion.div>
+
+      <ShareRunDialog
+        open={shareOpen}
+        card={shareCard}
+        onOpenChange={setShareOpen}
+      />
     </div>
   );
 };
