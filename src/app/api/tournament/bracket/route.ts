@@ -1,4 +1,4 @@
-import { apiFailure, apiSuccess } from "@/lib/api-response";
+import { apiFailure, apiSuccess, NO_STORE_HEADERS } from "@/lib/api-response";
 import { generateBracket, parseBracketQuery } from "@/lib/bracket";
 import { getPlayoffCandidates } from "@/lib/db/bracket";
 import { mintSeed } from "@/lib/rng";
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       return apiFailure("NO_ELIGIBLE_TEAM", 404);
     }
 
-    return apiSuccess(bracket, { "Cache-Control": "no-store" });
+    return apiSuccess(bracket, NO_STORE_HEADERS);
   } catch (error) {
     console.error("[api/tournament/bracket] query failed", error);
 

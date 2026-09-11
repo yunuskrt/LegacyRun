@@ -4,6 +4,7 @@ import React from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { transitionFor } from "@/lib/motion";
 import { REGULATION_SECONDS } from "@/lib/replay";
+import { marginPolarity } from "@/lib/tournament-view";
 import type { MomentumPoint } from "@/lib/replay";
 import type { SeriesSideView } from "@/lib/tournament-view";
 
@@ -11,8 +12,8 @@ type Props = {
   points: MomentumPoint[];
   axisEnd: number;
   margin: number;
-  home: SeriesSideView;
-  away: SeriesSideView;
+  first: SeriesSideView;
+  second: SeriesSideView;
 };
 
 const VIEW_WIDTH = 100;
@@ -21,9 +22,11 @@ const MIN_SCALE = 8;
 // Without it the widest margin lands on the viewBox edge and loses half its stroke.
 const AMPLITUDE = VIEW_HEIGHT / 2 - 2;
 
-const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
+const MomentumStrip = ({ points, axisEnd, margin, first, second }: Props) => {
   const reduced = useReducedMotion() ?? false;
-  const leader = margin === 0 ? null : margin > 0 ? home : away;
+  // The chart rises for whoever leads the scoreboard, so it flips with the host.
+  const polarity = marginPolarity(first);
+  const leader = margin === 0 ? null : margin * polarity > 0 ? first : second;
   const span = Math.max(
     MIN_SCALE,
     ...points.map((point) => Math.abs(point.margin))
@@ -34,7 +37,7 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
 
   const coords = points.map((point) => {
     const x = (point.x / REGULATION_SECONDS) * VIEW_WIDTH;
-    const y = VIEW_HEIGHT / 2 - (point.margin / span) * AMPLITUDE;
+    const y = VIEW_HEIGHT / 2 - ((point.margin * polarity) / span) * AMPLITUDE;
 
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   });
@@ -46,7 +49,8 @@ const MomentumStrip = ({ points, axisEnd, margin, home, away }: Props) => {
   );
   // The same margin the stroke gets, for the same clipping reason.
   const tipTop = (
-    ((VIEW_HEIGHT / 2 - (tip.margin / span) * AMPLITUDE) / VIEW_HEIGHT) *
+    ((VIEW_HEIGHT / 2 - ((tip.margin * polarity) / span) * AMPLITUDE) /
+      VIEW_HEIGHT) *
     100
   ).toFixed(2);
 

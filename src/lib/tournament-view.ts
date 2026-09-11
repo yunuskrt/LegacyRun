@@ -188,6 +188,10 @@ export const hostFirstSides = (
   second: bySide(sides, hostSide === "HOME" ? "AWAY" : "HOME"),
 });
 
+// Margins are slot-signed (home − away), so an away-hosted game plots upside down without this.
+export const marginPolarity = (first: SeriesSideView): 1 | -1 =>
+  first.id === "HOME" ? 1 : -1;
+
 // Series wins read from the squad's side — the squad is the home slot only in seeds 1-4.
 export const squadWinsOf = (
   wins: SidePair<number>,

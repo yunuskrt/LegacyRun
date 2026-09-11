@@ -1,5 +1,12 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { apiFailure, apiSuccess } from "@/lib/api-response";
+import {
+  apiFailure,
+  apiSuccess,
+  FROZEN_HISTORY_HEADERS,
+  NO_STORE_HEADERS,
+} from "@/lib/api-response";
 
 describe("apiSuccess", () => {
   it("wraps the payload in the success envelope with a 200", async () => {
@@ -16,6 +23,69 @@ describe("apiSuccess", () => {
     const response = apiSuccess("ok", { "Cache-Control": "no-store" });
 
     expect(response.headers.get("cache-control")).toBe("no-store");
+  });
+});
+
+describe("cache headers", () => {
+  const API_DIR = join(process.cwd(), "src/app/api");
+
+  // The PNG route's `public, …, immutable` is a different header for a different
+  // kind of response, and only coincidentally shares the max-age.
+  const SHARE_CARD = join("share", "card", "route.ts");
+
+  const dataRoutes = readdirSync(API_DIR, {
+    recursive: true,
+    encoding: "utf8",
+  }).filter((entry) => entry.endsWith("route.ts") && entry !== SHARE_CARD);
+
+  it("carries the values the routes used to inline", () => {
+    expect(FROZEN_HISTORY_HEADERS["Cache-Control"]).toBe("max-age=31536000");
+    expect(NO_STORE_HEADERS["Cache-Control"]).toBe("no-store");
+  });
+
+  // Defined once is only true while nothing re-inlines it — this is what stops the drift.
+  it("are never written as a literal in a data route", () => {
+    expect(dataRoutes.length).toBeGreaterThan(0);
+
+    for (const route of dataRoutes) {
+      const source = readFileSync(join(API_DIR, route), "utf8");
+
+      expect(
+        source.includes("Cache-Control"),
+        `${route} inlines a Cache-Control header — import it from @/lib/api-response instead.`
+      ).toBe(false);
+    }
+  });
+
+  // A shared constant stops the values drifting, not a route reaching for the wrong one.
+  const EXPECTED: Record<
+    string,
+    "FROZEN_HISTORY_HEADERS" | "NO_STORE_HEADERS"
+  > = {
+    [join("draft", "team", "route.ts")]: "NO_STORE_HEADERS",
+    [join("draft", "team", "[teamSeasonId]", "route.ts")]:
+      "FROZEN_HISTORY_HEADERS",
+    [join("tournament", "bracket", "route.ts")]: "NO_STORE_HEADERS",
+    [join("tournament", "match-data", "route.ts")]: "FROZEN_HISTORY_HEADERS",
+  };
+
+  // A new data route has to declare which one it is rather than inheriting a default.
+  it("covers every data route", () => {
+    expect([...dataRoutes].sort()).toEqual(Object.keys(EXPECTED).sort());
+  });
+
+  // Year-caching a randomised draw would serve one team+season for the life of the cache.
+  it("caches only the routes that return frozen history", () => {
+    for (const [route, expected] of Object.entries(EXPECTED)) {
+      const source = readFileSync(join(API_DIR, route), "utf8");
+      const wrong =
+        expected === "NO_STORE_HEADERS"
+          ? "FROZEN_HISTORY_HEADERS"
+          : "NO_STORE_HEADERS";
+
+      expect(source, `${route} should send ${expected}`).toContain(expected);
+      expect(source.includes(wrong), `${route} sends ${wrong}`).toBe(false);
+    }
   });
 });
 
