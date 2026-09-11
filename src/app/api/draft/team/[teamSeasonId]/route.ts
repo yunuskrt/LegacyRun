@@ -1,6 +1,10 @@
 import { getTeamSeasonById } from "@/lib/db/draft";
 import { parseTeamSeasonId } from "@/lib/draft-api";
-import { apiFailure, apiSuccess } from "@/lib/api-response";
+import {
+  apiFailure,
+  apiSuccess,
+  FROZEN_HISTORY_HEADERS,
+} from "@/lib/api-response";
 
 // Route Handlers are uncached by default, so the other three's force-dynamic is redundant.
 export async function GET(
@@ -21,8 +25,7 @@ export async function GET(
       return apiFailure("NO_ELIGIBLE_TEAM", 404);
     }
 
-    // Frozen history, so it never goes stale; errors are not cached.
-    return apiSuccess(team, { "Cache-Control": "max-age=31536000" });
+    return apiSuccess(team, FROZEN_HISTORY_HEADERS);
   } catch (error) {
     console.error("[api/draft/team/[teamSeasonId]] query failed", error);
 

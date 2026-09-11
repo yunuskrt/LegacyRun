@@ -1,4 +1,8 @@
-import { apiFailure, apiSuccess } from "@/lib/api-response";
+import {
+  apiFailure,
+  apiSuccess,
+  FROZEN_HISTORY_HEADERS,
+} from "@/lib/api-response";
 import { buildMatchData, parseMatchDataQuery } from "@/lib/match";
 import { getOpponentRosters, getSquadPlayers } from "@/lib/db/match";
 
@@ -23,8 +27,7 @@ export async function GET(request: Request) {
       return apiFailure("NO_ELIGIBLE_TEAM", 404);
     }
 
-    // Frozen history, so it never goes stale; errors are not cached.
-    return apiSuccess(data, { "Cache-Control": "max-age=31536000" });
+    return apiSuccess(data, FROZEN_HISTORY_HEADERS);
   } catch (error) {
     console.error("[api/tournament/match-data] query failed", error);
 

@@ -16,6 +16,7 @@ import {
   hostFirstSides,
   isChampionUnlocking,
   isFinalsOpponentRevealed,
+  marginPolarity,
   matchupCardState,
   nextSquadMatchup,
   opponentOf,
@@ -299,6 +300,52 @@ describe("hostFirstSides", () => {
         first.id === "HOME" ? scores.home : scores.away
       );
       expect(bySide(scores, second.id)).not.toBe(bySide(scores, first.id));
+    }
+  });
+});
+
+describe("marginPolarity", () => {
+  const sides = () => seriesSides(nextSquadMatchup(buildBracket())!, squad());
+
+  it("flips only when the away slot leads the display", () => {
+    const pair = sides();
+
+    expect(marginPolarity(hostFirstSides(pair, "HOME").first)).toBe(1);
+    expect(marginPolarity(hostFirstSides(pair, "AWAY").first)).toBe(-1);
+  });
+
+  // The bug this fixes: the chart rose for the HOME slot whatever the scoreboard showed.
+  it("raises the chart for the side the scoreboard leads with", () => {
+    const pair = sides();
+    const scores = { home: 118, away: 104 };
+    const margin = scores.home - scores.away;
+
+    for (const host of ["HOME", "AWAY"] as const) {
+      const { first, second } = hostFirstSides(pair, host);
+      const plotted = margin * marginPolarity(first);
+      const leader = plotted > 0 ? first : second;
+
+      expect(bySide(scores, leader.id)).toBe(
+        Math.max(scores.home, scores.away)
+      );
+    }
+  });
+
+  // Whichever way it points, the label and the line must name the same team.
+  it("keeps the leader label and the plotted direction in agreement", () => {
+    const pair = sides();
+
+    for (const host of ["HOME", "AWAY"] as const) {
+      for (const margin of [12, -12]) {
+        const { first, second } = hostFirstSides(pair, host);
+        const polarity = marginPolarity(first);
+        const leader = margin * polarity > 0 ? first : second;
+        const risesForFirst = margin * polarity > 0;
+
+        expect(risesForFirst).toBe(leader.id === first.id);
+        // Slot-signed throughout: a positive margin is always the home slot's lead.
+        expect(leader.id).toBe(margin > 0 ? "HOME" : "AWAY");
+      }
     }
   });
 });

@@ -4,7 +4,7 @@ import {
   getRandomTeamSeason,
 } from "@/lib/db/draft";
 import { fetchDraftTeam, parseDraftTeamQuery } from "@/lib/draft-api";
-import { apiFailure, apiSuccess } from "@/lib/api-response";
+import { apiFailure, apiSuccess, NO_STORE_HEADERS } from "@/lib/api-response";
 import type { DraftTeamFetchers } from "@/lib/draft-api";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,7 @@ export async function GET(request: Request) {
       return apiFailure("NO_ELIGIBLE_TEAM", 404);
     }
 
-    return apiSuccess(team, { "Cache-Control": "no-store" });
+    return apiSuccess(team, NO_STORE_HEADERS);
   } catch (error) {
     console.error("[api/draft/team] query failed", error);
 

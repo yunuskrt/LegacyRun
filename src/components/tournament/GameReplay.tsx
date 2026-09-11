@@ -110,13 +110,12 @@ const GameReplay = ({
             second={second}
             scores={scores}
           />
-          {/* Home/away, not first/second — its y-axis polarity is anchored to the slot. */}
           <MomentumStrip
             points={frame.momentum}
             axisEnd={frame.momentumAxis}
             margin={frame.margin}
-            home={home}
-            away={away}
+            first={first}
+            second={second}
           />
         </div>
 
