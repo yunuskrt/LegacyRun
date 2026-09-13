@@ -59,6 +59,7 @@ const DraftExperience = ({ slots }: Props) => {
   const [state, dispatch] = React.useReducer(reducer, INITIAL_DRAFT_STATE);
   const [isFetchingTeam, setIsFetchingTeam] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const confirmTriggerRef = React.useRef<HTMLButtonElement>(null);
   const [isHandingOff, setIsHandingOff] = React.useState(false);
   const [hoverPlayer, setHoverPlayer] = React.useState<DraftablePlayer | null>(
     null
@@ -71,6 +72,8 @@ const DraftExperience = ({ slots }: Props) => {
   const previewPlayer = resolvePreviewPlayer(state, dragPlayer, hoverPlayer);
   const open = openPositions(state, slots);
   const isComplete = isDraftComplete(state, slots);
+  // Visibility of the pinned CTA; canGetTeam is this same rule minus the in-flight fetch, which must not blink the bar.
+  const needsTeam = canOfferTeam(state, slots);
 
   React.useEffect(() => () => inFlight.current?.abort(), []);
 
@@ -138,13 +141,20 @@ const DraftExperience = ({ slots }: Props) => {
   };
 
   return (
-    <main className="flex flex-1 flex-col gap-6">
+    <main
+      className={cn(
+        "flex flex-1 flex-col gap-6",
+        // Reserves the pinned Get Random Team bar, which is fixed and so takes no flow space.
+        needsTeam && "pb-20 lg:pb-0"
+      )}
+    >
       <DraftTopBar
         filledSlots={state.members.length}
         totalSlots={slots.length}
       />
 
-      <div className="grid flex-1 gap-8 lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] lg:items-start">
+      {/* The base column must be explicit — an implicit `auto` floors at min-content and the widest roster card pushes the court past a 375px viewport. */}
+      <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] lg:items-start">
         <section>
           <DraftSectionHeading>Your Lineup</DraftSectionHeading>
           <DraftCourt
@@ -176,7 +186,8 @@ const DraftExperience = ({ slots }: Props) => {
             totalRerolls={TOTAL_REROLLS}
             isComplete={isComplete}
             isFetchingTeam={isFetchingTeam}
-            canGetTeam={canOfferTeam(state, slots) && !isFetchingTeam}
+            needsTeam={needsTeam}
+            canGetTeam={needsTeam && !isFetchingTeam}
             canReroll={canReroll(state, slots) && !isFetchingTeam}
             onGetRandomTeam={handleGetRandomTeam}
             onReroll={handleReroll}
@@ -187,6 +198,7 @@ const DraftExperience = ({ slots }: Props) => {
 
           <div className="mt-6">
             <Button
+              ref={confirmTriggerRef}
               type="button"
               variant={isComplete ? "default" : "secondary"}
               size="lg"
@@ -214,6 +226,7 @@ const DraftExperience = ({ slots }: Props) => {
           open={isConfirmOpen}
           members={state.members}
           slots={slots}
+          triggerRef={confirmTriggerRef}
           onOpenChange={setIsConfirmOpen}
           onConfirm={handleConfirmSquad}
         />

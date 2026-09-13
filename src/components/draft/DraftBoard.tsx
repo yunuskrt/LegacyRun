@@ -24,6 +24,7 @@ type Props = {
   totalRerolls: number;
   isComplete: boolean;
   isFetchingTeam: boolean;
+  needsTeam: boolean;
   canGetTeam: boolean;
   canReroll: boolean;
   onGetRandomTeam: () => void;
@@ -45,6 +46,7 @@ const DraftBoard = ({
   totalRerolls,
   isComplete,
   isFetchingTeam,
+  needsTeam,
   canGetTeam,
   canReroll,
   onGetRandomTeam,
@@ -63,154 +65,176 @@ const DraftBoard = ({
         : "idle";
 
   return (
-    <Card className="shadow-panel gap-0 p-5">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={stateKey}
-          initial={FADE_RISE.initial}
-          animate={FADE_RISE.animate}
-          exit={FADE_RISE.exit}
-          transition={transitionFor("base", reduced)}
-          className="mb-5"
-        >
-          {isComplete ? (
-            <div className="py-6 text-center">
-              <span className={PLACEHOLDER_ICON}>
-                <Dices className="size-7" />
-              </span>
-              <p className="mt-5 text-xl font-bold">Lineup complete</p>
-              <p className="text-muted-foreground mt-1">
-                Your five legends are locked in.
-              </p>
-            </div>
-          ) : team ? (
-            <div>
-              <div className="flex items-center gap-4">
-                <TeamLogoBadge
-                  teamName={team.teamName}
-                  teamLogo={team.teamLogo}
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-xl font-bold">
-                    {formatSeason(team.seasonYear)} {team.teamName}
-                  </p>
-                  <p className="text-muted-foreground text-sm tracking-[0.14em] uppercase">
-                    Team rating {team.teamRating}
-                  </p>
-                </div>
+    <>
+      <Card className="shadow-panel gap-0 p-5">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={stateKey}
+            initial={FADE_RISE.initial}
+            animate={FADE_RISE.animate}
+            exit={FADE_RISE.exit}
+            transition={transitionFor("base", reduced)}
+            className="mb-5"
+          >
+            {isComplete ? (
+              <div className="py-6 text-center">
+                <span className={PLACEHOLDER_ICON}>
+                  <Dices className="size-7" />
+                </span>
+                <p className="mt-5 text-xl font-bold">Lineup complete</p>
+                <p className="text-muted-foreground mt-1">
+                  Your five legends are locked in.
+                </p>
               </div>
+            ) : team ? (
+              <div>
+                <div className="flex items-center gap-4">
+                  <TeamLogoBadge
+                    teamName={team.teamName}
+                    teamLogo={team.teamLogo}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-xl font-bold">
+                      {formatSeason(team.seasonYear)} {team.teamName}
+                    </p>
+                    <p className="text-muted-foreground text-sm tracking-[0.14em] uppercase">
+                      Team rating {team.teamRating}
+                    </p>
+                  </div>
+                </div>
 
-              <p className="text-muted-foreground mt-5 mb-3 text-sm tracking-[0.14em] uppercase">
-                {selectedPosition ? (
-                  <>
-                    Roster · Pick a{" "}
-                    <span
-                      className={cn(
-                        "font-bold",
-                        POSITION_TEXT[selectedPosition]
-                      )}
-                    >
-                      {selectedPosition}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    Roster · Open slots{" "}
-                    {openPositions.map((position) => (
+                <p className="text-muted-foreground mt-5 mb-3 text-sm tracking-[0.14em] uppercase">
+                  {selectedPosition ? (
+                    <>
+                      Roster · Pick a{" "}
                       <span
-                        key={position}
                         className={cn(
-                          "ml-1 font-bold",
-                          POSITION_TEXT[position]
+                          "font-bold",
+                          POSITION_TEXT[selectedPosition]
                         )}
                       >
+                        {selectedPosition}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      Roster · Open slots{" "}
+                      {openPositions.map((position) => (
+                        <span
+                          key={position}
+                          className={cn(
+                            "ml-1 font-bold",
+                            POSITION_TEXT[position]
+                          )}
+                        >
+                          {position}
+                        </span>
+                      ))}
+                    </>
+                  )}
+                </p>
+
+                <div className="grid max-h-[26rem] grid-cols-2 gap-3 overflow-y-auto pr-1">
+                  {team.players.map((player, index) => (
+                    <motion.div
+                      key={player.playerSeasonId}
+                      initial={FADE_RISE.initial}
+                      animate={FADE_RISE.animate}
+                      transition={staggeredTransition("base", index, {
+                        reduced,
+                      })}
+                      // On the wrapper: a disabled button dispatches no pointer events.
+                      onPointerEnter={() => onHoverPlayer(player)}
+                      onPointerLeave={() => onHoverPlayer(null)}
+                    >
+                      <RosterPlayerCard
+                        player={player}
+                        availability={availabilityOf(player)}
+                        selectedPosition={selectedPosition}
+                        onDraft={() =>
+                          onDraftPlayer(
+                            player,
+                            selectedPosition ?? player.position
+                          )
+                        }
+                        onDragChange={(dragging) =>
+                          onDragPlayer(dragging ? player : null)
+                        }
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            ) : isFetchingTeam ? (
+              <div className="py-6 text-center">
+                <span className={PLACEHOLDER_ICON}>
+                  <Loader2 className="size-7 animate-spin" />
+                </span>
+                <p className="mt-5 text-lg font-bold">Drawing a team</p>
+                <p className="text-muted-foreground mt-1">Pulling a team.</p>
+              </div>
+            ) : (
+              <div className="py-6 text-center">
+                <span className={PLACEHOLDER_ICON}>
+                  <Dices className="size-7" />
+                </span>
+                {/* Separated, not badged — in a sentence, unspaced positions read as one word. */}
+                <p className="mt-5 text-lg font-bold">
+                  Open slots:{" "}
+                  {openPositions.map((position, index) => (
+                    <React.Fragment key={position}>
+                      {index > 0 && (
+                        <span className="text-muted-foreground"> · </span>
+                      )}
+                      <span className={POSITION_TEXT[position]}>
                         {position}
                       </span>
-                    ))}
-                  </>
-                )}
-              </p>
-
-              <div className="grid max-h-[26rem] grid-cols-2 gap-3 overflow-y-auto pr-1">
-                {team.players.map((player, index) => (
-                  <motion.div
-                    key={player.playerSeasonId}
-                    initial={FADE_RISE.initial}
-                    animate={FADE_RISE.animate}
-                    transition={staggeredTransition("base", index, {
-                      reduced,
-                    })}
-                    // On the wrapper: a disabled button dispatches no pointer events.
-                    onPointerEnter={() => onHoverPlayer(player)}
-                    onPointerLeave={() => onHoverPlayer(null)}
-                  >
-                    <RosterPlayerCard
-                      player={player}
-                      availability={availabilityOf(player)}
-                      selectedPosition={selectedPosition}
-                      onDraft={() =>
-                        onDraftPlayer(
-                          player,
-                          selectedPosition ?? player.position
-                        )
-                      }
-                      onDragChange={(dragging) =>
-                        onDragPlayer(dragging ? player : null)
-                      }
-                    />
-                  </motion.div>
-                ))}
+                    </React.Fragment>
+                  ))}
+                </p>
+                <p className="text-muted-foreground mt-1">
+                  Reveal a historical team and season to see its roster.
+                </p>
+                {/* Below lg the court pushes this past the fold, so the pinned bar carries it instead. */}
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={!canGetTeam}
+                  onClick={onGetRandomTeam}
+                  // size="lg" is h-9 (36px) — below the 44px touch floor, so the height is set here.
+                  className="bg-gold mt-5 hidden min-h-11 px-6 font-bold lg:inline-flex"
+                >
+                  Get Random Team
+                </Button>
               </div>
-            </div>
-          ) : isFetchingTeam ? (
-            <div className="py-6 text-center">
-              <span className={PLACEHOLDER_ICON}>
-                <Loader2 className="size-7 animate-spin" />
-              </span>
-              <p className="mt-5 text-lg font-bold">Drawing a team</p>
-              <p className="text-muted-foreground mt-1">Pulling a team.</p>
-            </div>
-          ) : (
-            <div className="py-6 text-center">
-              <span className={PLACEHOLDER_ICON}>
-                <Dices className="size-7" />
-              </span>
-              {/* Separated, not badged — in a sentence, unspaced positions read as one word. */}
-              <p className="mt-5 text-lg font-bold">
-                Open slots:{" "}
-                {openPositions.map((position, index) => (
-                  <React.Fragment key={position}>
-                    {index > 0 && (
-                      <span className="text-muted-foreground"> · </span>
-                    )}
-                    <span className={POSITION_TEXT[position]}>{position}</span>
-                  </React.Fragment>
-                ))}
-              </p>
-              <p className="text-muted-foreground mt-1">
-                Reveal a historical team and season to see its roster.
-              </p>
-              <Button
-                type="button"
-                size="lg"
-                disabled={!canGetTeam}
-                onClick={onGetRandomTeam}
-                className="bg-gold mt-5 font-bold"
-              >
-                Get Random Team
-              </Button>
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+            )}
+          </motion.div>
+        </AnimatePresence>
 
-      <RerollPool
-        rerollsLeft={rerollsLeft}
-        totalRerolls={totalRerolls}
-        isDisabled={!canReroll}
-        onReroll={onReroll}
-      />
-    </Card>
+        <RerollPool
+          rerollsLeft={rerollsLeft}
+          totalRerolls={totalRerolls}
+          isDisabled={!canReroll}
+          onReroll={onReroll}
+        />
+      </Card>
+
+      {/* Keyed on "no roster", not on canGetTeam, so the fetch does not blink the bar out and back. */}
+      {needsTeam && (
+        <div className="border-border/70 bg-card/95 fixed inset-x-0 bottom-0 z-30 border-t px-4 py-3 backdrop-blur lg:hidden">
+          {/* The label stays put while fetching — the card above already says "Drawing a team", and repeating it here reads as two statuses. */}
+          <Button
+            type="button"
+            size="lg"
+            disabled={!canGetTeam}
+            onClick={onGetRandomTeam}
+            className="bg-gold min-h-11 w-full font-bold"
+          >
+            Get Random Team
+          </Button>
+        </div>
+      )}
+    </>
   );
 };
 

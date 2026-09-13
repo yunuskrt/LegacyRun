@@ -74,7 +74,7 @@ const RerollPool = ({
           <button
             key={kind}
             type="button"
-            // The visible label is hidden below sm, so the name has to live here too.
+            // The visible label wraps to two lines below sm, so the name is pinned here too.
             aria-label={label}
             disabled={isDisabled}
             onClick={() => onReroll(kind)}
@@ -86,7 +86,7 @@ const RerollPool = ({
             )}
           >
             <Icon className="size-5" />
-            <span className="hidden text-center leading-tight sm:block">
+            <span className="block text-center text-xs leading-tight sm:text-sm">
               {label}
             </span>
           </button>

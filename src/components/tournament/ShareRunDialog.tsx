@@ -9,6 +9,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   DEFAULT_SHARE_RATIO,
@@ -22,9 +23,8 @@ import type { ShareCard, ShareCardRatio } from "@/lib/share-card";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  open: boolean;
   card: ShareCard;
-  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
 };
 
 // Long enough to read as confirmation, short enough that the label settles back.
@@ -159,8 +159,10 @@ const SharePanel = ({ card }: { card: ShareCard }) => {
   );
 };
 
-const ShareRunDialog = ({ open, card, onOpenChange }: Props) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
+// The trigger is a child so Radix owns it and restores focus to it on close; a bare onClick leaves focus on <body>.
+const ShareRunDialog = ({ card, children }: Props) => (
+  <Dialog>
+    <DialogTrigger asChild>{children}</DialogTrigger>
     <DialogContent className="flex max-h-[92dvh] flex-col overflow-y-auto p-6 sm:max-w-md">
       <DialogHeader className="shrink-0">
         <DialogTitle className="text-xl font-bold tracking-[0.16em] uppercase">
