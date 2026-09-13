@@ -1,14 +1,22 @@
 import {
   apiFailure,
+  apiRateLimited,
   apiSuccess,
   FROZEN_HISTORY_HEADERS,
 } from "@/lib/api-response";
 import { buildMatchData, parseMatchDataQuery } from "@/lib/match";
 import { getOpponentRosters, getSquadPlayers } from "@/lib/db/match";
+import { DATA_ROUTE_BUDGET, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const limit = rateLimit(request.headers, DATA_ROUTE_BUDGET);
+
+  if (!limit.allowed) {
+    return apiRateLimited(limit.retryAfterSeconds);
+  }
+
   const query = parseMatchDataQuery(new URL(request.url).searchParams);
 
   if (!query) {

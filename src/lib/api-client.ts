@@ -1,3 +1,4 @@
+import { API_ERRORS } from "@/types/api";
 import type { ApiError, ApiResponse } from "@/types/api";
 
 export type FetchLike = (
@@ -11,9 +12,7 @@ export type ApiFetchResult<T> =
   { ok: true; data: T } | { ok: false; error: ApiFetchFailure };
 
 const isApiError = (value: unknown): value is ApiError =>
-  value === "INVALID_REQUEST" ||
-  value === "NO_ELIGIBLE_TEAM" ||
-  value === "QUERY_FAILED";
+  API_ERRORS.includes(value as ApiError);
 
 export const requestJson = async <T>(
   url: string,

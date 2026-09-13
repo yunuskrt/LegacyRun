@@ -22,3 +22,17 @@ export const apiFailure = (error: ApiError, status: number) => {
 
   return NextResponse.json(body, { status });
 };
+
+// A throttled response must never be cached, or one caller's 429 is served to
+// everyone behind the same cache for as long as it lives there.
+export const apiRateLimited = (retryAfterSeconds: number) => {
+  const body: ApiResponse<never> = { success: false, error: "RATE_LIMITED" };
+
+  return NextResponse.json(body, {
+    status: 429,
+    headers: {
+      "Retry-After": String(retryAfterSeconds),
+      ...NO_STORE_HEADERS,
+    },
+  });
+};

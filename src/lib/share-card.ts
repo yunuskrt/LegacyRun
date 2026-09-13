@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRADITIONAL_SLOTS } from "@/data/formations";
 import { MAX_SQUAD_NAME_LENGTH, squadRatingOf } from "@/lib/run";
 import { playoffRecord, runPath } from "@/lib/run-summary";
+import { TEAM_SLUG_PATTERN } from "@/lib/team-logo";
 import { ROUND_PHRASE, squadDisplayName } from "@/lib/tournament-view";
 import { SQUAD_SIZE } from "@/types/game";
 import type { Bracket, BracketRoundId } from "@/types/bracket";
@@ -77,8 +78,8 @@ const MAX_RATING = 100;
 const MIN_SEASON = 1980;
 const MAX_SEASON = 2100;
 
-// The slug reaches a URL as `/logos/<slug>.png`, so anything path-like is rejected.
-const slugSchema = z.string().regex(/^[A-Z0-9]{2,8}$/);
+// Defined beside the path convention it has to stay safe for.
+const slugSchema = z.string().regex(TEAM_SLUG_PATTERN);
 
 const playerSchema = z.object({
   pos: z.enum(TRADITIONAL_SLOTS),
@@ -189,8 +190,16 @@ const fromBase64Url = (value: string): Uint8Array => {
 export const encodeShareCard = (card: ShareCard): string =>
   toBase64Url(new TextEncoder().encode(JSON.stringify(card)));
 
+// A real payload runs to roughly 1100 characters. The ceiling exists so the
+// pathological ones are rejected before `atob` and `JSON.parse` see them.
+export const MAX_ENCODED_CARD_LENGTH = 2048;
+
 // Every failure mode — bad base64, bad JSON, a tampered field — lands on `null`.
 export const decodeShareCard = (encoded: string): ShareCard | null => {
+  if (encoded.length === 0 || encoded.length > MAX_ENCODED_CARD_LENGTH) {
+    return null;
+  }
+
   try {
     const json = new TextDecoder().decode(fromBase64Url(encoded));
     const parsed = shareCardSchema.safeParse(JSON.parse(json));

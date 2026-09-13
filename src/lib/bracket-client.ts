@@ -23,6 +23,7 @@ export const BRACKET_FETCH_MESSAGE: Record<BracketFetchFailure, string> = {
   NO_ELIGIBLE_TEAM: "No bracket could be built for this squad.",
   QUERY_FAILED: "Couldn't reach the playoff archive. Try again.",
   UNREACHABLE: "Couldn't reach the playoff archive. Try again.",
+  RATE_LIMITED: "Too many requests just now — wait a moment and try again.",
 };
 
 // A run never plays the team-seasons it drafted its own players off.

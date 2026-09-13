@@ -3,6 +3,7 @@ import { TRADITIONAL_SLOTS } from "@/data/formations";
 import { MAX_SQUAD_NAME_LENGTH } from "@/lib/run";
 import {
   DEFAULT_SHARE_RATIO,
+  MAX_ENCODED_CARD_LENGTH,
   ROUND_IDS,
   SHARE_CARD_FILE_NAME,
   SHARE_CARD_PATH,
@@ -480,6 +481,34 @@ describe("encodeShareCard / decodeShareCard", () => {
         )
       )
     ).toBeNull();
+  });
+
+  // Padded with whitespace `JSON.parse` would accept, so the only thing that can
+  // reject this is the length ceiling — junk of the same size fails `atob` on its
+  // own and would pass whether the ceiling existed or not.
+  it("rejects an oversized payload before decoding it", () => {
+    const padded = JSON.stringify(card()) + " ".repeat(3000);
+    const encoded = Buffer.from(padded).toString("base64url");
+
+    expect(encoded.length).toBeGreaterThan(MAX_ENCODED_CARD_LENGTH);
+    expect(decodeShareCard(encoded)).toBeNull();
+  });
+
+  it("leaves real payloads far inside the ceiling", () => {
+    const longest = card({
+      name: "x".repeat(MAX_SQUAD_NAME_LENGTH),
+      five: card().five.map((player) => ({
+        ...player,
+        name: "y".repeat(60),
+        team: "z".repeat(40),
+        slug: "ABCDEFGH",
+      })),
+      last: { team: "w".repeat(40), year: 2026, round: "NBA_FINALS" },
+    });
+    const encoded = encodeShareCard(longest);
+
+    expect(encoded.length).toBeLessThan(MAX_ENCODED_CARD_LENGTH);
+    expect(decodeShareCard(encoded)).toEqual(longest);
   });
 });
 

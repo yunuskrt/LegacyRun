@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { requestJson } from "@/lib/api-client";
 import type { FetchLike } from "@/lib/api-client";
+import { API_ERRORS } from "@/types/api";
 
 const respondWith = (body: unknown): FetchLike =>
   vi.fn().mockResolvedValue({ json: async () => body });
@@ -33,6 +34,23 @@ describe("requestJson", () => {
     );
 
     expect(result).toEqual({ ok: false, error: "NO_ELIGIBLE_TEAM" });
+  });
+
+  // A code the narrowing does not know is reported as UNREACHABLE, which would
+  // tell a throttled player the server could not be reached. Every code the
+  // routes can send has to survive the trip.
+  it("carries every api error the routes can send", async () => {
+    for (const error of API_ERRORS) {
+      const result = await requestJson(
+        "/api/thing",
+        respondWith({ success: false, error })
+      );
+
+      expect(result, `${error} was not recognized`).toEqual({
+        ok: false,
+        error,
+      });
+    }
   });
 
   // An error off the wire, so an unrecognized one must not reach the caller's messages.

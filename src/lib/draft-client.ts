@@ -34,6 +34,7 @@ export const DRAFT_FETCH_MESSAGE: Record<DraftFetchFailure, string> = {
   NO_ELIGIBLE_TEAM: "No other team available.",
   QUERY_FAILED: "Couldn't reach the draft pool. Try again.",
   UNREACHABLE: "Couldn't reach the draft pool. Try again.",
+  RATE_LIMITED: "Drafting a little fast — wait a moment and try again.",
 };
 
 export const draftTeamUrl = (request: DraftRequest): string => {

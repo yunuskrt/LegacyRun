@@ -4,7 +4,13 @@ import {
   getRandomTeamSeason,
 } from "@/lib/db/draft";
 import { fetchDraftTeam, parseDraftTeamQuery } from "@/lib/draft-api";
-import { apiFailure, apiSuccess, NO_STORE_HEADERS } from "@/lib/api-response";
+import {
+  apiFailure,
+  apiRateLimited,
+  apiSuccess,
+  NO_STORE_HEADERS,
+} from "@/lib/api-response";
+import { DATA_ROUTE_BUDGET, rateLimit } from "@/lib/rate-limit";
 import type { DraftTeamFetchers } from "@/lib/draft-api";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +22,12 @@ const fetchers: DraftTeamFetchers = {
 };
 
 export async function GET(request: Request) {
+  const limit = rateLimit(request.headers, DATA_ROUTE_BUDGET);
+
+  if (!limit.allowed) {
+    return apiRateLimited(limit.retryAfterSeconds);
+  }
+
   const query = parseDraftTeamQuery(new URL(request.url).searchParams);
 
   if (!query) {
