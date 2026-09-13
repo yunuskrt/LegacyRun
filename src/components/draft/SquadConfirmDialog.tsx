@@ -26,6 +26,7 @@ type Props = {
   open: boolean;
   members: readonly SquadMember[];
   slots: readonly Position[];
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
   onOpenChange: (open: boolean) => void;
   onConfirm: (name: string, conference: Conference) => void;
 };
@@ -34,6 +35,7 @@ const SquadConfirmDialog = ({
   open,
   members,
   slots,
+  triggerRef,
   onOpenChange,
   onConfirm,
 }: Props) => {
@@ -44,7 +46,14 @@ const SquadConfirmDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92dvh] flex-col overflow-y-auto p-6 sm:max-w-lg">
+      {/* No DialogTrigger to restore to — the trigger stays mounted while this unmounts on handoff — so focus is returned by hand. */}
+      <DialogContent
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          triggerRef.current?.focus();
+        }}
+        className="flex max-h-[92dvh] flex-col overflow-y-auto p-6 sm:max-w-lg"
+      >
         <DialogHeader className="shrink-0">
           <DialogTitle className="text-xl font-bold tracking-[0.16em] uppercase">
             Confirm Your Squad
@@ -92,8 +101,9 @@ const SquadConfirmDialog = ({
                 <p className="truncate font-semibold">
                   {abbreviatePlayerName(member.name)}
                 </p>
+                {/* Season first, matching RunSquadGrid and SquadRail — truncation must never eat the era. */}
                 <p className="text-muted-foreground truncate text-xs tracking-[0.08em] uppercase">
-                  {member.teamName} · {formatSeason(member.seasonYear)}
+                  {formatSeason(member.seasonYear)} {member.teamName}
                 </p>
               </div>
 

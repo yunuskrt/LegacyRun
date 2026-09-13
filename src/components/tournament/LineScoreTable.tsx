@@ -16,7 +16,7 @@ const LineScoreTable = ({ cells, first, second, scores }: Props) => {
     <tr className="border-border/50 border-t">
       <th
         scope="row"
-        className={`px-4 py-2 text-left text-xs font-bold tracking-[0.1em] ${
+        className={`px-2 py-2 text-left text-xs font-bold tracking-[0.1em] sm:px-4 ${
           side.isSquad ? "text-primary" : "text-foreground"
         }`}
       >
@@ -28,7 +28,7 @@ const LineScoreTable = ({ cells, first, second, scores }: Props) => {
         return (
           <td
             key={cell.period}
-            className={`px-4 py-2 text-center text-sm tabular-nums ${
+            className={`px-2 py-2 text-center text-sm tabular-nums sm:px-4 ${
               cell.isCurrent
                 ? "bg-primary/10 text-primary font-semibold"
                 : "text-foreground"
@@ -38,7 +38,7 @@ const LineScoreTable = ({ cells, first, second, scores }: Props) => {
           </td>
         );
       })}
-      <td className="text-foreground px-4 py-2 text-center text-sm font-bold tabular-nums">
+      <td className="text-foreground px-2 py-2 text-center text-sm font-bold tabular-nums sm:px-4">
         {bySide(scores, side.id)}
       </td>
     </tr>
@@ -49,25 +49,26 @@ const LineScoreTable = ({ cells, first, second, scores }: Props) => {
       <p className="text-muted-foreground px-4 pt-3 pb-2 text-[0.625rem] font-semibold tracking-[0.18em]">
         LINE SCORE
       </p>
+      {/* No min-width floor: regulation fits 375px, and overtime columns still scroll here rather than clipping the total. */}
       <div className="overflow-x-auto">
-        <table className="w-full min-w-md">
+        <table className="w-full">
           <thead>
             <tr className="text-muted-foreground text-[0.625rem] font-semibold tracking-[0.14em]">
-              <th scope="col" className="px-4 pb-2 text-left">
+              <th scope="col" className="px-2 pb-2 text-left sm:px-4">
                 TEAM
               </th>
               {cells.map((cell) => (
                 <th
                   key={cell.period}
                   scope="col"
-                  className={`px-4 pb-2 text-center ${
+                  className={`px-2 pb-2 text-center sm:px-4 ${
                     cell.isCurrent ? "text-primary" : ""
                   }`}
                 >
                   {periodLabel(cell.period)}
                 </th>
               ))}
-              <th scope="col" className="px-4 pb-2 text-center">
+              <th scope="col" className="px-2 pb-2 text-center sm:px-4">
                 T
               </th>
             </tr>

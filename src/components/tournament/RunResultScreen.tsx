@@ -59,7 +59,6 @@ const RunResultScreen = ({
   const reduced = useReducedMotion() ?? false;
   const path = runPath(bracket, series);
   const eliminated = eliminationRow(path);
-  const [shareOpen, setShareOpen] = React.useState(false);
   const shareCard = React.useMemo(
     () => buildShareCard(squad, bracket, series, isChampion),
     [squad, bracket, series, isChampion]
@@ -162,16 +161,17 @@ const RunResultScreen = ({
         >
           Start a new run
         </motion.button>
-        <motion.button
-          type="button"
-          onClick={() => setShareOpen(true)}
-          {...press}
-          transition={transitionFor("quick", reduced)}
-          className="border-border bg-secondary text-foreground flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase sm:w-auto"
-        >
-          <Share2 className="size-4" aria-hidden="true" />
-          Share your run
-        </motion.button>
+        <ShareRunDialog card={shareCard}>
+          <motion.button
+            type="button"
+            {...press}
+            transition={transitionFor("quick", reduced)}
+            className="border-border bg-secondary text-foreground flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border px-6 py-3 text-xs font-bold tracking-[0.16em] uppercase sm:w-auto"
+          >
+            <Share2 className="size-4" aria-hidden="true" />
+            Share your run
+          </motion.button>
+        </ShareRunDialog>
 
         <motion.button
           type="button"
@@ -183,12 +183,6 @@ const RunResultScreen = ({
           Review bracket
         </motion.button>
       </motion.div>
-
-      <ShareRunDialog
-        open={shareOpen}
-        card={shareCard}
-        onOpenChange={setShareOpen}
-      />
     </div>
   );
 };
