@@ -2,15 +2,23 @@ import { getTeamSeasonById } from "@/lib/db/draft";
 import { parseTeamSeasonId } from "@/lib/draft-api";
 import {
   apiFailure,
+  apiRateLimited,
   apiSuccess,
   FROZEN_HISTORY_HEADERS,
 } from "@/lib/api-response";
+import { DATA_ROUTE_BUDGET, rateLimit } from "@/lib/rate-limit";
 
 // Route Handlers are uncached by default, so the other three's force-dynamic is redundant.
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ teamSeasonId: string }> }
 ) {
+  const limit = rateLimit(request.headers, DATA_ROUTE_BUDGET);
+
+  if (!limit.allowed) {
+    return apiRateLimited(limit.retryAfterSeconds);
+  }
+
   const { teamSeasonId } = await params;
   const id = parseTeamSeasonId(teamSeasonId);
 

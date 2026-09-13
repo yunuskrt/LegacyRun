@@ -22,6 +22,7 @@ export const MATCH_FETCH_MESSAGE: Record<MatchFetchFailure, string> = {
   NO_ELIGIBLE_TEAM: "Some rosters are missing from the archive.",
   QUERY_FAILED: "Couldn't reach the player archive. Try again.",
   UNREACHABLE: "Couldn't reach the player archive. Try again.",
+  RATE_LIMITED: "Too many requests just now — wait a moment and try again.",
 };
 
 // Every historical team in the bracket, including the drawn Finals opponent.

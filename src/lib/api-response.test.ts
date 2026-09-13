@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   apiFailure,
+  apiRateLimited,
   apiSuccess,
   FROZEN_HISTORY_HEADERS,
   NO_STORE_HEADERS,
@@ -104,5 +105,26 @@ describe("apiFailure", () => {
     const body = await apiFailure("QUERY_FAILED", 500).json();
 
     expect(Object.keys(body)).toEqual(["success", "error"]);
+  });
+});
+
+describe("apiRateLimited", () => {
+  it("answers 429 in the same envelope as every other failure", async () => {
+    const response = apiRateLimited(30);
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      error: "RATE_LIMITED",
+    });
+  });
+
+  it("tells the caller when to come back", () => {
+    expect(apiRateLimited(30).headers.get("retry-after")).toBe("30");
+  });
+
+  // A cached 429 would be replayed to everyone behind the same cache.
+  it("is never cached", () => {
+    expect(apiRateLimited(1).headers.get("cache-control")).toBe("no-store");
   });
 });

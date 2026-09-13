@@ -1,11 +1,23 @@
-import { apiFailure, apiSuccess, NO_STORE_HEADERS } from "@/lib/api-response";
+import {
+  apiFailure,
+  apiRateLimited,
+  apiSuccess,
+  NO_STORE_HEADERS,
+} from "@/lib/api-response";
 import { generateBracket, parseBracketQuery } from "@/lib/bracket";
 import { getPlayoffCandidates } from "@/lib/db/bracket";
+import { DATA_ROUTE_BUDGET, rateLimit } from "@/lib/rate-limit";
 import { mintSeed } from "@/lib/rng";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
+  const limit = rateLimit(request.headers, DATA_ROUTE_BUDGET);
+
+  if (!limit.allowed) {
+    return apiRateLimited(limit.retryAfterSeconds);
+  }
+
   const query = parseBracketQuery(new URL(request.url).searchParams);
 
   if (!query) {

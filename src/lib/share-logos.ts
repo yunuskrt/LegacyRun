@@ -1,37 +1,50 @@
-import { teamLogoPath } from "@/lib/team-logo";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { TEAM_SLUG_PATTERN, teamLogoPath } from "@/lib/team-logo";
 
-// Only what a logo response is read for, so a test can stand in for `fetch`.
-export type LogoResponse = {
-  ok: boolean;
-  arrayBuffer: () => Promise<ArrayBuffer>;
-};
+export type LogoBytes = ArrayBuffer | Uint8Array;
 
-export type LogoFetch = (url: string) => Promise<LogoResponse>;
+// The crests are read off disk rather than fetched, so nothing about the
+// inbound request can steer where the bytes come from.
+export type LogoReader = (path: string) => Promise<LogoBytes>;
 
 export type ShareLogos = Record<string, string | null>;
 
-export const logoDataUri = (bytes: ArrayBuffer): string =>
-  `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`;
+// `Buffer.from` has no overload for the union, so the ArrayBuffer half is
+// wrapped rather than widened.
+export const logoDataUri = (bytes: LogoBytes): string =>
+  `data:image/png;base64,${Buffer.from(
+    bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
+  ).toString("base64")}`;
 
-// Satori has no `onError`, so a crest that 404s would fail the whole image.
+const LOGO_ROOT = join(process.cwd(), "public");
+
+// `public/` reaches the serverless bundle only via next.config.ts's trace; a
+// failed read is a crest drawn as initials, never a failed render.
+export const readLogoFromDisk: LogoReader = async (path) => {
+  if (!path.startsWith("/logos/") || path.includes("..")) {
+    throw new Error(`refusing to read a logo from ${path}`);
+  }
+
+  return readFile(join(LOGO_ROOT, path));
+};
+
+// Satori has no `onError`, so a crest that is missing would fail the whole image.
 // Anything that did not come back is `null`, which the card draws as initials.
 export const loadShareLogos = async (
   slugs: readonly string[],
-  origin: string,
-  fetchLogo: LogoFetch
+  readLogo: LogoReader
 ): Promise<ShareLogos> => {
   const unique = [...new Set(slugs)];
 
   const entries = await Promise.all(
     unique.map(async (slug) => {
+      // Re-asserted here rather than trusted from the decoder, because this is
+      // the function that turns a slug into a path on disk.
+      if (!TEAM_SLUG_PATTERN.test(slug)) return [slug, null] as const;
+
       try {
-        const response = await fetchLogo(
-          new URL(teamLogoPath(slug), origin).href
-        );
-
-        if (!response.ok) return [slug, null] as const;
-
-        return [slug, logoDataUri(await response.arrayBuffer())] as const;
+        return [slug, logoDataUri(await readLogo(teamLogoPath(slug)))] as const;
       } catch {
         return [slug, null] as const;
       }

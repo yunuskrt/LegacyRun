@@ -19,6 +19,35 @@ const sourceFiles = (dir: string): string[] =>
     .filter((entry) => !entry.endsWith(".test.ts"))
     .map((entry) => readFileSync(join(ROOT, dir, entry), "utf8"));
 
+const WHY_TRACING_MATTERS = [
+  "`next.config.ts` must trace `public/logos` into the share-card function.",
+  "The route reads the crests off disk, and `public/` is not included in a",
+  "serverless bundle on its own — without this the deployed card renders team",
+  "initials where every logo should be, with no error anywhere to explain it.",
+  "See the Public Deploy Hardening entry in context/current-feature.md.",
+].join(" ");
+
+describe("next.config.ts output file tracing", () => {
+  it("traces the crests into the share-card function", () => {
+    const traced =
+      /outputFileTracingIncludes\s*:\s*\{[^}]*["']\/api\/share\/card["']\s*:\s*\[[^\]]*logos/.test(
+        CONFIG
+      );
+
+    expect(traced, WHY_TRACING_MATTERS).toBe(true);
+  });
+
+  // Without a disk read in the tree the trace above is dead weight.
+  it("still has the disk read it exists for", () => {
+    const source = readFileSync(join(ROOT, "src/lib/share-logos.ts"), "utf8");
+
+    expect(
+      source.includes("node:fs/promises"),
+      "`share-logos.ts` no longer reads from disk — re-check whether the trace above is still needed."
+    ).toBe(true);
+  });
+});
+
 describe("next.config.ts image optimization", () => {
   it("disables the image optimizer", () => {
     const disabled = /images\s*:\s*\{[^}]*\bunoptimized\s*:\s*true\b/.test(

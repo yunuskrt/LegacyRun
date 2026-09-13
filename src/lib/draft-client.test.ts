@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { API_ERRORS } from "@/types/api";
 import {
   DRAFT_FETCH_MESSAGE,
   draftTeamUrl,
@@ -184,12 +185,9 @@ describe("requestDraftTeam", () => {
 
 describe("DRAFT_FETCH_MESSAGE", () => {
   it("covers every failure the fetcher can return", () => {
-    expect(Object.keys(DRAFT_FETCH_MESSAGE).sort()).toEqual([
-      "INVALID_REQUEST",
-      "NO_ELIGIBLE_TEAM",
-      "QUERY_FAILED",
-      "UNREACHABLE",
-    ]);
+    expect(Object.keys(DRAFT_FETCH_MESSAGE).sort()).toEqual(
+      [...API_ERRORS, "UNREACHABLE"].sort()
+    );
 
     for (const message of Object.values(DRAFT_FETCH_MESSAGE)) {
       expect(message.length).toBeGreaterThan(0);
