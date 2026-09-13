@@ -20,5 +20,8 @@
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_drag"
     ]
+  },
+  "enabledPlugins": {
+    "claude-security@claude-plugins-official": true
   }
 }
