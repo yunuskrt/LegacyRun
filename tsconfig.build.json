@@ -1,0 +1,20 @@
+{
+  // Build-only config. `src/data/db`, `src/data/raw` and
+  // `src/data/rating/season_players.ts` are gitignored, so a fresh checkout —
+  // Vercel's included — does not have them. These eight files are the only ones
+  // that read them, and nothing imports any of the eight, so excluding them here
+  // drops them from the typecheck without changing a byte of the bundle.
+  // Full-tree checking still happens through tsconfig.json: `npm run typecheck`.
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "node_modules",
+    "src/data/db-data.test.ts",
+    "src/data/rating/season-players.test.ts",
+    "src/lib/bracket-data.test.ts",
+    "src/lib/landing.test.ts",
+    "src/lib/match-data.test.ts",
+    "src/lib/team-logo.test.ts",
+    "scripts/build-db-data.mts",
+    "scripts/ingest-db-data.mts"
+  ]
+}
