@@ -148,7 +148,7 @@ Two routes, not five+: keeps the live simulation and bracket experience continuo
 ## 📌 Status
 
 - **Playable end to end — 20 of 23 phases complete.** Draft, squad confirmation, bracket, match simulation and the result screen all work against real data; see `todo.md` for the phase list and `current-feature.md` for the build history.
-- **Data is ingested and frozen.** Neon holds 69,036 rows across seven tables, loaded from the committed files under `src/data/`. Both are locked — see the 🔒 section in `CLAUDE.md` before running anything that writes to the database or regenerates that data.
+- **Data is ingested and frozen.** Neon holds 69,036 rows across seven tables, loaded from the files under `src/data/`. Those files are gitignored and no longer ship with the repo — see the 🔒 section in `CLAUDE.md` for where they live and what a checkout without them cannot do.
 - **Remaining:** Phase 21 home screen, Phase 22 AI commentary (post-MVP), Phase 23 production deployment. Nothing has been promoted to a Neon production branch yet.
 
 ---

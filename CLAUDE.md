@@ -20,7 +20,9 @@ Read the following to get the full context of the project:
 
 ## 🔒 Locked: database writes and data regeneration
 
-As of Phase 10, the Neon development branch is fully ingested — 69,036 rows across the seven tables — and the committed files under `src/data/` are the source of truth for what it holds. **Both are frozen.** Promoting this data to the production branch happens later, by hand, and is not an agent task.
+As of Phase 10, the Neon development branch is fully ingested — 69,036 rows across the seven tables — and the files under `src/data/` are the source of truth for what it holds. **Both are frozen.** Promoting this data to the production branch happens later, by hand, and is not an agent task.
+
+**Those files are no longer in the repo.** `src/data/db/`, `src/data/raw/` and `src/data/rating/season_players.ts` are gitignored — they live on the maintainer's disk, and in git history up to `97ce336` (`git show 97ce336:src/data/db/player.ts`). A fresh checkout does not have them, so six suites fail on missing imports (`db-data`, `landing`, `match-data`, `team-logo`, `bracket-data`, `season-players`) and neither `db:ingest` nor `build:db-data` can run. `npm run build` is unaffected: `tsconfig.build.json` excludes exactly those eight files. Run `npm run typecheck` for the whole tree, which needs the data present.
 
 **Never run these without explicit, in-the-moment permission. Do not run them as a "verification step", to fix a failing test, or because a task seems to imply them.**
 

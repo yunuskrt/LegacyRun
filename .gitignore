@@ -46,6 +46,12 @@ __pycache__/
 # parser output — regenerate with `npm run parse:raw`
 /src/data/parsed
 
+# pipeline data — kept out of the repo, still on disk and in history before 97ce336.
+# The suites and scripts that read these are excluded in tsconfig.build.json.
+/src/data/db
+/src/data/raw
+/src/data/rating/season_players.ts
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

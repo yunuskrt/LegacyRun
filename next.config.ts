@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/share/card": ["./public/logos/**"],
   },
+  typescript: {
+    // The build typechecks the whole project, tests and scripts included, so it
+    // must not see the eight files that import the gitignored pipeline data.
+    tsconfigPath: "tsconfig.build.json",
+  },
 };
 
 export default nextConfig;
