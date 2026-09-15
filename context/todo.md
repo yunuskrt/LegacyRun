@@ -25,5 +25,4 @@ Quick-reference list of what's being built, in build order. For the detailed, pa
 - [x] **Phase 19 — Results & Run Summary**: victory/defeat screen and run recap — the five, the path, playoff record, run scoring leader, signature game — plus a read-only bracket archive and a new-run reset. Every figure derived from `SeriesState[]`, points only. **Closes the run-persistence question** left open since Phase 12. Full spec: `context/features/phase-19-results-run-summary.md`.
 - [x] **Phase 20 — Motion & Transition Polish**: Framer Motion across draft reveals, rounds, score updates.
 - [x] **Phase 21 — Home Screen**: landing page and Start Game CTA.
-- [ ] **Phase 22 — AI Commentary (Post-MVP)**: optional, non-authoritative match commentary.
-- [ ] **Phase 23 — Production Deployment**: Vercel + Neon production setup, smoke test.
+- [x] **Phase 22 — Production Deployment**: Vercel + Neon production setup, smoke test.
